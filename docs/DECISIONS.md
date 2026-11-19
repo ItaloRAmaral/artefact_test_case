@@ -23,6 +23,8 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports)                      | Layer rule enforced with `no-restricted-imports`                     | 2026-11-19 |
 | [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only)                       | e2e tests on a production build, Chromium only                       | 2026-11-19 |
 | [D-19](#d-19-newest-version-at-least-7-days-old)                                  | Newest version at least 7 days old                                   | 2026-11-19 |
+| [D-20](#d-20-limits-title-120-description-1000-page-10-to-50)                     | Limits: title 120, description 1000, page 10 (max 50)                | 2026-11-19 |
+| [D-21](#d-21-position-cursor)                                                     | Position cursor                                                      | 2026-11-19 |
 
 ---
 
@@ -208,11 +210,29 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Why:** bypassing a security default to gain a few days of release age is a bad trade. Every piece is still on its latest major line, ESLint 10 (D-16) included.
 - **Supersedes in part:** the exact versions in D-02 and D-16, where they were newer than 7 days.
 
+## D-20: Limits: title 120, description 1000, page 10 (max 50)
+
+- **Context:** the spec sets no limits, but unbounded text would let one request grow server memory without limit (in-memory storage, D-05).
+- **Decision:**
+  - The title has 1 to 120 characters and the description up to 1000, both counted after trimming.
+  - A page holds 10 tasks by default, and the client may ask for up to 50.
+  - Input caps that follow from earlier decisions: an `id` has at most 36 characters (a UUID v4 string), and a cursor at most 84 (D-21: the base64 of a 24-character ISO date, `|` and a 36-character id).
+  - The Zod schemas enforce these caps, the page-size range and its default at the edge. Inside, `ListTasks` trusts `limit` (`CLAUDE.md`: input is validated once, at the edge).
+  - The constants live in `src/shared/tasks/task-limits.ts` (D-13).
+- **Why:** 120 characters fit a one-line title and 1000 a few paragraphs. A default of 10 makes the infinite scroll visible with few tasks; a maximum of 50 caps the cost of one request.
+
+## D-21: Position cursor
+
+- **Context:** the paginated list (D-10) needs a cursor that neither skips nor repeats tasks, and that still works when the task it points to has been deleted between two pages.
+- **Decision:**
+  - The cursor is an opaque string: the base64 of `<createdAt ISO>|<id>` of the last task on the page.
+  - `ListTasks` decodes it, and a malformed cursor fails with `TASK_CURSOR_INVALID`. It then asks the repository for the next `limit + 1` tasks after that position, in the order of D-12 with ties broken by `id` descending. The extra task tells whether another page exists.
+- **Why:**
+  - A position, unlike an id, does not need the task to still exist.
+  - The decoding rule and the page logic stay in the application. The repository only sorts and filters, so a database adapter would map it to a `WHERE (created_at, id) < (…)` query.
+
 ---
 
 ## Open decisions
 
-To be decided in the implementation plans, then recorded here.
-
-- **Limits:** the maximum lengths of `title` and `description`, the page size and its cap.
-- **Cursor encoding**, which must keep working when the task it points to was deleted.
+None open. New ones are added here when a plan raises them.
