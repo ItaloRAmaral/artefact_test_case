@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { makeTask, makeTaskSnapshot } from '@/test/factories/make-task';
 import { catchError } from '@/test/catch-error';
 
-import { Task } from './task';
+import { Task } from './entity';
 
 const CREATED_AT = new Date('2026-11-19T12:00:00.000Z');
 

@@ -4,3 +4,8 @@ export interface TaskSnapshot {
   readonly description: string | null;
   readonly createdAt: Date;
 }
+
+export interface TaskContent {
+  readonly title: string;
+  readonly description?: string | null;
+}

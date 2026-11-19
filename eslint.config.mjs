@@ -20,13 +20,13 @@ const EXTERNAL_TO_CORE = {
     'crypto',
   ],
   message:
-    'The domain and application layers import nothing external (.claude/rules/backend.md).',
+    'domains/ is the core and imports nothing external (.claude/rules/backend.md).',
 };
 
-const OUTER_LAYERS = {
-  group: ['**/infra/**', '**/trpc/**'],
+const OUTER_RING = {
+  group: ['**/adapters/**', '**/tasks-module'],
   message:
-    'Dependencies point inward: only infra/ and trpc/ may depend on the core (.claude/rules/backend.md).',
+    'Dependencies point inward: adapters and the composition root depend on domains/, never the reverse (.claude/rules/backend.md).',
 };
 
 export default defineConfig([
@@ -44,6 +44,10 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        { allowInterfaces: 'with-single-extends' },
+      ],
       'no-console': 'error',
       'padding-line-between-statements': [
         'error',
@@ -63,22 +67,43 @@ export default defineConfig([
     },
   },
   {
+    files: ['**/*.test.{ts,tsx}', 'e2e/**'],
+    rules: {
+      'padding-line-between-statements': 'off',
+    },
+  },
+  {
     files: ['**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
-    files: ['src/server/**/domain/**'],
+    files: ['src/server/domains/**'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [EXTERNAL_TO_CORE, OUTER_RING] },
+      ],
+    },
+  },
+  {
+    files: ['src/server/domains/*/entities/**'],
+    ignores: ['**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             EXTERNAL_TO_CORE,
-            OUTER_LAYERS,
+            OUTER_RING,
             {
-              group: ['**/application/**'],
+              group: [
+                '**/use-cases/**',
+                '**/repositories/**',
+                '**/providers/**',
+              ],
               message:
-                'The domain does not depend on the application layer (.claude/rules/backend.md).',
+                'Entities hold the rules only: they know no use case, repository or provider (.claude/rules/backend.md).',
             },
           ],
         },
@@ -86,16 +111,8 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/server/**/application/**'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [EXTERNAL_TO_CORE, OUTER_LAYERS] },
-      ],
-    },
-  },
-  {
     files: ['src/shared/**'],
+    ignores: ['**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

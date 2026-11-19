@@ -10,7 +10,7 @@
 
 **Goal:** the task domain, the five use cases and the in-memory repository, fully unit-tested with the 90% gate on `src/server/**` now enforced, with no tRPC, Zod or Next.js involved.
 
-**Architecture:** everything in `.claude/rules/backend.md`'s layout. `src/shared/tasks/task-limits.ts` holds the limits. `src/server/tasks/domain/` holds `Task` and its errors. `src/server/tasks/application/` holds the ports and one folder per use case; the cursor codec sits in `list-tasks/`, its only user. `src/server/tasks/infra/` holds the adapters, and `tasks-module.ts` wires them. Test fakes and factories go in `src/test/`.
+**Architecture:** everything in `.claude/rules/backend.md`'s layout. `src/shared/tasks/task-limits.ts` holds the limits. Since Task 3's review (D-23), everything of the domain lives in `src/server/domains/task/`: `entities/` (`Task`, its shapes and errors), `repositories/` (the contract and the in-memory implementation beside it), `providers/` (one folder per provider, `clock/` and `id-generator/`, each with its contract and implementation) and `use-cases/` (one folder per use case; the cursor codec sits in `list-tasks/`, its only user). `src/server/tasks-module.ts` wires them. (Before D-23 the folders were `domain/`, `application/` and `infra/` under `src/server/tasks/`; the notes of Tasks 1 to 3 use those paths.) Test fakes and factories go in `src/test/`.
 
 ## Global constraints
 
@@ -19,8 +19,8 @@
 - The page-size range (1 to `TASK_PAGE_SIZE_MAX`) and its default are enforced by the Zod schema in sub-plan 3, at the edge (`CLAUDE.md`: inside, code trusts the types). `ListTasks` trusts `limit`, so the roadmap's "limit cap" test belongs to sub-plan 3's router tests.
 - Cursor (D-21): opaque string, base64 of `<createdAt ISO>|<id>` of the last task of the page. The application decodes it; the repository receives a position, never the raw cursor.
 - Error codes (roadmap interface, D-07): `TASK_NOT_FOUND`, `TASK_TITLE_REQUIRED`, `TASK_TITLE_TOO_LONG`, `TASK_DESCRIPTION_TOO_LONG`, `TASK_CURSOR_INVALID`, `TASK_STORAGE_FULL` (D-22). Each is a `DomainError` subclass with a literal `code`.
-- IDs are UUID v4 from `node:crypto` `randomUUID()`, in infra only. Time comes from `Clock`.
-- `domain/` and `application/` import nothing external (D-17 lint). `infra/` and `tasks-module.ts` import `server-only` (D-13).
+- IDs are UUID v4 from the global Web Crypto `crypto.randomUUID()`, only in `RandomIdGenerator` (no import, so it can sit beside its contract, D-23). Time comes from `Clock`.
+- `src/server/domains/` imports nothing external (D-17 lint, D-23). `tasks-module.ts` imports `server-only` (D-13, D-23).
 - Ports return `Promise`: the contract fits any storage. The in-memory adapter's methods are not `async` and return `Promise.resolve(...)`, because `strictTypeChecked` includes `@typescript-eslint/require-await`.
 - New dependency: `server-only` 0.0.1 (released 2022, meets D-19).
 
@@ -54,15 +54,15 @@
 
 ## Security
 
-| Threat                                                            | How this plan handles it                                                                                                                                                                                                                 | Task and test                                                                                                                                                   |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mass assignment                                                   | `CreateTask` input has no `id` or `createdAt`; both come from ports                                                                                                                                                                      | Task 3, `sets id and createdAt from the ports`                                                                                                                  |
-| Unbounded input                                                   | title and description limits enforced by the entity                                                                                                                                                                                      | Task 1, limit tests                                                                                                                                             |
-| Unbounded storage (memory exhaustion by creating tasks in a loop) | the in-memory repository holds at most 1000 tasks; a new task beyond that fails with `TASK_STORAGE_FULL`, edits still save (D-22)                                                                                                        | Task 2, `rejects a new task when the storage is full`, `still saves an existing task when the storage is full`, `accepts a new task again after one is deleted` |
-| Stored state mutated by reference                                 | the repository stores snapshots and returns new entities                                                                                                                                                                                 | Task 2, `returns copies, not stored state`                                                                                                                      |
-| Forged cursor                                                     | strict decoding, `TASK_CURSOR_INVALID` on anything malformed; length cap at the edge in sub-plan 3                                                                                                                                       | Task 4                                                                                                                                                          |
-| Server code in client bundles                                     | `server-only` as the first import of `in-memory-task-repository.ts`, `system-clock.ts`, `random-id-generator.ts` and `tasks-module.ts`; the build-level proof (a client import failing) arrives with the first client code in sub-plan 3 | Task 5, step 2 (grep check)                                                                                                                                     |
-| Internal details in errors                                        | domain errors carry only `code`; translation is sub-plan 3                                                                                                                                                                               | Task 1                                                                                                                                                          |
+| Threat                                                            | How this plan handles it                                                                                                                                                                                                                                   | Task and test                                                                                                                                                   |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mass assignment                                                   | `CreateTask` input has no `id` or `createdAt`; both come from ports                                                                                                                                                                                        | Task 3, `sets id and createdAt from the ports`                                                                                                                  |
+| Unbounded input                                                   | title and description limits enforced by the entity                                                                                                                                                                                                        | Task 1, limit tests                                                                                                                                             |
+| Unbounded storage (memory exhaustion by creating tasks in a loop) | the in-memory repository holds at most 1000 tasks; a new task beyond that fails with `TASK_STORAGE_FULL`, edits still save (D-22)                                                                                                                          | Task 2, `rejects a new task when the storage is full`, `still saves an existing task when the storage is full`, `accepts a new task again after one is deleted` |
+| Stored state mutated by reference                                 | the repository stores snapshots and returns new entities                                                                                                                                                                                                   | Task 2, `returns copies, not stored state`                                                                                                                      |
+| Forged cursor                                                     | strict decoding, `TASK_CURSOR_INVALID` on anything malformed; length cap at the edge in sub-plan 3                                                                                                                                                         | Task 4                                                                                                                                                          |
+| Server code in client bundles                                     | `server-only` as the first import of `tasks-module.ts`, the only way the server's single instances are built; `domains/` imports nothing external (D-23); the build-level proof (a client import failing) arrives with the first client code in sub-plan 3 | Task 5, step 2 (grep check)                                                                                                                                     |
+| Internal details in errors                                        | domain errors carry only `code`; translation is sub-plan 3                                                                                                                                                                                                 | Task 1                                                                                                                                                          |
 
 ## Test plan
 
@@ -153,14 +153,14 @@ None.
 **Interfaces:**
 
 - Produces ports, as abstract classes:
-  - `TaskRepository`: `findById(id: string): Promise<Task | null>`, `save(task: Task): Promise<void>`, `delete(id: string): Promise<void>`, `listAfter(position: TaskPosition | null, count: number): Promise<Task[]>`, where `interface TaskPosition { readonly createdAt: Date; readonly id: string }` lives in its own file, `application/ports/interfaces/task-position.ts` (code-style: one interface per file, in `interfaces/`);
+  - `TaskRepository`: `findExistingById(id: string): Promise<Task>` (rejects with `TaskNotFoundError`; was `findById` returning `null`, changed in Task 3's review), `save(task: Task): Promise<void>`, `delete(id: string): Promise<void>`, `listAfter(position: TaskPosition | null, count: number): Promise<Task[]>`, where `interface TaskPosition { readonly createdAt: Date; readonly id: string }` lives in its own file, `application/ports/interfaces/task-position.ts` (code-style: one interface per file, in `interfaces/`);
   - `Clock`: `now(): Date`;
   - `IdGenerator`: `next(): string`.
 - Produces fakes: `FixedClock extends Clock`, with constructor `(now: Date)`; `SequentialIdGenerator extends IdGenerator`, returning `task-1`, `task-2`, ….
 - Produces `InMemoryTaskRepository extends TaskRepository`:
   - imports `server-only`;
   - stores `Map<string, TaskSnapshot>`;
-  - `save` stores `task.toSnapshot()`, and `findById` and `listAfter` return `Task.restore(...)` of a copy;
+  - `save` stores `task.toSnapshot()`, and `findExistingById` and `listAfter` return `Task.restore(...)` of a copy;
   - `listAfter` sorts by `createdAt` desc then `id` desc, keeps the tasks strictly after `position` in that order, and takes `count`, with a short why-comment (strictly after a position, so the task the cursor came from may be gone, D-21; `id` breaks ties, D-12).
 
 - [x] **Step 1:** Vitest alias `server-only` → `node_modules/server-only/empty.js`. Its `exports` map sends the default condition to a throwing `index.js` and `react-server` to `empty.js`. This is a test-runner setting for a third-party marker, not a mock of project code. A short comment says why.
@@ -194,8 +194,26 @@ None.
 - `UpdateTask(repository).execute(input: { id: string; title: string; description?: string | null }): Promise<Task>`: load, throw `TaskNotFoundError` if missing, `task.edit(...)`, save, return
 - `DeleteTask(repository).execute(input: { id: string }): Promise<void>`: throws `TaskNotFoundError` if missing, then deletes
 
-- [ ] **Step 1:** one test file per use case (Task 3 rows), with a fresh `InMemoryTaskRepository`, `FixedClock` and `SequentialIdGenerator`. Async errors are asserted with `await expect(promise).rejects.toMatchObject({ code: 'TASK_NOT_FOUND' })`. A failed update or delete leaves the repository unchanged, asserted by reading it back.
-- [ ] **Step 2:** red, implement each use case as a thin script (load → entity → save → return), green.
+- [x] **Step 1:** one test file per use case (Task 3 rows), with a fresh `InMemoryTaskRepository`, `FixedClock` and `SequentialIdGenerator`. Async errors are asserted with `await expect(promise).rejects.toMatchObject({ code: 'TASK_NOT_FOUND' })`. A failed update or delete leaves the repository unchanged, asserted by reading it back.
+- [x] **Step 2:** red, implement each use case as a thin script (load → entity → save → return), green.
+
+**Execution notes (2026-11-19):**
+
+- `findExistingTask(repository, id)` added in `application/use-cases/find-existing-task.ts`. `GetTask`, `UpdateTask` and `DeleteTask` each loaded the task and threw `TaskNotFoundError` when missing: a third copy, which `code-style.md` turns into an abstraction. It is a function with no owner class, in its own file in the layer of its rule.
+- Lint: the layer blocks of `eslint.config.mjs` now ignore `**/*.test.{ts,tsx}`. The dependency rule is for production code, and `tests.md` tests use cases with the in-memory adapter from `infra/`.
+- Lint: `padding-line-between-statements` is off for tests. In the use-case and repository tests, `eslint --fix` had inserted blank lines inside Arrange, after a `const` and before `await repository.save(...)`. That broke the Arrange/Act/Assert spacing of `tests.md`. The 16 inserted lines were removed, and `code-style.md` records the exception.
+- Red: with stubs that reject with `Not implemented`, all 10 use-case tests failed. Green: 46 passed. Coverage on `src/server/**`: 97.43% lines, 100% branches; `pnpm test:coverage` exits 0.
+- Verified: `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0.
+
+- Review of Task 3 (user decisions):
+  - `findExistingTask` (a loose function) replaced by `findExistingById` in the repository **contract and its implementation**. The port declares it, the in-memory adapter rejects with `TaskNotFoundError`, and the use cases call it. `findById` was removed: no use case calls it any more (`backend.md`: a method exists only when a use case calls it). `backend.md` records that not-found is part of the port contract.
+  - Input shapes moved out of the signatures into interfaces:
+    - `domain/interfaces/task-content.ts` (`TaskContent`, used by `Task.create`, `Task.edit` and `CreateTask`);
+    - each use case's input in its own folder (user request: a shared `use-cases/interfaces/` folder is hard to navigate): then renamed (user request) to the folder pattern `index.ts` / `index.test.ts` / `dto.ts`: every use case, `CreateTask` included (`CreateTaskInput extends TaskContent`), keeps its input in `dto.ts`. `UpdateTaskInput` extends `TaskContent` with `id`. ESLint `no-empty-object-type` allows a single-extends interface.
+  - Deep relative imports replaced by the `@/` alias (new rule in `code-style.md`). A blank line now separates `edit` and `save` in `UpdateTask`.
+  - New test `fails with TASK_STORAGE_FULL when the storage is full` in `CreateTask`.
+  - Tests that read the repository use `findExistingById`; absence is asserted as a `TASK_NOT_FOUND` rejection. 47 tests pass; coverage 97.36% lines, 100% branches.
+  - Folders reorganized (user decision, D-23): `src/server/tasks/{domain,application,infra}` became `src/server/domains/task/{entities,repositories,providers,use-cases}`. `TaskSnapshot` and `TaskContent` moved to `entities/dto.ts`, `TaskPosition` to `repositories/dto.ts`. The in-memory repository sits beside its contract as `in-memory-database-repository.ts` and no longer imports `server-only`. ESLint layer blocks rewritten for `domains/**` and `entities/`, checked with the ESLint API: forbidden imports blocked, allowed ones pass. Files only moved; 47 tests still pass.
 
 **Suggested commit:** `feat(server): add create, get, update and delete task use cases`
 
@@ -203,7 +221,7 @@ None.
 
 **Files:**
 
-- Create: `src/server/tasks/application/use-cases/list-tasks/list-tasks.ts`, `task-cursor.ts`, `list-tasks.test.ts`
+- Create: `src/server/domains/task/use-cases/list-tasks/index.ts`, `dto.ts`, `task-cursor.ts`, `index.test.ts`
 
 **Interfaces:**
 
@@ -218,12 +236,13 @@ None.
 
 **Files:**
 
-- Create: `src/server/tasks/infra/system-clock.ts`, `random-id-generator.ts` (with tests), `src/server/tasks/tasks-module.ts` (with test)
+- Move (user request, 2026-11-19: one folder per provider, so `providers/` does not pile up files): `providers/clock.ts` → `providers/clock/clock.ts`, `providers/id-generator.ts` → `providers/id-generator/id-generator.ts`; update their imports (use cases, `src/test/fakes/`)
+- Create: `providers/clock/system-clock.ts` and `providers/id-generator/random-id-generator.ts` (with tests), under `src/server/domains/task/`; `src/server/tasks-module.ts` (with test)
 - Modify: this plan's status, the roadmap's sub-plan 2 status (D-20 and D-21 are written with this plan)
 
 **Interfaces:**
 
-- `SystemClock extends Clock` (`new Date()`); `RandomIdGenerator extends IdGenerator` (`randomUUID()` from `node:crypto`). Both import `server-only`.
+- `SystemClock extends Clock` (`new Date()`); `RandomIdGenerator extends IdGenerator` (global `crypto.randomUUID()`). Both import nothing (D-23).
 - `createTasksModule(deps: { repository: TaskRepository; clock: Clock; idGenerator: IdGenerator }): { createTask: CreateTask; listTasks: ListTasks; getTask: GetTask; updateTask: UpdateTask; deleteTask: DeleteTask }`. Imports `server-only`. The `globalThis` singleton is sub-plan 3's composition root.
 
 - [ ] **Step 1:** tests:
@@ -233,7 +252,7 @@ None.
 
   Red, implement, green.
 
-- [ ] **Step 2:** `pnpm test:coverage` meets 90% lines and branches on `src/server/**` (paste the summary); `pnpm lint`, `pnpm typecheck` and `pnpm format:check` green; `grep -L "^import 'server-only';"` on the four server-wiring files lists none.
+- [ ] **Step 2:** `pnpm test:coverage` meets 90% lines and branches on `src/server/**` (paste the summary); `pnpm lint`, `pnpm typecheck` and `pnpm format:check` green; `tasks-module.ts` starts with `import 'server-only';`, and `grep -r "server-only" src/server/domains` finds nothing.
 - [ ] **Step 3:** mark this plan "Done" and sub-plan 2 "Done" in the roadmap; add the D-03 field mapping to the README (the model now exists); in `CLAUDE.md` "Stack", Zod → "installed in sub-plan 3" and add `server-only` 0.0.1.
 
 **Suggested commit:** `feat(server): add system adapters and tasks module composition`

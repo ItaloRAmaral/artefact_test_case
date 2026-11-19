@@ -26,6 +26,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-20](#d-20-limits-title-120-description-1000-page-10-to-50)                     | Limits: title 120, description 1000, page 10 (max 50)                | 2026-11-19 |
 | [D-21](#d-21-position-cursor)                                                     | Position cursor                                                      | 2026-11-19 |
 | [D-22](#d-22-storage-capped-at-1000-tasks)                                        | Storage capped at 1000 tasks                                         | 2026-11-19 |
+| [D-23](#d-23-back-end-folders-by-domain-and-adapters)                             | Back-end folders: `domains/<name>/` and `adapters/`                  | 2026-11-19 |
 
 ---
 
@@ -73,7 +74,7 @@ The main decisions behind this project, each with its context, the choice and wh
 ## D-04: Hexagonal architecture with a repository on the back end
 
 - **Context:** the spec asks for a small CRUD and says "less is more"; it also evaluates how the back end is structured.
-- **Decision:** ports and adapters with a repository pattern, kept lean. One `tasks` module with `domain/` (the `Task` entity and its errors; limits in `src/shared`, D-13), `application/` (ports and one use case per operation), `infra/` (the in-memory repository, clock and ID generator) and `trpc/` (the inbound adapter). Dependencies point inward: `domain/` and `application/` import no framework or library. Details in [`.claude/rules/backend.md`](../.claude/rules/backend.md).
+- **Decision:** ports and adapters with a repository pattern, kept lean. One `tasks` module with `domain/` (the `Task` entity and its errors; limits in `src/shared`, D-13), `application/` (ports and one use case per operation), `infra/` (the in-memory repository, clock and ID generator) and `trpc/` (the inbound adapter). Dependencies point inward: `domain/` and `application/` import no framework or library. Details in [`.claude/rules/backend.md`](../.claude/rules/backend.md). _Superseded in part by [D-23](#d-23-back-end-folders-by-domain-and-adapters): the folders are now `domains/task/` and `adapters/`; the architecture is the same._
 - **Why:**
   - The spec makes storage in memory; the repository port isolates exactly that, so moving to a database changes one adapter and nothing else.
   - Business rules live in the entity and use cases, testable in milliseconds without tRPC or Next.
@@ -156,6 +157,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - The limits are plain constants with no imports, in `src/shared/tasks/task-limits.ts`. The entity and the schemas both use them.
   - `server-only` is imported only by the modules that wire or expose the server: the composition root, `infra/`, `trpc/` and the server caller.
   - `domain/` and `application/` stay free of external imports, and nothing in `src/server/` is imported by client code.
+  - _Superseded in part by [D-23](#d-23-back-end-folders-by-domain-and-adapters): with the new folders, the composition root and `adapters/` import `server-only`, and `domains/` stays free of it._
 - **Why:** each limit is still defined once, the client imports only `src/shared/`, and a client import of the server's wiring still fails the build.
 - **Supersedes in part:** D-04 and D-06, where the limits were placed in the domain.
 
@@ -194,6 +196,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - `domain/` imports no framework, library, `server-only` or Node module, and nothing from `application/`, `infra/` or `trpc/`;
   - `application/` imports the same externals as `domain/` forbids, and nothing from `infra/` or `trpc/`;
   - `src/shared/` imports nothing from `src/server/`.
+  - _Superseded in part by [D-23](#d-23-back-end-folders-by-domain-and-adapters): the blocks now cover `src/server/domains/**` and its `entities/`._
 - **Why:** a violation fails `pnpm lint`, with no new dependency. `eslint-plugin-boundaries` would be more expressive, but adds a dependency this one module does not need.
 
 ## D-18: e2e tests on a production build, Chromium only
@@ -244,6 +247,21 @@ The main decisions behind this project, each with its context, the choice and wh
   - It bounds the cost of the per-request sort.
   - It adds no method to the port and no business `if` to a use case.
 - **Alternative rejected:** a `count()` on the repository port and the check in `CreateTask`. The rule would sit in the use case (`backend.md`), and every future adapter would have to implement `count()`.
+
+## D-23: Back-end folders by domain and adapters
+
+- **Context:** the folders of D-04 (`domain/`, `application/ports/`, `application/use-cases/`, `infra/`, `trpc/`) were confusing to read: "use cases are framework agnostic, so why are they not in the domain?". The user showed the layout they prefer on 2026-11-19.
+- **Decision:**
+  - Everything of a domain lives in `src/server/domains/<name>/`, grouped by kind of piece: `entities/` (`entity.ts`, `dto.ts`, `errors.ts`), `repositories/`, `providers/` (one folder per provider: `clock/`, `id-generator/`) and `use-cases/` (one folder per use case).
+  - An implementation that imports nothing external sits beside its contract: `in-memory-database-repository.ts` next to `database-repository.ts`, and the system clock and ID generator next to theirs. The ID generator uses the global Web Crypto `crypto.randomUUID()`, so it needs no import.
+  - Everything that knows a framework lives in `src/server/adapters/`: `trpc/` (setup, app router, server caller), `controllers/` (the procedures) and `middlewares/` when one is needed. These modules and the composition root `src/server/tasks-module.ts` import `server-only`; `domains/` does not.
+  - ESLint: `domains/**` imports nothing external and nothing from `adapters/` or the composition root; `entities/` also imports no use case, repository or provider.
+- **Why:**
+  - One folder answers "where is everything about tasks", and each subfolder name says what is inside.
+  - The architecture is unchanged: the core still imports no framework, and dependencies still point inward.
+  - The contract and the in-memory implementation are read side by side.
+- **Cost:** a concrete implementation now sits inside the core folder. It is contained because the implementation imports nothing external (ESLint checks it), and the single instance is still created in the composition root, which imports `server-only`.
+- **Alternative rejected:** keeping `domain/` and `application/` with the in-memory repository in `infra/`. It is the textbook split, but the user found it harder to follow, and the dependency rule holds either way.
 
 ---
 

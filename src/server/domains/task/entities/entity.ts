@@ -7,8 +7,8 @@ import {
   TaskDescriptionTooLongError,
   TaskTitleRequiredError,
   TaskTitleTooLongError,
-} from './task-errors';
-import type { TaskSnapshot } from './interfaces/task-snapshot';
+} from './errors';
+import type { TaskContent, TaskSnapshot } from './dto';
 
 export class Task {
   private state: TaskSnapshot;
@@ -17,12 +17,9 @@ export class Task {
     this.state = { ...snapshot, createdAt: new Date(snapshot.createdAt) };
   }
 
-  static create(props: {
-    id: string;
-    title: string;
-    description?: string | null;
-    createdAt: Date;
-  }): Task {
+  static create(
+    props: TaskContent & Pick<TaskSnapshot, 'id' | 'createdAt'>,
+  ): Task {
     const content = Task.normalizeContent(props.title, props.description);
 
     return new Task({ id: props.id, createdAt: props.createdAt, ...content });
@@ -32,7 +29,7 @@ export class Task {
     return new Task(snapshot);
   }
 
-  edit(changes: { title: string; description?: string | null }): void {
+  edit(changes: TaskContent): void {
     const content = Task.normalizeContent(changes.title, changes.description);
 
     this.state = { ...this.state, ...content };

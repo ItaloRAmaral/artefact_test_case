@@ -1,5 +1,5 @@
-import { Task } from '@/server/tasks/domain/task';
-import type { TaskSnapshot } from '@/server/tasks/domain/interfaces/task-snapshot';
+import { Task } from '@/server/domains/task/entities/entity';
+import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
 
 export function makeTaskSnapshot(
   overrides: Partial<TaskSnapshot> = {},

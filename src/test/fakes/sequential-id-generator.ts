@@ -1,4 +1,4 @@
-import { IdGenerator } from '@/server/tasks/application/ports/id-generator';
+import { IdGenerator } from '@/server/domains/task/providers/id-generator';
 
 export class SequentialIdGenerator extends IdGenerator {
   private generatedCount = 0;

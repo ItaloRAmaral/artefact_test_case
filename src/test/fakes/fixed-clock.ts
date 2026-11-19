@@ -1,4 +1,4 @@
-import { Clock } from '@/server/tasks/application/ports/clock';
+import { Clock } from '@/server/domains/task/providers/clock';
 
 export class FixedClock extends Clock {
   constructor(private readonly fixedNow: Date) {

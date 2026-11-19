@@ -1,8 +1,8 @@
-import type { Task } from '../../domain/task';
-import type { TaskPosition } from './interfaces/task-position';
+import type { Task } from '@/server/domains/task/entities/entity';
+import type { TaskPosition } from './dto';
 
 export abstract class TaskRepository {
-  abstract findById(id: string): Promise<Task | null>;
+  abstract findExistingById(id: string): Promise<Task>;
 
   abstract save(task: Task): Promise<void>;
 

@@ -1,10 +1,12 @@
-import 'server-only';
+import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
+import { Task } from '@/server/domains/task/entities/entity';
+import {
+  TaskNotFoundError,
+  TaskStorageFullError,
+} from '@/server/domains/task/entities/errors';
 
-import type { TaskPosition } from '../application/ports/interfaces/task-position';
-import { TaskRepository } from '../application/ports/task-repository';
-import type { TaskSnapshot } from '../domain/interfaces/task-snapshot';
-import { Task } from '../domain/task';
-import { TaskStorageFullError } from '../domain/task-errors';
+import { TaskRepository } from './database-repository';
+import type { TaskPosition } from './dto';
 
 export class InMemoryTaskRepository extends TaskRepository {
   private static readonly DEFAULT_CAPACITY = 1000;
@@ -17,10 +19,14 @@ export class InMemoryTaskRepository extends TaskRepository {
     super();
   }
 
-  override findById(id: string): Promise<Task | null> {
+  override findExistingById(id: string): Promise<Task> {
     const snapshot = this.snapshots.get(id);
 
-    return Promise.resolve(snapshot ? Task.restore(snapshot) : null);
+    if (snapshot === undefined) {
+      return Promise.reject(new TaskNotFoundError());
+    }
+
+    return Promise.resolve(Task.restore(snapshot));
   }
 
   override save(task: Task): Promise<void> {
