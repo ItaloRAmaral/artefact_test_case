@@ -25,6 +25,7 @@ const pattern = new RegExp(
 );
 
 let command = '';
+
 try {
   command = JSON.parse(readFileSync(0, 'utf8')).tool_input?.command ?? '';
 } catch {

@@ -46,3 +46,11 @@ export class TaskCursorInvalidError extends DomainError {
     super('Task cursor is invalid');
   }
 }
+
+export class TaskStorageFullError extends DomainError {
+  override readonly code = 'TASK_STORAGE_FULL';
+
+  constructor() {
+    super('Task storage is full');
+  }
+}

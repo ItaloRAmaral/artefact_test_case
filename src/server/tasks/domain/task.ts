@@ -24,6 +24,7 @@ export class Task {
     createdAt: Date;
   }): Task {
     const content = Task.normalizeContent(props.title, props.description);
+
     return new Task({ id: props.id, createdAt: props.createdAt, ...content });
   }
 
@@ -33,6 +34,7 @@ export class Task {
 
   edit(changes: { title: string; description?: string | null }): void {
     const content = Task.normalizeContent(changes.title, changes.description);
+
     this.state = { ...this.state, ...content };
   }
 
@@ -61,14 +63,17 @@ export class Task {
     description: string | null | undefined,
   ): Pick<TaskSnapshot, 'title' | 'description'> {
     const trimmedTitle = title.trim();
+
     if (trimmedTitle === '') {
       throw new TaskTitleRequiredError();
     }
+
     if (trimmedTitle.length > TASK_TITLE_MAX_LENGTH) {
       throw new TaskTitleTooLongError();
     }
 
     const trimmedDescription = description?.trim() ?? '';
+
     if (trimmedDescription.length > TASK_DESCRIPTION_MAX_LENGTH) {
       throw new TaskDescriptionTooLongError();
     }

@@ -25,6 +25,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-19](#d-19-newest-version-at-least-7-days-old)                                  | Newest version at least 7 days old                                   | 2026-11-19 |
 | [D-20](#d-20-limits-title-120-description-1000-page-10-to-50)                     | Limits: title 120, description 1000, page 10 (max 50)                | 2026-11-19 |
 | [D-21](#d-21-position-cursor)                                                     | Position cursor                                                      | 2026-11-19 |
+| [D-22](#d-22-storage-capped-at-1000-tasks)                                        | Storage capped at 1000 tasks                                         | 2026-11-19 |
 
 ---
 
@@ -230,6 +231,19 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Why:**
   - A position, unlike an id, does not need the task to still exist.
   - The decoding rule and the page logic stay in the application. The repository only sorts and filters, so a database adapter would map it to a `WHERE (created_at, id) < (…)` query.
+
+## D-22: Storage capped at 1000 tasks
+
+- **Context:** tasks live in server memory (D-05), and the app has no authentication or rate limiting (D-09). Anyone could create tasks in a loop until the server runs out of memory. Every list request also sorts all stored tasks, so a large store makes each page more expensive. A code review raised it on 2026-11-19.
+- **Decision:**
+  - The in-memory repository holds at most **1000** tasks (`InMemoryTaskRepository.DEFAULT_CAPACITY`, kept in the adapter and not in `src/shared`, because neither the entity nor the client uses it).
+  - Saving a _new_ task when full fails with `TASK_STORAGE_FULL`. Saving an existing task (an edit) still works, and deleting frees a place.
+  - The cap is a property of the in-memory adapter, not a business rule: it exists only because memory is the storage. A database adapter would not have it.
+- **Why:**
+  - It bounds memory: in the worst case, about 1.1 million characters of task text (1000 × 1120). V8 stores 1 or 2 bytes per character depending on the content, plus object overhead, so this is an estimate in characters, not a measured size in bytes.
+  - It bounds the cost of the per-request sort.
+  - It adds no method to the port and no business `if` to a use case.
+- **Alternative rejected:** a `count()` on the repository port and the check in `CreateTask`. The rule would sit in the use case (`backend.md`), and every future adapter would have to implement `count()`.
 
 ---
 
