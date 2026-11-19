@@ -35,3 +35,33 @@ export function failingAfterFirstCallLink(
     false: failingLink,
   });
 }
+
+export function pendingRefreshLink(
+  repository: TaskRepository,
+): TRPCLink<AppRouter> {
+  let listCallCount = 0;
+
+  return splitLink({
+    condition: (op) => {
+      if (op.path !== 'task.list') {
+        return false;
+      }
+
+      listCallCount += 1;
+
+      return listCallCount > 1;
+    },
+    true: () => () => observable(() => undefined),
+    false: routerLink(repository),
+  });
+}
+
+export function failingDeleteLink(
+  repository: TaskRepository,
+): TRPCLink<AppRouter> {
+  return splitLink({
+    condition: (op) => op.path === 'task.delete',
+    true: failingLink,
+    false: routerLink(repository),
+  });
+}
