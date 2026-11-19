@@ -19,17 +19,17 @@ const INVALID_FIELDS_MESSAGE = 'Some fields are invalid.';
 const GENERIC_MESSAGE =
   'Something went wrong. Check your connection and try again.';
 
-export function getErrorMessage(
-  error:
-    | {
-        readonly data?: {
-          readonly code?: string;
-          readonly domainCode?: string | null;
-        } | null;
-      }
-    | null
-    | undefined,
-): string {
+type ClientError =
+  | {
+      readonly data?: {
+        readonly code?: string;
+        readonly domainCode?: string | null;
+      } | null;
+    }
+  | null
+  | undefined;
+
+export function getErrorMessage(error: ClientError): string {
   const domainCode = error?.data?.domainCode;
 
   if (isTaskErrorCode(domainCode)) {
@@ -41,6 +41,14 @@ export function getErrorMessage(
   }
 
   return GENERIC_MESSAGE;
+}
+
+// A failure with no tRPC code (the network) or a server error may pass on a new try; a
+// missing task or an invalid input will not, so the UI offers Retry only for the first.
+export function isTemporaryError(error: ClientError): boolean {
+  const code = error?.data?.code;
+
+  return code === undefined || code === 'INTERNAL_SERVER_ERROR';
 }
 
 function isTaskErrorCode(

@@ -15,7 +15,7 @@ import {
   TASK_LIST_INPUT,
 } from '@/shared/tasks/task-list-query';
 
-import { getErrorMessage } from './error-message';
+import { getErrorMessage, isTemporaryError } from './error-message';
 import { TaskDate } from './task-date';
 import { useShowToast } from './toast';
 
@@ -88,7 +88,21 @@ export function TaskList() {
   if (list.isPending) {
     content = <p>Loading tasks…</p>;
   } else if (list.isLoadingError) {
-    content = <p role="alert">{getErrorMessage(list.error)}</p>;
+    content = (
+      <>
+        <p role="alert">{getErrorMessage(list.error)}</p>
+        {isTemporaryError(list.error) ? (
+          <button
+            type="button"
+            onClick={() => {
+              void list.refetch();
+            }}
+          >
+            Retry
+          </button>
+        ) : null}
+      </>
+    );
   } else if (tasks.length === 0) {
     content = <p>No tasks yet.</p>;
   } else {

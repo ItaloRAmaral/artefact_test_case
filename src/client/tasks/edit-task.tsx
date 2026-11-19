@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useTRPC } from '@/client/trpc/provider';
 
-import { getErrorMessage } from './error-message';
+import { getErrorMessage, isTemporaryError } from './error-message';
 import { TaskForm } from './task-form';
 
 export function EditTask({ id }: { id: string }) {
@@ -20,7 +20,21 @@ export function EditTask({ id }: { id: string }) {
   }
 
   if (task.isLoadingError) {
-    return <p role="alert">{getErrorMessage(task.error)}</p>;
+    return (
+      <>
+        <p role="alert">{getErrorMessage(task.error)}</p>
+        {isTemporaryError(task.error) ? (
+          <button
+            type="button"
+            onClick={() => {
+              void task.refetch();
+            }}
+          >
+            Retry
+          </button>
+        ) : null}
+      </>
+    );
   }
 
   return <TaskForm task={task.data} />;

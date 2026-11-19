@@ -81,11 +81,12 @@ export function failingProcedureLink(
   });
 }
 
-export function scriptedListLink(
+export function scriptedProcedureLink(
   repository: TaskRepository,
+  path: string,
   script: readonly ('serve' | 'fail' | 'hang')[],
 ): TRPCLink<AppRouter> {
-  let listCallCount = 0;
+  let callCount = 0;
 
   return (runtime) => {
     const links: Record<'serve' | 'fail' | 'hang', OperationLink<AppRouter>> = {
@@ -95,13 +96,13 @@ export function scriptedListLink(
     };
 
     return (options) => {
-      if (options.op.path !== 'task.list') {
+      if (options.op.path !== path) {
         return links.serve(options);
       }
 
-      listCallCount += 1;
+      callCount += 1;
 
-      return links[script[listCallCount - 1] ?? 'serve'](options);
+      return links[script[callCount - 1] ?? 'serve'](options);
     };
   };
 }

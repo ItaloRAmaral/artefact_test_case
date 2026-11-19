@@ -13,7 +13,7 @@ import {
   failingProcedureLink,
   pendingRefreshLink,
   routerLink,
-  scriptedListLink,
+  scriptedProcedureLink,
 } from '@/test/trpc-links';
 
 import { TaskList } from './task-list';
@@ -359,7 +359,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     renderWithTrpc(<TaskList />, {
-      link: scriptedListLink(repository, ['serve', 'fail']),
+      link: scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     });
     await screen.findAllByRole('listitem');
 
@@ -377,7 +377,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const counting = countingLink(
-      scriptedListLink(repository, ['serve', 'fail']),
+      scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     );
     renderWithTrpc(<TaskList />, { link: counting.link });
     await screen.findAllByRole('listitem');
@@ -394,7 +394,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const { user } = renderWithTrpc(<TaskList />, {
-      link: scriptedListLink(repository, ['serve', 'fail']),
+      link: scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     });
     await screen.findAllByRole('listitem');
     FakeIntersectionObserver.revealAll();
@@ -412,7 +412,11 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const { user } = renderWithTrpc(<TaskList />, {
-      link: scriptedListLink(repository, ['serve', 'fail', 'hang']),
+      link: scriptedProcedureLink(repository, 'task.list', [
+        'serve',
+        'fail',
+        'hang',
+      ]),
     });
     await screen.findAllByRole('listitem');
     FakeIntersectionObserver.revealAll();
@@ -465,5 +469,20 @@ describe('TaskList', () => {
 
     expect(counting.listCallCount()).toBe(1);
     expect(screen.queryByText('No more tasks.')).toBeNull();
+  });
+
+  it('loads the list again on retry', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList />, {
+      link: scriptedProcedureLink(repository, 'task.list', ['fail']),
+    });
+    const retry = await screen.findByRole('button', { name: 'Retry' });
+
+    await user.click(retry);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Write the README' }),
+    ).toBeInTheDocument();
   });
 });

@@ -56,7 +56,7 @@ export class InMemoryTaskRepository extends TaskRepository {
     position: TaskPosition | null,
     count: number,
   ): Promise<Task[]> {
-    // Filters by position, not by id, so a cursor still works after its task is deleted (D-21).
+    // Filters by position, not by id, so a cursor still works after its task is deleted (DECISIONS D-21).
     const tasks = [...this.snapshots.values()]
       .sort((a, b) => InMemoryTaskRepository.compareNewestFirst(a, b))
       .filter(

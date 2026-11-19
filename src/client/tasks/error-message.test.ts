@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getErrorMessage } from './error-message';
+import { getErrorMessage, isTemporaryError } from './error-message';
 
 describe('getErrorMessage', () => {
   it.each([
@@ -63,5 +63,28 @@ describe('getErrorMessage', () => {
     expect(text).toBe(
       'Something went wrong. Check your connection and try again.',
     );
+  });
+});
+
+describe('isTemporaryError', () => {
+  it.each([
+    { case: 'a failure without data', error: { data: null } },
+    {
+      case: 'a server error',
+      error: { data: { code: 'INTERNAL_SERVER_ERROR' } },
+    },
+  ])('treats $case as temporary', ({ error }) => {
+    const temporary = isTemporaryError(error);
+
+    expect(temporary).toBe(true);
+  });
+
+  it.each([
+    { case: 'a missing task', error: { data: { code: 'NOT_FOUND' } } },
+    { case: 'an invalid input', error: { data: { code: 'BAD_REQUEST' } } },
+  ])('treats $case as permanent', ({ error }) => {
+    const temporary = isTemporaryError(error);
+
+    expect(temporary).toBe(false);
   });
 });

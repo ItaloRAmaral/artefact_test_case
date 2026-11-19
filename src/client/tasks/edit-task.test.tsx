@@ -7,6 +7,7 @@ import { renderWithTrpc } from '@/test/render-with-trpc';
 import {
   failingAfterFirstCallLink,
   pendingProcedureLink,
+  scriptedProcedureLink,
 } from '@/test/trpc-links';
 
 import { EditTask } from './edit-task';
@@ -63,6 +64,7 @@ describe('EditTask', () => {
 
     expect(message).toHaveAttribute('role', 'alert');
     expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
   it('shows the invalid-fields message for an id that is too long', async () => {
@@ -244,6 +246,21 @@ describe('EditTask', () => {
 
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue(
       'Review the plan',
+    );
+  });
+
+  it('loads the task again on retry', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<EditTask id="task-1" />, {
+      link: scriptedProcedureLink(repository, 'task.getById', ['fail']),
+    });
+    const retry = await screen.findByRole('button', { name: 'Retry' });
+
+    await user.click(retry);
+
+    expect(await screen.findByRole('textbox', { name: 'Title' })).toHaveValue(
+      'Write the README',
     );
   });
 });
