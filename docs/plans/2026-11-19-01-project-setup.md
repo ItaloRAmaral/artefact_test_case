@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Proposed |
+| Status | Approved |
 | Date | 2026-11-19 |
 | Request | "aprovado, pode começar o sub-plano 1": sub-plan 1 of the roadmap, project setup and tooling |
 | Context | [Roadmap](2026-11-19-roadmap.md) sub-plan 1 and "Risks and pending decisions"; [`docs/DECISIONS.md`](../DECISIONS.md) D-01, D-02, D-08, D-13, D-16 to D-18; `CLAUDE.md` "Stack" and "Commands"; `.claude/rules/code-style.md` "TypeScript"; `.claude/rules/backend.md` "Dependency rule"; Next.js 16 docs read on 2026-11-19 (upgrade guide, ESLint config, `create-next-app`, Vitest and Playwright guides) |
@@ -76,15 +76,23 @@ None. One change to the style guide itself: in `code-style.md` "TypeScript", the
 - Create: `package.json`, `pnpm-lock.yaml` (by `pnpm install`), `tsconfig.json`, `next.config.ts`, `.gitignore`, `.nvmrc`, `src/app/layout.tsx`, `src/app/page.tsx`
 
 **Interfaces:**
-- Produces: scripts `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `typecheck` (`tsc --noEmit`); import alias `@/*` → `src/*`; the home page `/` with the heading `Tasks` (role `heading`, level 1), which sub-plan 4 replaces with the list.
+- Produces: scripts `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `typecheck` (`next typegen && tsc --noEmit`, see the execution notes); import alias `@/*` → `src/*`; the home page `/` with the heading `Tasks` (role `heading`, level 1), which sub-plan 4 replaces with the list.
 
-- [ ] **Step 1: generate the reference scaffold** in the scratchpad: `pnpm create next-app@16.4.6 <scratchpad>/next-reference --ts --eslint --app --src-dir --no-tailwind --empty --use-pnpm --import-alias "@/*" --skip-install --disable-git --yes`. Copy `tsconfig.json`, `next.config.ts` and `.gitignore` from it; read its `package.json` for the generated scripts and its `src/app/` for the minimal layout. Nothing else is copied.
-- [ ] **Step 2: write `package.json`** with name `task-manager`, `private: true`, `packageManager: "pnpm@12.21.0"`, the four scripts above, `next`/`react`/`react-dom` as dependencies and `typescript`, `@types/node`, `@types/react`, `@types/react-dom` as dev dependencies, all at the exact versions in "Global constraints".
-- [ ] **Step 3: harden `tsconfig.json`** with the options in `code-style.md` "TypeScript" (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `forceConsistentCasingInFileNames`), keeping every field the scaffold sets.
-- [ ] **Step 4: placeholder page and layout:** `layout.tsx` with `<html lang="en">` and metadata title `Tasks`; `page.tsx` renders `<h1>Tasks</h1>`. Add `.gitignore` entries for `coverage/`, `test-results/`, `playwright-report/` and `.env*` if the scaffold does not have them; write `.nvmrc`.
-- [ ] **Step 5: verify:** `pnpm install` (peer warnings for the ESLint plugins arrive in Task 2, not here) · `pnpm build` succeeds · `pnpm typecheck` exits 0 · `pnpm dev` serves `Tasks` at `http://localhost:3000`. Keep any change Next.js makes to `tsconfig.json`.
+- [x] **Step 1: generate the reference scaffold** in the scratchpad: `pnpm create next-app@16.4.6 <scratchpad>/next-reference --ts --eslint --app --src-dir --no-tailwind --empty --use-pnpm --import-alias "@/*" --skip-install --disable-git --yes`. Copy `tsconfig.json`, `next.config.ts` and `.gitignore` from it; read its `package.json` for the generated scripts and its `src/app/` for the minimal layout. Nothing else is copied.
+- [x] **Step 2: write `package.json`** with name `task-manager`, `private: true`, `packageManager: "pnpm@12.21.0"`, the four scripts above, `next`/`react`/`react-dom` as dependencies and `typescript`, `@types/node`, `@types/react`, `@types/react-dom` as dev dependencies, all at the exact versions in "Global constraints".
+- [x] **Step 3: harden `tsconfig.json`** with the options in `code-style.md` "TypeScript" (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `forceConsistentCasingInFileNames`), keeping every field the scaffold sets.
+- [x] **Step 4: placeholder page and layout:** `layout.tsx` with `<html lang="en">` and metadata title `Tasks`; `page.tsx` renders `<h1>Tasks</h1>`. Add `.gitignore` entries for `coverage/`, `test-results/`, `playwright-report/` and `.env*` if the scaffold does not have them; write `.nvmrc`.
+- [x] **Step 5: verify:** `pnpm install` (peer warnings for the ESLint plugins arrive in Task 2, not here) · `pnpm build` succeeds · `pnpm typecheck` exits 0 · `pnpm dev` serves `Tasks` at `http://localhost:3000`. Keep any change Next.js makes to `tsconfig.json`.
 
-**Suggested commit:** `chore: scaffold Next.js 16 app with pinned versions` · files: `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `next.config.ts`, `.gitignore`, `.nvmrc`, `src/app/layout.tsx`, `src/app/page.tsx`
+**Execution notes (2026-11-19):**
+- The scaffold also generated `pnpm-workspace.yaml` (`allowBuilds: { sharp: false, unrs-resolver: false }`, pnpm's build-script approval). It is copied too; without it `pnpm install` asks about those builds.
+- `typecheck` is `next typegen && tsc --noEmit`, not `tsc --noEmit`: the layout uses the global `LayoutProps` route type, which lives in the generated (and gitignored) `next-env.d.ts` and `.next/types`. On a clean tree `tsc` alone failed with `TS2304: Cannot find name 'LayoutProps'`; with `next typegen` first it exits 0.
+- The scaffold's `next.config.ts` enables `cacheComponents: true` and `partialPrefetching: true` by default, kept as generated. `pnpm build` lists `/` as `○ (Static)`, the risk sub-plan 4 must handle (roadmap updated).
+- The scaffold's `tsconfig.json` already includes `**/*.mts`. Next.js changed nothing in it on build or dev. Task 2's `disableTypeChecked` therefore covers only `**/*.mjs`.
+- `next dev` created `AGENTS.md`, a block Next.js manages that points AI agents to the version-matched docs in `node_modules/next/dist/docs/`. It is written only when an AI agent runs `next dev`, re-created if deleted, and disabled with `agentRules: false`. Kept and committed, so the tree stays clean.
+- Verified: `pnpm install` (pnpm switched to 12.21.0 from `packageManager`), `pnpm build` green, `pnpm typecheck` exit 0 on a clean tree, `pnpm dev` served `<h1>Tasks</h1>`.
+
+**Suggested commit:** `chore: scaffold Next.js 16 app with pinned versions` · files: `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `tsconfig.json`, `next.config.ts`, `.gitignore`, `.nvmrc`, `src/app/layout.tsx`, `src/app/page.tsx`, `AGENTS.md`
 
 ## Task 2: lint, layer rule and formatting
 
@@ -98,7 +106,7 @@ None. One change to the style guide itself: in `code-style.md` "TypeScript", the
 - [ ] **Step 1: `eslint.config.mjs`** (flat, `defineConfig` from `eslint/config`):
   - `eslint-config-next/core-web-vitals`, then `eslint-config-next/typescript`;
   - `typescript-eslint` `strictTypeChecked` and `stylisticTypeChecked` with `parserOptions.projectService: true`, plus `@typescript-eslint/switch-exhaustiveness-check`, `@typescript-eslint/consistent-type-imports`, and core `no-console`, `eqeqeq`, `prefer-const` (`code-style.md` "TypeScript");
-  - `disableTypeChecked` for `**/*.{mjs,mts}`: `eslint.config.mjs`, and `vitest.config.mts`, which the scaffold's `tsconfig.json` include (`**/*.ts`, `**/*.tsx`) does not cover, so the project service could not type it;
+  - `disableTypeChecked` for `**/*.mjs` (`eslint.config.mjs`); `.mts` files are in the scaffold's `tsconfig.json` include, so `vitest.config.mts` is type-checked (see Task 1's execution notes);
   - the Next.js default ignores (`.next/**`, `out/**`, `build/**`, `next-env.d.ts`) plus `coverage/**`, `playwright-report/**`, `test-results/**`.
 - [ ] **Step 2: layer rule** (D-17), `no-restricted-imports` blocks:
 
