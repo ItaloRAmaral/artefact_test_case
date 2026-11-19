@@ -19,6 +19,9 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring) | Limits live in `src/shared`; `server-only` only on server wiring | 2026-11-19 |
 | [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration) | Dates rendered in UTC on the server, local time after hydration | 2026-11-19 |
 | [D-15](#d-15-the-trpc-contract) | The tRPC contract | 2026-11-19 |
+| [D-16](#d-16-eslint-10) | ESLint 10 | 2026-11-19 |
+| [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports) | Layer rule enforced with `no-restricted-imports` | 2026-11-19 |
+| [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only) | e2e tests on a production build, Chromium only | 2026-11-19 |
 
 ---
 
@@ -41,7 +44,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | TanStack Query | 5.108.0 | — |
 | Zod | 4.6.7 | — |
 | TypeScript | **6.0.3**, not 7.0.2 | typescript-eslint supports TypeScript `>=4.8.4 <6.1.0` |
-| ESLint | **9.39.5**, not 10.x | `eslint-config-next@16` depends on `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import`, which declare support only up to ESLint 9 |
+| ESLint | ~~**9.39.5**, not 10.x~~ *Superseded by [D-16](#d-16-eslint-10): 10.15.0* | `eslint-config-next@16` depends on `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import`, which declare support only up to ESLint 9 |
 | Vitest | 5.1.1 | with Testing Library and jsdom |
 | Playwright | 1.65.1 | — |
 | Node | 24.22.2 | `.nvmrc` |
@@ -173,6 +176,30 @@ The main decisions behind this project, each with its context, the choice and wh
   - Routes: `/`, `/tasks/new`, `/tasks/[id]/edit`.
 - **Why:** each choice is the smallest one that lets the pages work and show precise errors. Fixing the contract in the roadmap lets the back-end and front-end sub-plans be written independently.
 
+## D-16: ESLint 10
+
+- **Context:** D-02 held ESLint at 9 because `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import`, which `eslint-config-next@16` depends on, declare peers only up to ESLint 9. The Next.js ESLint docs (read 2026-11-19) state that "`eslint-config-next` supports ESLint 9 and ESLint 10", with ESLint 10 compatibility added in 16.4.0.
+- **Decision:** ESLint **10.15.0**, accepting pnpm's peer warnings for those three plugins.
+- **Why:** the spec asks for the most recent versions, and the Next.js team supports this combination. A rule that crashed under ESLint 10 would fail `pnpm lint`, so the risk shows up at once.
+- **Supersedes in part:** D-02 (the ESLint row).
+
+## D-17: Layer rule enforced with `no-restricted-imports`
+
+- **Context:** the hexagonal dependency rule (D-04, D-13) needs a check that does not depend on a reviewer noticing.
+- **Decision:** ESLint's built-in `no-restricted-imports`, with one block per layer:
+  - `domain/` imports no framework, library, `server-only` or Node module, and nothing from `application/`, `infra/` or `trpc/`;
+  - `application/` imports the same externals as `domain/` forbids, and nothing from `infra/` or `trpc/`;
+  - `src/shared/` imports nothing from `src/server/`.
+- **Why:** a violation fails `pnpm lint`, with no new dependency. `eslint-plugin-boundaries` would be more expressive, but adds a dependency this one module does not need.
+
+## D-18: e2e tests on a production build, Chromium only
+
+- **Context:** the Next.js Playwright guide recommends testing production code, and the SSR checks only mean something on a production build (`next dev` renders every request).
+- **Decision:**
+  - Playwright starts its own server with `pnpm build && pnpm start` on port 3100 and never reuses a running one, so every run starts with an empty in-memory list.
+  - Playwright runs one browser, Chromium.
+- **Why:** the tests see the app as it ships. One or two flows do not need three browser engines.
+
 ---
 
 ## Open decisions
@@ -181,4 +208,3 @@ To be decided in the implementation plans, then recorded here.
 
 - **Limits:** the maximum lengths of `title` and `description`, the page size and its cap.
 - **Cursor encoding**, which must keep working when the task it points to was deleted.
-- **Layer boundaries in lint** (`eslint-plugin-boundaries`), or code review only.
