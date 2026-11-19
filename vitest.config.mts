@@ -13,8 +13,27 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.{ts,tsx}'],
-    environment: 'node',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'components',
+          include: ['src/**/*.test.tsx'],
+          environment: 'jsdom',
+          setupFiles: ['src/test/setup-dom.ts'],
+          // A fixed zone with no daylight saving, so local-time assertions are stable.
+          env: { TZ: 'America/Sao_Paulo' },
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/server/**'],
