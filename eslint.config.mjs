@@ -3,8 +3,6 @@ import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 import tseslint from 'typescript-eslint';
 
-// Hexagonal dependency rule (.claude/rules/backend.md, DECISIONS D-04, D-13, D-17):
-// the core (domain and application) imports no framework, library or Node module.
 const EXTERNAL_TO_CORE = {
   group: [
     'zod',

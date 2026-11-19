@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                                                                                                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status  | Proposed                                                                                                                                                                                                                                                                                   |
+| Status  | Approved                                                                                                                                                                                                                                                                                   |
 | Date    | 2026-11-19                                                                                                                                                                                                                                                                                 |
 | Request | "segue para o sub-plano 2": sub-plan 2 of the roadmap, the back-end core (domain, application, infra)                                                                                                                                                                                      |
 | Context | [Roadmap](2026-11-19-roadmap.md) sub-plan 2, "Interfaces between sub-plans" and "Security"; [`docs/DECISIONS.md`](../DECISIONS.md) D-04, D-05, D-07, D-10, D-12, D-13, D-15, D-17, D-19; `.claude/rules/backend.md`; `.claude/rules/tests.md`; `docs/SPEC.md` §2 (model, CRUD, validation) |
@@ -98,13 +98,13 @@ None.
 
 **Files:**
 
-- Create: `src/shared/tasks/task-limits.ts`, `src/server/tasks/domain/task-errors.ts`, `src/server/tasks/domain/task.ts`, `src/server/tasks/domain/task.test.ts`, `src/test/factories/make-task.ts`
+- Create: `src/shared/tasks/task-limits.ts`, `src/server/tasks/domain/task-errors.ts`, `src/server/tasks/domain/interfaces/task-snapshot.ts`, `src/server/tasks/domain/task.ts`, `src/server/tasks/domain/task.test.ts`, `src/test/factories/make-task.ts`
 
 **Interfaces:**
 
 - Produces `task-limits.ts`: `TASK_TITLE_MAX_LENGTH = 120`, `TASK_DESCRIPTION_MAX_LENGTH = 1000`, `TASK_PAGE_SIZE_DEFAULT = 10`, `TASK_PAGE_SIZE_MAX = 50`, `TASK_ID_MAX_LENGTH = 36`, `TASK_CURSOR_MAX_LENGTH = 84` (the last two with a one-line comment on how they are derived). Plain constants, no imports.
 - Produces `task-errors.ts`: `abstract class DomainError extends Error { abstract readonly code: string }`, and `TaskNotFoundError`, `TaskTitleRequiredError`, `TaskTitleTooLongError`, `TaskDescriptionTooLongError`, `TaskCursorInvalidError`, each with `readonly code = '<CODE>' as const`.
-- Produces `task.ts`:
+- Produces `interfaces/task-snapshot.ts` and `task.ts`:
   - `interface TaskSnapshot { readonly id: string; readonly title: string; readonly description: string | null; readonly createdAt: Date }`;
   - `class Task`, private constructor;
   - `static create(props: { id: string; title: string; description?: string | null; createdAt: Date }): Task`;
@@ -114,10 +114,30 @@ None.
   - `toSnapshot(): TaskSnapshot`, which returns a new object with a copied `Date`.
 - Produces `make-task.ts`: `makeTask(overrides?: Partial<TaskSnapshot>): Task` (through `restore`) and `makeTaskSnapshot(overrides?)`, with fixed defaults (`id: 'task-1'`, `title: 'Write the README'`, `description: null`, `createdAt: new Date('2026-11-19T12:00:00.000Z')`).
 
-- [ ] **Step 1:** write the entity tests from the test plan (Task 1 rows). Assert errors by `code` with `catchError` (sync). Use `'a'.repeat(120)` literals for the limits, so no logic.
-- [ ] **Step 2:** run and watch them fail on the assertions. A minimal `Task` that compiles and does nothing makes this possible.
-- [ ] **Step 3:** implement the limits, errors and `Task`. `create` and `edit` share one private normalization: trim the title, check blank then length; trim the description, blank → `null`, check length.
-- [ ] **Step 4:** `pnpm test` green; `pnpm lint` green (the domain imports only `@/shared/tasks/task-limits`).
+- [x] **Step 1:** write the entity tests from the test plan (Task 1 rows). Assert errors by `code` with `catchError` (sync). Use `'a'.repeat(120)` literals for the limits, so no logic.
+- [x] **Step 2:** run and watch them fail on the assertions. A minimal `Task` that compiles and does nothing makes this possible.
+- [x] **Step 3:** implement the limits, errors and `Task`. `create` and `edit` share one private static method, `Task.normalizeContent`: trim the title, check blank then length; trim the description, blank → `null`, check length.
+- [x] **Step 4:** `pnpm test` green; `pnpm lint` green (the domain imports only `@/shared/tasks/task-limits`).
+
+**Execution notes (2026-11-19):**
+
+- Red: with a `Task` that stored input as given, 13 of 21 tests failed on their assertions (`expected '  Write the README  ' to be 'Write the README'`, `expected '' to be null`, 4 × `Expected the function to throw, but it returned normally`), none on an import. The 8 that already passed check what the stub did on purpose (store input, restore). They include the "just inside" sides of the limit pairs (120 and 1000 accepted), which guard against an off-by-one once validation exists.
+- Green: 21 passed. `pnpm lint` (the domain imports only `@/shared/tasks/task-limits`) and `pnpm typecheck` exit 0.
+- Coverage of `src/server/**` after this task: 83.33% lines, 100% branches. `pnpm test:coverage` fails the gate until Tasks 3 and 4 use `TaskNotFoundError`, `TaskCursorInvalidError` and the `id`/`createdAt` getters. The plan checks the gate at Task 5.
+- Lengths are counted in UTF-16 code units (`String.length`), the same unit Zod's `.max` uses in sub-plan 3, so the form and the entity agree.
+
+- After review (user request): `TaskSnapshot` moved to its own file, `domain/interfaces/task-snapshot.ts`; the internal `TaskContent` interface was replaced by `Pick<TaskSnapshot, 'title' | 'description'>`. Convention added to `code-style.md` (one interface per file, in an `interfaces/` folder of its layer), and `TaskPosition` in Task 2 goes to `application/ports/interfaces/task-position.ts`.
+
+- After review (user request): the shared title/description rule moved from a loose `normalizeContent` function in `task.ts` to the private static method `Task.normalizeContent`, so the rule stays in the entity and nothing loose sits next to the class. Convention added to `code-style.md` and `backend.md`.
+
+- After review (user request): JavaScript `#` private fields replaced by TypeScript `private`, the form the user can explain in an interview. The state lives in one `private state: TaskSnapshot` (a getter cannot share a field's name, and `_` prefixes were avoided); `edit` replaces it with `{ ...this.state, ...content }`. Convention added to `code-style.md`.
+
+- Code review fixes (user approved): three tests added, written after the code, each with the production change that breaks it:
+  - `does not let a changed createdAt from the getter alter the task` breaks if the getter returns `this.state.createdAt` without copying it;
+  - `does not let a changed createdAt from a snapshot alter the task` breaks if `toSnapshot` drops its `createdAt: new Date(...)`;
+  - `keeps the task unchanged when an edit fails` breaks if `edit` applies the title before validating the description.
+
+  The table tests got readable labels (`empty`, `spaces only`, `missing`). Six doc comments that restated the code were removed (user request). `code-style.md` now says there are no doc comments by default.
 
 **Suggested commit:** `feat(server): add Task entity, domain errors and shared limits`
 
@@ -125,13 +145,13 @@ None.
 
 **Files:**
 
-- Create: `src/server/tasks/application/ports/task-repository.ts`, `clock.ts`, `id-generator.ts`; `src/test/fakes/fixed-clock.ts`, `sequential-id-generator.ts`; `src/server/tasks/infra/in-memory-task-repository.ts` and its `.test.ts`
+- Create: `src/server/tasks/application/ports/task-repository.ts`, `ports/interfaces/task-position.ts`, `clock.ts`, `id-generator.ts`; `src/test/fakes/fixed-clock.ts`, `sequential-id-generator.ts`; `src/server/tasks/infra/in-memory-task-repository.ts` and its `.test.ts`
 - Modify: `package.json` (dependency `server-only` 0.0.1), `vitest.config.mts` (alias)
 
 **Interfaces:**
 
 - Produces ports, as abstract classes:
-  - `TaskRepository`: `findById(id: string): Promise<Task | null>`, `save(task: Task): Promise<void>`, `delete(id: string): Promise<void>`, `listAfter(position: TaskPosition | null, count: number): Promise<Task[]>`, where `interface TaskPosition { readonly createdAt: Date; readonly id: string }` is exported from the same file;
+  - `TaskRepository`: `findById(id: string): Promise<Task | null>`, `save(task: Task): Promise<void>`, `delete(id: string): Promise<void>`, `listAfter(position: TaskPosition | null, count: number): Promise<Task[]>`, where `interface TaskPosition { readonly createdAt: Date; readonly id: string }` lives in its own file, `application/ports/interfaces/task-position.ts` (code-style: one interface per file, in `interfaces/`);
   - `Clock`: `now(): Date`;
   - `IdGenerator`: `next(): string`.
 - Produces fakes: `FixedClock extends Clock`, with constructor `(now: Date)`; `SequentialIdGenerator extends IdGenerator`, returning `task-1`, `task-2`, ….

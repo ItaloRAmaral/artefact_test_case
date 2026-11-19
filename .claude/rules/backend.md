@@ -23,8 +23,10 @@ src/
       domain/
         task.ts              Task entity
         task-errors.ts       domain errors, each with a literal code
+        interfaces/          one interface per file (task-snapshot.ts)
       application/
         ports/               abstract classes: TaskRepository, Clock, IdGenerator
+          interfaces/        interfaces the ports use (task-position.ts)
         use-cases/
           create-task/       create-task.ts + create-task.test.ts (one folder per use case)
           list-tasks/
@@ -59,7 +61,7 @@ File and folder names are a starting point for the plan; the dependency rule bel
 
 ## Domain
 
-- **Entity `Task`:** private state; `static create(props)` checks invariants (title not blank after trimming, within the length limit); `static restore(snapshot)` rehydrates without re-running creation rules; business-named methods (`edit({ title, description })`); `toSnapshot()` for the repository; no setters, no `Object.assign` from input.
+- **Entity `Task`:** private state; `static create(props)` checks invariants (title not blank after trimming, within the length limit); `static restore(snapshot)` rehydrates without re-running creation rules; business-named methods (`edit({ title, description })`); rules shared by several methods are private methods of the entity, never loose functions in its file; `toSnapshot()` for the repository; no setters, no `Object.assign` from input.
 - **Domain errors** extend a small `DomainError` with a literal `code` (`TASK_NOT_FOUND`, `TASK_TITLE_REQUIRED`); no sentences for the user, no transport status.
 - **Limits** are constants defined once in `src/shared/tasks/task-limits.ts`; the entity and the Zod schema both use them. The schema checks shape for field-level feedback; the entity guarantees no invalid task exists whatever the caller. Same limit, one definition.
 
