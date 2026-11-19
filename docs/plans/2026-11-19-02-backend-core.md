@@ -228,7 +228,16 @@ None.
 - `task-cursor.ts`: `encodeTaskCursor(position: TaskPosition): string` (base64 of `<createdAt ISO>|<id>`, with `btoa`) and `decodeTaskCursor(cursor: string): TaskPosition`. Decoding throws `TaskCursorInvalidError` on invalid base64, a part count other than 2, an invalid date or an empty id. Pure functions, tested through `ListTasks`. A short why-comment at the top: the cursor is a position, not an id, so it survives the deletion of its task (D-21).
 - `ListTasks(repository).execute(input: { cursor: string | null; limit: number }): Promise<{ items: Task[]; nextCursor: string | null }>`. It decodes the cursor and asks the repository for `limit + 1` tasks after the position. If more than `limit` come back, it returns the first `limit` and the cursor of the last one returned; otherwise `nextCursor: null`. `limit` is trusted: the schema validates it in sub-plan 3 and applies `TASK_PAGE_SIZE_DEFAULT`.
 
-- [ ] **Step 1:** pagination tests from "Review focus", written with literal tasks saved at fixed `createdAt` values, and the invalid-cursor table (`'%%%'`, the base64 of `'only-one-part'`, the base64 of `'not-a-date|task-1'`, the base64 of `'2026-11-19T12:00:00.000Z|'`). Red, implement, green.
+- [x] **Step 1:** pagination tests from "Review focus", written with literal tasks saved at fixed `createdAt` values, and the invalid-cursor table (`'%%%'`, the base64 of `'only-one-part'`, the base64 of `'not-a-date|task-1'`, the base64 of `'2026-11-19T12:00:00.000Z|'`). Red, implement, green.
+
+**Execution notes (2026-11-19):**
+
+- Files in `src/server/domains/task/use-cases/list-tasks/` (D-23): `index.ts`, `dto.ts` (`ListTasksInput`, `ListTasksOutput`), `task-cursor.ts`, `index.test.ts`.
+- Red: with stubs that reject with `Not implemented`, all 15 tests failed on that error, none on an import. Green: 62 tests pass.
+- Invalid-cursor table: `'only-one-part'` was replaced by the base64 of a date alone (`'2026-11-19T12:00:00.000Z'`). The first value also fails the date check, so no test would break if the separator check were removed; a valid date with no separator does break it. A "three parts" row was added for the `id.includes('|')` check.
+- What breaks each test: asking the repository for `limit` instead of `limit + 1` (no next cursor); taking the cursor from `tasks[limit]` instead of `tasks[limit - 1]` (the last page skips a task); removing any check in `decodeTaskCursor` (its table row).
+- `nextCursor` is built from the last task of the page, without a branch that cannot happen: `hasNextPage ? tasks[limit - 1] : undefined`.
+- Coverage on `src/server/**`: 100% lines and branches. `pnpm lint`, `pnpm typecheck` and `pnpm format:check` exit 0.
 
 **Suggested commit:** `feat(server): add paginated ListTasks with a position cursor`
 
