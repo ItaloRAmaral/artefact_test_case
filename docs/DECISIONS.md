@@ -299,6 +299,30 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision:** a client file may `import type` from `src/server/` (user decision). A value import stays forbidden, and `server-only` makes it fail the build. Output types reach the client through the router's inferred types, so `src/shared/` holds only the input schemas.
 - **Why:** `import type` is erased at build (`verbatimModuleSyntax`), so no server code reaches the browser; writing the contract's types again by hand would duplicate the router and could drift from it.
 
+## D-27: List page rendering
+
+- **Context:** `/` must show the list rendered on the server with data from the in-memory store, then let the client delete and refresh it. With `cacheComponents` (on since sub-plan 1), Next.js 16.4.6 prerenders at build time whatever it cannot see is dynamic, and an in-memory read is invisible to it (the version-matched docs in `node_modules/next/dist/docs/`, read 2026-11-19). The tRPC 11 docs for `@trpc/tanstack-react-query` describe a per-request query client, a server options proxy and hydration.
+- **Decision:**
+  - `page.tsx` keeps the heading and a `<Suspense>` fallback as the static shell; the list section calls `await io()` from `next/cache` first, so it renders on every request (the docs prefer `io()` to `connection()` with Cache Components). `pnpm build` lists `/` as `◐ (Partial Prerender)`.
+  - The section fetches the first page of the infinite list query through `createTRPCOptionsProxy` over the shared `tasksModule` (`src/server/adapters/trpc/server.ts`, one query client per request with React `cache`), awaits it, and hands the cache to the client with `HydrationBoundary`. The query options come from `src/client/tasks/task-list-query.ts`, shared by the page and `TaskList`, so both build the same cache key.
+  - `makeQueryClient` (`src/shared/trpc/query-client.ts`) sets only `staleTime: 30_000`, so hydrated data counts as fresh and the browser does not request it again. The streaming dehydrate options of the docs are left out: the fetch is awaited.
+  - The fetch uses `queryClient.infiniteQuery(…).catch(noop)`: TanStack Query 5.107 deprecates `prefetchInfiniteQuery` in its favor. A failed fetch is not dehydrated (only successful queries are), so the client loads the list itself and shows the error.
+  - The browser client uses `httpLink` to the relative `/api/trpc` (batching is off, D-25).
+  - Dates follow D-14: the server and the hydration render show `YYYY-MM-DD HH:mm UTC`, cut from the ISO string without locale data, so Node and the browser produce the same text; after hydration, `Intl.DateTimeFormat` in the browser's locale and zone. The switch uses `useSyncExternalStore`, so no effect sets state and hydration matches.
+- **Why:** the spec asks for SSR of the list; the task is in the server HTML, no `task.list` request fires on first load and no hydration error is logged (e2e, production build).
+- **Alternative rejected:** fetching in the client only (no SSR), or rendering the list from a server caller without the query cache (the client would then refetch, and delete could not invalidate one query).
+
+## D-28: Front-end structure and delete UX
+
+- **Context:** sub-plan 4 adds the first client code: where it lives, how it is tested and how delete gives feedback (the spec asks for feedback and loading, success and failure states).
+- **Decision:**
+  - Client code lives in `src/client/` (user decision), mirroring `src/server/`; ESLint keeps it to `import type` from `@/server/*` and never `server-only` (D-26). The query client factory is in `src/shared/trpc/`, used by both sides.
+  - Components are tested in jsdom inside the real providers, with tRPC's `localLink` to `appRouter` over a fresh `InMemoryTaskRepository`, so the error formatter applies as over HTTP; the network is simulated with links in `src/test/trpc-links.ts`. TanStack Query notifies React as a microtask in these tests (`setup-dom.ts`), so updates land inside `act`.
+  - The list shows the full-page error only when the first load fails (`isLoadingError`): a failed refresh keeps the tasks on screen.
+  - Delete: no confirmation (user decision: the spec asks only for feedback). Each button is named after its task (`Delete <title>`). Every delete button stays disabled until the list has refetched (`onSettled` returns the invalidation promise), so the deleted row cannot be clicked again. A toast shows `Task deleted.` (`role="status"`) or the error text mapped from its code (`role="alert"`) and hides after 4 seconds (user decision: a toast that disappears); it is keyed per result, so a new delete restarts the timer.
+- **Why:** each piece is the smallest that meets the spec's feedback states; testing against the real router avoids mocks of our own code.
+- **Alternative rejected:** a confirmation dialog (not asked by the spec), a toast library (one small component is enough).
+
 ---
 
 ## Open decisions

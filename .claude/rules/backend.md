@@ -18,6 +18,8 @@ src/
     tasks/
       task-limits.ts         limits as plain constants, no imports (title and description max length, page size)
       task-schemas.ts        strict Zod input schemas of the tRPC contract; imported by the controller AND the form (output types come from the router, D-26)
+    trpc/
+      query-client.ts        makeQueryClient: the TanStack Query defaults of the server fetch and the browser (D-27)
   server/
     domains/
       task/                  the core: imports nothing external
@@ -41,7 +43,7 @@ src/
         dto.ts               TrpcContext
         app-router.ts        merges the controllers' routers; exports the AppRouter type
         handler.ts           fetch adapter for /api/trpc (batching off, logs unexpected errors)
-        (sub-plan 4)         server options proxy and per-request query client for SSR
+        server.ts            per-request query client and the tRPC options proxy over tasksModule, for the page's server fetch
       controllers/
         task/                index.ts (procedures: input schema → use case → output object), dto.ts (TaskDto),
                              to-task-dto.ts, index.test.ts
@@ -61,7 +63,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 - **Inside a domain:** `entities/` holds the rules and knows no use case or repository; repositories know the entity; use cases know both.
 - **An implementation that needs nothing external lives beside its contract** (`InMemoryTaskRepository` next to `TaskRepository`). An implementation that needs a library or a Node built-in would go to `adapters/`.
 - **`adapters/`** is the only place that knows a framework or a library (tRPC, Zod at the edge).
-- **`src/shared/`** holds only what both client and server need (the limits and the Zod contract); it never imports anything from `src/server/`.
+- **`src/shared/`** holds only what both client and server need (the limits, the Zod contract and the query client factory); it never imports anything from `src/server/`.
 - **`server-only`** is imported by the modules that wire or expose the server (`tasks-module.ts` and `adapters/`), so a client import of them fails the build. `domains/` stays free of it; no client code imports it either.
 
 ## Entities

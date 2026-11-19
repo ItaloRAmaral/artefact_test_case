@@ -31,6 +31,10 @@ The back end is a tRPC router served at `/api/trpc` (one call per HTTP request: 
 
 Errors carry `data.code` (the tRPC code), `data.domainCode` (for example `TASK_NOT_FOUND` with `NOT_FOUND`, or `TASK_STORAGE_FULL` with `CONFLICT` once 1000 tasks are stored) and, for invalid input, `data.fieldErrors` (`BAD_REQUEST`). Unexpected errors reach the client as `INTERNAL_SERVER_ERROR` without detail and are logged on the server. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-15, D-25).
 
+## List page
+
+`/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28).
+
 ## Requirements
 
 - Node.js 24.22.2 (see `.nvmrc`)

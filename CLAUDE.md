@@ -12,18 +12,19 @@ A small task manager for a technical test: a Next.js app whose back end keeps ta
 
 ## Where things live
 
-| Path                                      | What                                                                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `docs/SPEC.md`                            | The test statement (source of truth for scope)                                                                      |
-| `docs/plans/`                             | Implementation plans, written with the `planning-code-changes` skill                                                |
-| `README.md`                               | How the system works and how to run it (a deliverable of the test)                                                  |
-| `docs/DECISIONS.md`                       | Main decisions (D-NN), each with context, the choice and why, plus the open ones                                    |
-| `.claude/rules/code-style.md`             | Code style guide (source of truth for style), always loaded                                                         |
-| `.claude/rules/backend.md`                | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**` |
-| `.claude/rules/tests.md`                  | Test conventions, loaded on test files                                                                              |
-| `.claude/skills/`                         | `planning-code-changes`, `writing-tests`                                                                            |
-| `.claude/agents/plan-reviewer.md`         | Read-only reviewer of plans                                                                                         |
-| `.claude/settings.json`, `.claude/hooks/` | Permissions and the hook that blocks git commands that create commits or publish                                    |
+| Path                                        | What                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `docs/SPEC.md`                              | The test statement (source of truth for scope)                                                                      |
+| `src/server/`, `src/client/`, `src/shared/` | Back end; client components and the tRPC React provider (type-only imports from `src/server/`); code both sides use |
+| `docs/plans/`                               | Implementation plans, written with the `planning-code-changes` skill                                                |
+| `README.md`                                 | How the system works and how to run it (a deliverable of the test)                                                  |
+| `docs/DECISIONS.md`                         | Main decisions (D-NN), each with context, the choice and why, plus the open ones                                    |
+| `.claude/rules/code-style.md`               | Code style guide (source of truth for style), always loaded                                                         |
+| `.claude/rules/backend.md`                  | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**` |
+| `.claude/rules/tests.md`                    | Test conventions, loaded on test files                                                                              |
+| `.claude/skills/`                           | `planning-code-changes`, `writing-tests`                                                                            |
+| `.claude/agents/plan-reviewer.md`           | Read-only reviewer of plans                                                                                         |
+| `.claude/settings.json`, `.claude/hooks/`   | Permissions and the hook that blocks git commands that create commits or publish                                    |
 
 ## Stack
 
@@ -36,11 +37,11 @@ Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-
 | Next.js (App Router) | 16.4.6                                                                                          | latest stable; the spec asks for the most recent versions (the "v15" mention is recorded in `docs/DECISIONS.md`)                                          |
 | React                | 19.3.1                                                                                          | accepted by Next 16 (`^19.0.0`)                                                                                                                           |
 | tRPC                 | 11.28.0: `@trpc/server` (sub-plan 3); `@trpc/client`, `@trpc/tanstack-react-query` (sub-plan 4) | newest at least 7 days old (D-19); 11.29.5 was too fresh                                                                                                  |
-| TanStack Query       | 5.107.1, installed in sub-plan 4                                                                | peer of `@trpc/tanstack-react-query` (`^5.106.0`), newest at least 7 days old (D-19)                                                                      |
+| TanStack Query       | 5.107.1                                                                                         | peer of `@trpc/tanstack-react-query` (`^5.106.0`), newest at least 7 days old (D-19)                                                                      |
 | Zod                  | 4.6.7                                                                                           | input schemas shared by the procedures and the form (D-06)                                                                                                |
 | TypeScript           | 6.0.3                                                                                           | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported                                                                                         |
 | ESLint               | 10.x (10.14.0 installed)                                                                        | latest major, supported by `eslint-config-next@16` per its docs; its React, a11y and import plugins still declare peers up to 9 (accepted warnings, D-16) |
-| Vitest               | 5.1.0 (Testing Library and jsdom arrive in sub-plan 4)                                          | —                                                                                                                                                         |
+| Vitest               | 5.1.0, with Testing Library and jsdom 31.0.0 for component tests                                | —                                                                                                                                                         |
 | Playwright           | 1.65.0, Chromium only                                                                           | production build on port 3100 (D-18)                                                                                                                      |
 | server-only          | 0.0.1                                                                                           | makes a client import of server wiring fail the build (D-13)                                                                                              |
 
