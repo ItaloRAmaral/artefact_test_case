@@ -2,7 +2,37 @@
 
 A small task manager built for a technical test: a Next.js app whose back end keeps tasks in memory and exposes create, list, update and delete through tRPC, with a server-rendered list page and a create/edit form. The test statement is in [`docs/SPEC.md`](docs/SPEC.md).
 
-> Work in progress: this README grows with each part of the [roadmap](docs/plans/2026-11-19-roadmap.md). Today it covers the project setup, the back-end core and the API.
+## How it works
+
+**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. `/tasks/new` and `/tasks/<id>/edit` share one form. Each action shows its loading, success and failure states.
+
+**Request path.** The pages talk to the back end only through tRPC, with TanStack Query caching the results in the browser:
+
+```
+list or form ─► tRPC client ─► /api/trpc ─► controller ─► use case ─► Task entity
+                                  (strict Zod input)                 └► repository (in memory)
+```
+
+On the server, the list page calls the same router directly, without HTTP, and hands the result to the browser's cache ([D-27](docs/DECISIONS.md#d-27-list-page-rendering)).
+
+The controller validates the input shape with the shared Zod schema, calls one use case (`CreateTask`, `ListTasks`, `GetTask`, `UpdateTask`, `DeleteTask`) and returns an output object built field by field. The `Task` entity guards the rules (a title is required, length limits); the repository only stores and returns copies.
+
+**Errors.** An expected failure is a domain error with a code (`TASK_NOT_FOUND`, `TASK_TITLE_REQUIRED`…). One middleware turns the code into a tRPC code (`NOT_FOUND`, `BAD_REQUEST`, `CONFLICT`), and one module in the UI turns codes into messages; anything unexpected becomes a generic message, with no internal detail sent to the browser.
+
+**Back-end layers.** Hexagonal: `src/server/domains/task/` holds the entity, the repository contract with its in-memory implementation beside it, and the use cases, and imports no framework; `src/server/adapters/` holds what knows tRPC. The tasks live in a `Map` kept on `globalThis`, so they survive hot reload in development and are shared by the pages and the API route, which Next.js bundles separately ([D-05](docs/DECISIONS.md#d-05-in-memory-repository-kept-on-globalthis), [D-30](docs/DECISIONS.md#d-30-only-plain-data-is-shared-on-globalthis)). Restarting the server empties the list.
+
+**Where the code lives.**
+
+| Path          | What                                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/app/`    | Next.js routes: the pages and the `/api/trpc` handler                                                      |
+| `src/server/` | the back end: `domains/task/` (entity, repository, use cases), `adapters/` (tRPC), composition             |
+| `src/shared/` | what both sides use: limits, Zod schemas, the list query options, the query client factory                 |
+| `src/client/` | client components (list, form, edit loader, toast), the code-to-message module and the tRPC React provider |
+| `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup               |
+| `e2e/`        | Playwright tests                                                                                           |
+
+The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md); short comments in the code point to them.
 
 ## Task model
 
@@ -17,15 +47,15 @@ The spec names the fields in Portuguese; the code is in English ([D-03](docs/DEC
 
 ## API
 
-The back end is a tRPC router served at `/api/trpc` (one call per HTTP request: batching is off). Inputs are validated by strict Zod schemas that the create/edit form will reuse ([`src/shared/tasks/task-schemas.ts`](src/shared/tasks/task-schemas.ts)): unknown fields are rejected, and text is trimmed.
+The back end is a tRPC router served at `/api/trpc` (one call per HTTP request: batching is off). Inputs are validated by strict Zod schemas that the create/edit form also uses ([`src/shared/tasks/task-schemas.ts`](src/shared/tasks/task-schemas.ts)): unknown fields are rejected, and text is trimmed.
 
-| Procedure      | Kind     | Input                                                               | Output                                                        |
-| -------------- | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `task.list`    | query    | `{ cursor?: string \| null; limit?: number }` (1 to 50, default 10) | `{ items: Task[]; nextCursor: string \| null }`, newest first |
-| `task.getById` | query    | `{ id: string }`                                                    | `Task`                                                        |
-| `task.create`  | mutation | `{ title: string; description?: string }`                           | `Task`                                                        |
-| `task.update`  | mutation | `{ id: string; title: string; description?: string }`               | `Task` (an omitted `description` clears it)                   |
-| `task.delete`  | mutation | `{ id: string }`                                                    | `{ id: string }`                                              |
+| Procedure      | Kind     | Input                                                                                                                                        | Output                                                        |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `task.list`    | query    | `{ cursor?: string \| null; limit?: number; direction?: 'forward' \| 'backward' }` (limit 1 to 50, default 10; `direction` is ignored, D-25) | `{ items: Task[]; nextCursor: string \| null }`, newest first |
+| `task.getById` | query    | `{ id: string }`                                                                                                                             | `Task`                                                        |
+| `task.create`  | mutation | `{ title: string; description?: string }`                                                                                                    | `Task`                                                        |
+| `task.update`  | mutation | `{ id: string; title: string; description?: string }`                                                                                        | `Task` (an omitted `description` clears it)                   |
+| `task.delete`  | mutation | `{ id: string }`                                                                                                                             | `{ id: string }`                                              |
 
 `Task` is `{ id, title, description: string | null, createdAt }`, with `createdAt` as an ISO 8601 string.
 
@@ -33,7 +63,7 @@ Errors carry `data.code` (the tRPC code), `data.domainCode` (for example `TASK_N
 
 ## List page
 
-`/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28).
+`/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. Scrolling near the end loads the next page (`Loading more tasks…`; on failure, the error and a `Retry` button; `No more tasks.` after the last page); on a screen taller than the first page, the second one loads right away. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28, D-31).
 
 ## Create and edit
 
@@ -64,7 +94,7 @@ pnpm exec playwright install chromium   # once, to download the browser
 pnpm test:e2e               # end-to-end tests (Playwright) on a production build
 ```
 
-`pnpm test:e2e` builds the app and starts its own server on port 3100, so every run starts from an empty task list.
+`pnpm test:e2e` builds the app and starts its own server on port 3100, so every run starts from an empty task list. The e2e tests run one at a time: they share that in-memory server and look for their tasks on the first page.
 
 ## Lint and format
 

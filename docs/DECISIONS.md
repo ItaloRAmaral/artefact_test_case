@@ -34,6 +34,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-28](#d-28-front-end-structure-and-delete-ux)                                   | Front-end structure and delete UX                                    | 2026-11-19 |
 | [D-29](#d-29-create-and-edit-form)                                                | Create and edit form                                                 | 2026-11-19 |
 | [D-30](#d-30-only-plain-data-is-shared-on-globalthis)                             | Only plain data is shared on `globalThis`                            | 2026-11-19 |
+| [D-31](#d-31-infinite-scroll-on-the-list)                                         | Infinite scroll on the list                                          | 2026-11-19 |
 
 ---
 
@@ -345,6 +346,18 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision:** `globalThis` keeps only the `Map` of task snapshots (plain data). Each bundle builds its own `InMemoryTaskRepository` over it (`new InMemoryTaskRepository({ snapshots })`), so every error and entity a bundle sees comes from its own classes. The constructor takes `{ capacity?, snapshots? }`.
 - **Why:** it removes the cause (class instances crossing bundles) instead of working around one `instanceof`; `instanceof` stays valid everywhere. The e2e `returns NOT_FOUND for a missing task after a page has rendered` proves it, and fails with the shared instance.
 - **Alternative rejected:** recognizing domain errors by their `code` in the middleware: smaller, but entities and errors from another bundle would still cross over.
+
+## D-31: Infinite scroll on the list
+
+- **Context:** infinite scroll is a bonus of the spec; the list contract is cursor-paginated since D-10, and the client reads it as an infinite query since sub-plan 4. TanStack Query 5.107's `fetchNextPage` cancels a running fetch by default (`cancelRefetch: true`), and a list refetch (after a delete or a save, or on window focus) is not a "next page" fetch (`query-core` source, read 2026-11-19).
+- **Decision:**
+  - A sentinel after the list, watched by an `IntersectionObserver` with `rootMargin: '200px'`, calls `fetchNextPage()`. Only the scroll triggers it; there is no `Load more` button (user decision).
+  - The observer runs only while a next page exists, no fetch is running (so a refetch is never cancelled and a deleted task never comes back) and no page has failed.
+  - A failed page shows the code-mapped error and a `Retry` button; scrolling does not retry it, and while `Retry` reloads the page, the error and the button give way to `Loading more tasks…`. After the last page, `No more tasks.` shows when more than one page is loaded (user decision).
+  - A screen taller than the first page loads the second right away (the observer reports on start), so D-27's "no `task.list` request on first load" holds when the first page fills the screen.
+  - Tests: component tests fake `IntersectionObserver` (absent from jsdom) and fire it on demand (`src/test/intersection-observer.ts`); e2e tests run on one worker, and the list tests use a 400 px tall viewport, so the first page fills it.
+- **Why:** the smallest trigger that loads as the user scrolls, with every state the spec asks for; the guards come from measured library behavior, each proved by a test that fails without it.
+- **Alternative rejected:** a `Load more` button (the spec asks for scrolling), a library for the observer (one effect is enough), parallel e2e workers (tests on one in-memory server would push each other's tasks off the first page).
 
 ---
 
