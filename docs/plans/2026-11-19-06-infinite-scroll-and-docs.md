@@ -134,8 +134,15 @@ None: the observer lives in `TaskList`, its one caller (no hook extracted for a 
   - `playwright.config.ts`: `workers: 1`, with a why-comment (the tests share one in-memory server and look for their tasks on the first page; a parallel test creating tasks could push them to the second; roadmap risk "e2e state shared by parallel workers").
   - `e2e/list-page.spec.ts`: `test.use({ viewport: { width: 1280, height: 400 } })` at the top of the file, with a comment (ten unstyled tasks are taller than 400 px plus the 200 px margin, so the first page fills the screen: the first-load test sees no `task.list` request and the scroll test needs the scroll); a local helper `createTasks(request, prefix, count)` that posts `${prefix} ${n}` titles through the API.
 
-- [ ] **Step 1: write the test** `loads more tasks when scrolling to the end`: create 11 tasks with a unique prefix (Arrange), `page.goto('/')`; Act `page.keyboard.press('End')`; Assert headings matching the prefix have count 11.
-- [ ] **Step 2:** sabotage check: with the sentinel removed from `TaskList`, it fails (10 headings); restore, run the whole e2e suite with `workers: 1` and watch it pass, `does not request task.list on first load` included.
+- [x] **Step 1: write the test** `loads more tasks when scrolling to the end`: create 11 tasks with a unique prefix (Arrange), `page.goto('/')`; Act `page.keyboard.press('End')`; Assert headings matching the prefix have count 11.
+- [x] **Step 2:** sabotage check: with the sentinel removed from `TaskList`, it fails (10 headings); restore, run the whole e2e suite with `workers: 1` and watch it pass, `does not request task.list on first load` included.
+
+**Execution notes (2026-11-19):**
+
+- The file already had `createTask(request, title)`; `createTasks(request, prefix, count)` calls it in order.
+- Sabotage checks: with the sentinel removed from `TaskList`, the test fails (`Received: 10`); with the `End` key press removed, it fails too, so the 400 px viewport makes the scroll necessary.
+- The test passed alone but failed in the full suite (`Received: 10`; the call log showed 0 headings first): `End` was pressed while the list was still streaming in behind the `Loading tasks…` fallback, so there was nothing to scroll, and the sentinel was off screen when the list arrived. The Arrange now waits for the newest task's heading (`getByRole('heading', { name: `${prefix} 11` }).waitFor()`) before the Act. The full suite then passed twice in a row: 14 tests on 1 worker, `does not request task.list on first load` included.
+- `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0.
 
 **Suggested commit:** `test(e2e): run serially and cover scrolling through the list` · files: the list above
 
