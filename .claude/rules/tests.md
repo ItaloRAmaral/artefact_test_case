@@ -1,0 +1,20 @@
+---
+paths:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "e2e/**"
+---
+
+# Test rules
+
+Source of truth for how to write and verify tests: the `writing-tests` skill.
+
+- Files: unit and component tests sit next to the code as `*.test.ts(x)` (Vitest), each use case's test in its folder; end-to-end tests live in `e2e/*.spec.ts` (Playwright). Test-only helpers live in `src/test/` (`factories/make-*.ts`, `fakes/` for clock and IDs, `catchError`).
+- Arrange, Act, Assert separated by blank lines, with no comments; one Act per test; no `if` or loops deciding what to assert.
+- `it.each` only when every row has the same behavior and assertion shape, the table holds only literals, the body has no `if`, and the name shows the varying value (`%s`). Success and error cases go in separate tables.
+- Expected errors: assert the `code`, never the message. Async: the Act is the call (`const promise = caller.task.update(input);`) and the Assert is `await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND' })`. Sync: `const error = catchError(() => ...)`, then assert its `code`. Never `expect(() => ...).toThrow()`.
+- Test names describe the behavior (what), not the mechanism (how).
+- TDD for the entity, the use cases, the router and the form validation: write the test, watch it fail for the right reason, then write the code.
+- Use cases are tested with a fresh `InMemoryTaskRepository` and fixed clock and ID generator per test, never with mocks of the repository; no test depends on another's data. Factories with fixed data and overrides (`makeTaskInput({ title: '' })`); time comes from a fixed clock, never the real one.
+- The router is tested through `createCaller`, not over HTTP. Components are tested by what the user sees and does (Testing Library queries by role and label), not by internal state. Never mock code you own.
+- Playwright tests the main flows against the running app; they do not repeat edge cases the unit tests already prove.
