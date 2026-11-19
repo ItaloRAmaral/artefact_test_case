@@ -1,14 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 import type { ToastMessage } from './dto';
 
 const TOAST_DURATION_MS = 4000;
 
+const ShowToastContext = createContext<
+  ((kind: ToastMessage['kind'], text: string) => void) | null
+>(null);
+
+// Lives in the root layout, which stays mounted across navigations, so a page can show a
+// result on the page it navigates to (DECISIONS D-29).
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const showToast = useCallback((kind: ToastMessage['kind'], text: string) => {
+    setToast((current) => ({ id: (current?.id ?? 0) + 1, kind, text }));
+  }, []);
+
+  return (
+    <ShowToastContext value={showToast}>
+      {children}
+      <ToastRegion toast={toast} />
+    </ShowToastContext>
+  );
+}
+
+export function useShowToast(): (
+  kind: ToastMessage['kind'],
+  text: string,
+) => void {
+  const showToast = useContext(ShowToastContext);
+
+  if (showToast === null) {
+    throw new Error('useShowToast must be used inside ToastProvider');
+  }
+
+  return showToast;
+}
+
 // Both live regions stay on the page, empty until a result: screen readers announce a
 // change inside an existing region, but often miss a region inserted with its text.
-export function ToastRegion({ toast }: { toast: ToastMessage | null }) {
+function ToastRegion({ toast }: { toast: ToastMessage | null }) {
   return (
     <div style={{ position: 'fixed', right: '1rem', bottom: '1rem' }}>
       <div role="status">

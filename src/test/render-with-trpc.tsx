@@ -3,8 +3,9 @@ import type { TRPCLink } from '@trpc/client';
 import { createTRPCClient } from '@trpc/client';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
+import { ToastProvider } from '@/client/tasks/toast';
 import { TRPCProvider } from '@/client/trpc/provider';
 import type { AppRouter } from '@/server/adapters/trpc/app-router';
 import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
@@ -25,13 +26,15 @@ export function renderWithTrpc(
   });
   const user = userEvent.setup();
 
-  const result = render(
-    <QueryClientProvider client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        {ui}
-      </TRPCProvider>
-    </QueryClientProvider>,
-  );
+  const result = render(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <ToastProvider>{children}</ToastProvider>
+        </TRPCProvider>
+      </QueryClientProvider>
+    ),
+  });
 
   return { ...result, user, repository, queryClient };
 }

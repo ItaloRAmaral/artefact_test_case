@@ -6,7 +6,6 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
 
 import { useTRPC } from '@/client/trpc/provider';
 import {
@@ -14,15 +13,14 @@ import {
   TASK_LIST_INPUT,
 } from '@/shared/tasks/task-list-query';
 
-import type { ToastMessage } from './dto';
 import { getErrorMessage } from './error-message';
 import { TaskDate } from './task-date';
-import { ToastRegion } from './toast';
+import { useShowToast } from './toast';
 
 export function TaskList() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const showToast = useShowToast();
   const list = useInfiniteQuery(
     trpc.task.list.infiniteQueryOptions(TASK_LIST_INPUT, {
       getNextPageParam: getNextTaskListCursor,
@@ -44,10 +42,6 @@ export function TaskList() {
   );
   const tasks = list.data?.pages.flatMap((page) => page.items) ?? [];
   let content: ReactNode;
-
-  function showToast(kind: ToastMessage['kind'], text: string) {
-    setToast((current) => ({ id: (current?.id ?? 0) + 1, kind, text }));
-  }
 
   if (list.isPending) {
     content = <p>Loading tasks…</p>;
@@ -79,10 +73,5 @@ export function TaskList() {
     );
   }
 
-  return (
-    <section aria-label="Tasks">
-      {content}
-      <ToastRegion toast={toast} />
-    </section>
-  );
+  return <section aria-label="Tasks">{content}</section>;
 }
