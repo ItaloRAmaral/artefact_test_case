@@ -6,7 +6,7 @@ import { makeTask } from '@/test/factories/make-task';
 import { renderWithTrpc } from '@/test/render-with-trpc';
 import {
   failingAfterFirstCallLink,
-  failingDeleteLink,
+  failingProcedureLink,
   failingLink,
   pendingRefreshLink,
 } from '@/test/trpc-links';
@@ -58,6 +58,18 @@ describe('TaskList', () => {
       'dateTime',
       '2026-11-19T12:00:00.000Z',
     );
+  });
+
+  it('links each task to its edit page', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    renderWithTrpc(<TaskList />, { repository });
+
+    const link = await screen.findByRole('link', {
+      name: 'Edit Write the README',
+    });
+
+    expect(link).toHaveAttribute('href', '/tasks/task-1/edit');
   });
 
   it('shows no description for a task without one', async () => {
@@ -221,7 +233,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
     const { user } = renderWithTrpc(<TaskList />, {
-      link: failingDeleteLink(repository),
+      link: failingProcedureLink(repository, 'task.delete'),
     });
     const button = await screen.findByRole('button', {
       name: 'Delete Write the README',

@@ -5,6 +5,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { useTRPC } from '@/client/trpc/provider';
@@ -57,6 +58,12 @@ export function TaskList() {
             <h2>{task.title}</h2>
             {task.description === null ? null : <p>{task.description}</p>}
             <TaskDate iso={task.createdAt} />
+            <Link
+              href={`/tasks/${task.id}/edit`}
+              aria-label={`Edit ${task.title}`}
+            >
+              Edit
+            </Link>
             <button
               type="button"
               aria-label={`Delete ${task.title}`}

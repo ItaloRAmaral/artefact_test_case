@@ -9,19 +9,17 @@ import {
   useState,
 } from 'react';
 
-import type { ToastMessage } from './dto';
+import type { ShowToast, ToastMessage } from './dto';
 
 const TOAST_DURATION_MS = 4000;
 
-const ShowToastContext = createContext<
-  ((kind: ToastMessage['kind'], text: string) => void) | null
->(null);
+const ShowToastContext = createContext<ShowToast | null>(null);
 
 // Lives in the root layout, which stays mounted across navigations, so a page can show a
 // result on the page it navigates to (DECISIONS D-29).
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const showToast = useCallback((kind: ToastMessage['kind'], text: string) => {
+  const showToast = useCallback<ShowToast>((kind, text) => {
     setToast((current) => ({ id: (current?.id ?? 0) + 1, kind, text }));
   }, []);
 
@@ -33,10 +31,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useShowToast(): (
-  kind: ToastMessage['kind'],
-  text: string,
-) => void {
+export function useShowToast(): ShowToast {
   const showToast = useContext(ShowToastContext);
 
   if (showToast === null) {

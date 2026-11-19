@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary, noop } from '@tanstack/react-query';
 import { io } from 'next/cache';
+import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { TaskList } from '@/client/tasks/task-list';
@@ -13,6 +14,7 @@ export default function HomePage() {
   return (
     <main>
       <h1>Tasks</h1>
+      <Link href="/tasks/new">New task</Link>
       <Suspense fallback={<p>Loading tasks…</p>}>
         <TaskListSection />
       </Suspense>

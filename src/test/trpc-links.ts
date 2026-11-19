@@ -20,6 +20,9 @@ export const failingLink: TRPCLink<AppRouter> = () => () =>
     observer.error(TRPCClientError.from(new Error('Network down')));
   });
 
+const neverSettlingLink: TRPCLink<AppRouter> = () => () =>
+  observable(() => undefined);
+
 export function failingAfterFirstCallLink(
   repository: TaskRepository,
 ): TRPCLink<AppRouter> {
@@ -51,16 +54,28 @@ export function pendingRefreshLink(
 
       return listCallCount > 1;
     },
-    true: () => () => observable(() => undefined),
+    true: neverSettlingLink,
     false: routerLink(repository),
   });
 }
 
-export function failingDeleteLink(
+export function pendingProcedureLink(
   repository: TaskRepository,
+  path: string,
 ): TRPCLink<AppRouter> {
   return splitLink({
-    condition: (op) => op.path === 'task.delete',
+    condition: (op) => op.path === path,
+    true: neverSettlingLink,
+    false: routerLink(repository),
+  });
+}
+
+export function failingProcedureLink(
+  repository: TaskRepository,
+  path: string,
+): TRPCLink<AppRouter> {
+  return splitLink({
+    condition: (op) => op.path === path,
     true: failingLink,
     false: routerLink(repository),
   });

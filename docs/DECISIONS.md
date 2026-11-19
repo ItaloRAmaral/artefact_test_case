@@ -30,6 +30,10 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-24](#d-24-time-and-ids-without-ports)                                          | Time and IDs without ports                                           | 2026-11-19 |
 | [D-25](#d-25-error-responses-and-transport)                                       | Error responses and transport                                        | 2026-11-19 |
 | [D-26](#d-26-client-code-imports-only-types-from-srcserver)                       | Client code imports only types from `src/server/`                    | 2026-11-19 |
+| [D-27](#d-27-list-page-rendering)                                                 | List page rendering                                                  | 2026-11-19 |
+| [D-28](#d-28-front-end-structure-and-delete-ux)                                   | Front-end structure and delete UX                                    | 2026-11-19 |
+| [D-29](#d-29-create-and-edit-form)                                                | Create and edit form                                                 | 2026-11-19 |
+| [D-30](#d-30-only-plain-data-is-shared-on-globalthis)                             | Only plain data is shared on `globalThis`                            | 2026-11-19 |
 
 ---
 
@@ -89,7 +93,7 @@ The main decisions behind this project, each with its context, the choice and wh
 ## D-05: In-memory repository kept on `globalThis`
 
 - **Context:** the spec wants tasks kept in memory. In development, Next.js hot reload re-evaluates modules, which would empty a module-level list on every edit.
-- **Decision:** a single `InMemoryTaskRepository` instance, created in the composition root and kept on `globalThis`. It stores snapshots in a `Map` and returns copies.
+- **Decision:** a single `InMemoryTaskRepository` instance, created in the composition root and kept on `globalThis`. It stores snapshots in a `Map` and returns copies. _Superseded in part by [D-30](#d-30-only-plain-data-is-shared-on-globalthis): `globalThis` keeps only the `Map`; each bundle builds its own repository over it._
 - **Why:** the list survives hot reload, and nothing outside the repository can mutate stored tasks by reference.
 - **Limits (accepted, by the spec):** data is lost on restart, and the list is not shared between server instances.
 
@@ -319,9 +323,28 @@ The main decisions behind this project, each with its context, the choice and wh
   - Client code lives in `src/client/` (user decision), mirroring `src/server/`; ESLint keeps it to `import type` from `@/server/*` and never `server-only` (D-26). The query client factory is in `src/shared/trpc/`, used by both sides.
   - Components are tested in jsdom inside the real providers, with tRPC's `localLink` to `appRouter` over a fresh `InMemoryTaskRepository`, so the error formatter applies as over HTTP; the network is simulated with links in `src/test/trpc-links.ts`. TanStack Query notifies React as a microtask in these tests (`setup-dom.ts`), so updates land inside `act`.
   - The list shows the full-page error only when the first load fails (`isLoadingError`): a failed refresh keeps the tasks on screen.
-  - Delete: no confirmation (user decision: the spec asks only for feedback). Each button is named after its task (`Delete <title>`). Every delete button stays disabled until the list has refetched (`onSettled` returns the invalidation promise), so the deleted row cannot be clicked again. A toast shows `Task deleted.` (`role="status"`) or the error text mapped from its code (`role="alert"`) and hides after 4 seconds (user decision: a toast that disappears); it is keyed per result, so a new delete restarts the timer. Both live regions stay on the page, empty until a result, because screen readers announce a change inside an existing region but often miss a region inserted with its text.
+  - Delete: no confirmation (user decision: the spec asks only for feedback). Each button is named after its task (`Delete <title>`). Every delete button stays disabled until the list has refetched (`onSettled` returns the invalidation promise), so the deleted row cannot be clicked again. _Superseded in part by [D-29](#d-29-create-and-edit-form): the toast state lives in a `ToastProvider` in the root layout._ A toast shows `Task deleted.` (`role="status"`) or the error text mapped from its code (`role="alert"`) and hides after 4 seconds (user decision: a toast that disappears); it is keyed per result, so a new delete restarts the timer. Both live regions stay on the page, empty until a result, because screen readers announce a change inside an existing region but often miss a region inserted with its text.
 - **Why:** each piece is the smallest that meets the spec's feedback states; testing against the real router avoids mocks of our own code.
 - **Alternative rejected:** a confirmation dialog (not asked by the spec), a toast library (one small component is enough).
+
+## D-29: Create and edit form
+
+- **Context:** the spec asks for a create/update page with a form built from functional components and hooks, validation (no empty title), messages for front-end and back-end errors, and loading, success and failure states. With `cacheComponents`, Next.js 16 hides a page it leaves with React `<Activity>` and keeps its state (`node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`).
+- **Decision:**
+  - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/tasks/task-form.tsx`) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one.
+  - Save is disabled from the click until the navigation (`Saving…` while pending). A failed save shows the code-mapped text (D-07) in the toast. On success the form awaits the cache refresh (the list with `refetchType: 'all'` in the filter, since it is off screen; on update also `task.getById` for that id), shows `Task created.` or `Task saved.` and returns to `/` (user decision). The toast lives in a `ToastProvider` in the root layout, which stays mounted across navigations.
+  - `TaskForm` is keyed by `useRouter().bfcacheId`, so each visit through a link starts a fresh form while the browser's back button restores a draft (`use-router.md`).
+  - The edit page reads `params` inside `<Suspense>` and loads the task in the browser only (user decision), with `retry: false`, so a missing task shows `This task no longer exists.` at once on the page (user decision); an id over 36 characters shows `Some fields are invalid.`.
+  - Component tests mock `next/navigation`, because `useRouter` throws outside a mounted App Router; it is the only module mocked.
+- **Why:** one form and one feedback channel cover both modes with the fewest pieces; each behavior above is proved by a component or e2e test (sub-plan 5).
+- **Alternative rejected:** a form library (two fields), staying on the form after a save (the user chose the list), a server prefetch for the edit page (the spec asks for SSR only on the list).
+
+## D-30: Only plain data is shared on `globalThis`
+
+- **Context:** in the production build, `TASK_NOT_FOUND` reached the client as `INTERNAL_SERVER_ERROR` (found by the sub-plan 5 e2e). Next.js bundles pages and the API route separately, each with its own copy of the domain classes. The repository on `globalThis` (D-05) was built by the first bundle that loaded `tasks-module.ts` (the list page, which Playwright requests to know the server is up), so its `TaskNotFoundError` failed `instanceof DomainError` in the API route's copy.
+- **Decision:** `globalThis` keeps only the `Map` of task snapshots (plain data). Each bundle builds its own `InMemoryTaskRepository` over it (`new InMemoryTaskRepository({ snapshots })`), so every error and entity a bundle sees comes from its own classes. The constructor takes `{ capacity?, snapshots? }`.
+- **Why:** it removes the cause (class instances crossing bundles) instead of working around one `instanceof`; `instanceof` stays valid everywhere. The e2e `returns NOT_FOUND for a missing task after a page has rendered` proves it, and fails with the shared instance.
+- **Alternative rejected:** recognizing domain errors by their `code` in the middleware: smaller, but entities and errors from another bundle would still cross over.
 
 ---
 
