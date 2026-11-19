@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                                                                                                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status  | Approved                                                                                                                                                                                                                                                                                   |
+| Status  | Done                                                                                                                                                                                                                                                                                       |
 | Date    | 2026-11-19                                                                                                                                                                                                                                                                                 |
 | Request | "segue para o sub-plano 2": sub-plan 2 of the roadmap, the back-end core (domain, application, infra)                                                                                                                                                                                      |
 | Context | [Roadmap](2026-11-19-roadmap.md) sub-plan 2, "Interfaces between sub-plans" and "Security"; [`docs/DECISIONS.md`](../DECISIONS.md) D-04, D-05, D-07, D-10, D-12, D-13, D-15, D-17, D-19; `.claude/rules/backend.md`; `.claude/rules/tests.md`; `docs/SPEC.md` §2 (model, CRUD, validation) |
@@ -10,7 +10,7 @@
 
 **Goal:** the task domain, the five use cases and the in-memory repository, fully unit-tested with the 90% gate on `src/server/**` now enforced, with no tRPC, Zod or Next.js involved.
 
-**Architecture:** everything in `.claude/rules/backend.md`'s layout. `src/shared/tasks/task-limits.ts` holds the limits. Since Task 3's review (D-23), everything of the domain lives in `src/server/domains/task/`: `entities/` (`Task`, its shapes and errors), `repositories/` (the contract and the in-memory implementation beside it), `providers/` (one folder per provider, `clock/` and `id-generator/`, each with its contract and implementation) and `use-cases/` (one folder per use case; the cursor codec sits in `list-tasks/`, its only user). `src/server/tasks-module.ts` wires them. (Before D-23 the folders were `domain/`, `application/` and `infra/` under `src/server/tasks/`; the notes of Tasks 1 to 3 use those paths.) Test fakes and factories go in `src/test/`.
+**Architecture:** everything in `.claude/rules/backend.md`'s layout. `src/shared/tasks/task-limits.ts` holds the limits. Since Task 3's review (D-23), everything of the domain lives in `src/server/domains/task/`: `entities/` (`Task`, its shapes and errors), `repositories/` (the contract and the in-memory implementation beside it), (until D-24) `providers/` for the clock and ID generator, and `use-cases/` (one folder per use case; the cursor codec sits in `list-tasks/`, its only user). `src/server/tasks-module.ts` wires them. (Before D-23 the folders were `domain/`, `application/` and `infra/` under `src/server/tasks/`; the notes of Tasks 1 to 3 use those paths.) Test fakes and factories go in `src/test/`.
 
 ## Global constraints
 
@@ -254,15 +254,30 @@ None.
 - `SystemClock extends Clock` (`new Date()`); `RandomIdGenerator extends IdGenerator` (global `crypto.randomUUID()`). Both import nothing (D-23).
 - `createTasksModule(deps: { repository: TaskRepository; clock: Clock; idGenerator: IdGenerator }): { createTask: CreateTask; listTasks: ListTasks; getTask: GetTask; updateTask: UpdateTask; deleteTask: DeleteTask }`. Imports `server-only`. The `globalThis` singleton is sub-plan 3's composition root.
 
-- [ ] **Step 1:** tests:
+- [x] **Step 1:** tests:
   - `returns the current time`: the result is a `Date` between two `Date` values taken before and after the call, so no logic;
   - `generates distinct UUIDs`: the first call in Arrange, the second is the Act; both match a literal UUID v4 regex and differ;
   - `wires the use cases to the given ports`: create through the module, then get the task through the module.
 
   Red, implement, green.
 
-- [ ] **Step 2:** `pnpm test:coverage` meets 90% lines and branches on `src/server/**` (paste the summary); `pnpm lint`, `pnpm typecheck` and `pnpm format:check` green; `tasks-module.ts` starts with `import 'server-only';`, and `grep -r "server-only" src/server/domains` finds nothing.
-- [ ] **Step 3:** mark this plan "Done" and sub-plan 2 "Done" in the roadmap; add the D-03 field mapping to the README (the model now exists); in `CLAUDE.md` "Stack", Zod → "installed in sub-plan 3" and add `server-only` 0.0.1.
+- [x] **Step 2:** `pnpm test:coverage` meets 90% lines and branches on `src/server/**` (paste the summary); `pnpm lint`, `pnpm typecheck` and `pnpm format:check` green; `tasks-module.ts` starts with `import 'server-only';`, and `grep -r "server-only" src/server/domains` finds nothing.
+- [x] **Step 3:** mark this plan "Done" and sub-plan 2 "Done" in the roadmap; add the D-03 field mapping to the README (the model now exists); in `CLAUDE.md` "Stack", Zod → "installed in sub-plan 3" and add `server-only` 0.0.1.
+
+**Execution notes (2026-11-19):**
+
+- Provider contracts moved into one folder each (user request): `providers/clock/clock.ts`, `providers/id-generator/id-generator.ts`; imports updated in `CreateTask` and `src/test/fakes/`.
+- `SystemClock` is tested with Vitest fake timers on `Date` only (`vi.setSystemTime`), instead of comparing with two `Date` values taken around the call: the expected value is a literal, and the test has a single Act and no value computed in the Assert. Real timers are restored after each test.
+- `generates distinct UUIDs` became two tests, one behavior each: `generates a UUID v4` and `generates a different id on each call`.
+- `createTasksModule` has one test per use case (create, list, get, update, delete), each asserting through the repository it was given, instead of a single create-then-get test: a use case wired to another repository would pass the single test. Its return type is inferred; no interface is declared for a shape only this function builds.
+- Red: with stub providers that throw and a module wired to a separate repository, all 8 new tests failed on their assertions or the stub error, none on an import. Green: 70 tests pass.
+- Coverage on `src/server/**`: 100% lines (96/96) and branches (37/37). `pnpm lint`, `pnpm typecheck` and `pnpm format:check` exit 0. `tasks-module.ts` starts with `import 'server-only';`; `grep -rn server-only src/server/domains` finds nothing.
+
+- Code review after Task 5 (user decisions):
+  - The clock and ID generator were removed as overengineering (D-24): `CreateTask` calls `new Date()` and `crypto.randomUUID()` directly, and `createTasksModule(repository)` takes only the repository. Removed: `providers/` (contracts, `SystemClock`, `RandomIdGenerator` and their tests) and `src/test/fakes/`. `CreateTask` tests freeze time with Vitest fake timers and check the id by its UUID v4 shape and by being different on each call. These tests were rewritten together with the code (a refactor, behavior unchanged), not red first; each breaks if `new Date()` or `crypto.randomUUID()` is replaced by a constant.
+  - `task-cursor.ts`: a class with static methods was tried and refused by ESLint `no-extraneous-class`, so the cursor stays as functions (user choice: the simplest form). `decodeTaskCursor` now checks the separator before reading the date and id, and base64 decoding is a small function of its own.
+  - Imports aligned (`entities` → `repositories` → `use-cases`, a blank line between the `@/` and `./` groups); `ListTasksOutput.items` is `readonly Task[]`.
+  - 69 tests pass; coverage 100% lines and branches.
 
 **Suggested commit:** `feat(server): add system adapters and tasks module composition`
 

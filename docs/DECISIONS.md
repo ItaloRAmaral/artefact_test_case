@@ -27,6 +27,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-21](#d-21-position-cursor)                                                     | Position cursor                                                      | 2026-11-19 |
 | [D-22](#d-22-storage-capped-at-1000-tasks)                                        | Storage capped at 1000 tasks                                         | 2026-11-19 |
 | [D-23](#d-23-back-end-folders-by-domain-and-adapters)                             | Back-end folders: `domains/<name>/` and `adapters/`                  | 2026-11-19 |
+| [D-24](#d-24-time-and-ids-without-ports)                                          | Time and IDs without ports                                           | 2026-11-19 |
 
 ---
 
@@ -78,7 +79,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Why:**
   - The spec makes storage in memory; the repository port isolates exactly that, so moving to a database changes one adapter and nothing else.
   - Business rules live in the entity and use cases, testable in milliseconds without tRPC or Next.
-  - Time and IDs come through ports, so tests are deterministic.
+  - Time and IDs come through ports, so tests are deterministic. _Superseded by [D-24](#d-24-time-and-ids-without-ports): direct calls, with fake timers in tests._
 - **Cost, and how it is contained:** about a dozen small files where three would run. No DI container (a plain composition root), no mapper layer, no DTO classes, no `Result` type, no port method that no use case calls.
 - **Alternative rejected:** a tRPC router that edits an array directly. It is shorter, but rules, storage and transport end up in the same function, and every test goes through tRPC.
 
@@ -115,11 +116,11 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the spec values simplicity; tests must still prove the requirements.
 - **Decision:**
 
-| Level      | Tool                             | Covers                                                                                                                                 |
-| ---------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| unit       | Vitest                           | the entity, each use case with the in-memory repository and a fixed clock and IDs, the schemas, the tRPC router through `createCaller` |
-| component  | Vitest + Testing Library + jsdom | the form (validation, loading, error display) and the delete feedback                                                                  |
-| end to end | Playwright                       | one or two main flows: create, list (server-rendered), edit, delete                                                                    |
+| Level      | Tool                             | Covers                                                                                                                                              |
+| ---------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| unit       | Vitest                           | the entity, each use case with the in-memory repository (fake timers where time matters, D-24), the schemas, the tRPC router through `createCaller` |
+| component  | Vitest + Testing Library + jsdom | the form (validation, loading, error display) and the delete feedback                                                                               |
+| end to end | Playwright                       | one or two main flows: create, list (server-rendered), edit, delete                                                                                 |
 
 - Tests are written test-first for the back end and the form validation. Each test follows Arrange, Act, Assert, with no comments and no logic.
 - Coverage of at least 90% of lines and branches in `src/server/**`, enforced by the Vitest config.
@@ -252,8 +253,8 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** the folders of D-04 (`domain/`, `application/ports/`, `application/use-cases/`, `infra/`, `trpc/`) were confusing to read: "use cases are framework agnostic, so why are they not in the domain?". The user showed the layout they prefer on 2026-11-19.
 - **Decision:**
-  - Everything of a domain lives in `src/server/domains/<name>/`, grouped by kind of piece: `entities/` (`entity.ts`, `dto.ts`, `errors.ts`), `repositories/`, `providers/` (one folder per provider: `clock/`, `id-generator/`) and `use-cases/` (one folder per use case).
-  - An implementation that imports nothing external sits beside its contract: `in-memory-database-repository.ts` next to `database-repository.ts`, and the system clock and ID generator next to theirs. The ID generator uses the global Web Crypto `crypto.randomUUID()`, so it needs no import.
+  - Everything of a domain lives in `src/server/domains/<name>/`, grouped by kind of piece: `entities/` (`entity.ts`, `dto.ts`, `errors.ts`), `repositories/`, and `use-cases/` (one folder per use case).
+  - An implementation that imports nothing external sits beside its contract: `in-memory-database-repository.ts` next to `database-repository.ts`. _(The `providers/` folder for the clock and the ID generator was removed by [D-24](#d-24-time-and-ids-without-ports).)_
   - Everything that knows a framework lives in `src/server/adapters/`: `trpc/` (setup, app router, server caller), `controllers/` (the procedures) and `middlewares/` when one is needed. These modules and the composition root `src/server/tasks-module.ts` import `server-only`; `domains/` does not.
   - ESLint: `domains/**` imports nothing external and nothing from `adapters/` or the composition root; `entities/` also imports no use case, repository or provider.
 - **Why:**
@@ -262,6 +263,17 @@ The main decisions behind this project, each with its context, the choice and wh
   - The contract and the in-memory implementation are read side by side.
 - **Cost:** a concrete implementation now sits inside the core folder. It is contained because the implementation imports nothing external (ESLint checks it), and the single instance is still created in the composition root, which imports `server-only`.
 - **Alternative rejected:** keeping `domain/` and `application/` with the in-memory repository in `infra/`. It is the textbook split, but the user found it harder to follow, and the dependency rule holds either way.
+
+## D-24: Time and IDs without ports
+
+- **Context:** D-04 put time and IDs behind ports (`Clock`, `IdGenerator`) with real implementations (`SystemClock`, `RandomIdGenerator`) and test fakes (`FixedClock`, `SequentialIdGenerator`): six files to wrap `new Date()` and `crypto.randomUUID()`. The user called it overengineering on 2026-11-19 ("simple whenever possible").
+- **Decision:** `CreateTask` calls `new Date()` and the global `crypto.randomUUID()` directly. The ports, implementations, fakes and the `providers/` folder are removed; `createTasksModule(repository)` takes only the repository.
+- **Why:**
+  - Each port wrapped one line and had one real implementation; the only reason for it was tests, and the test tools already cover that: Vitest fake timers freeze `Date`, and a generated id is asserted by its shape (UUID v4) and by being different on each call.
+  - Fewer elements (code-style: Kent Beck's rules, "less is more").
+  - The dependency rule still holds: both are globals, not imports, and the entity stays deterministic (it receives `id` and `createdAt`).
+- **Cost:** tests that check time must turn fake timers on and off; tests cannot predict an id, so they read it from the created task.
+- **Alternative rejected:** keeping the ports. Textbook hexagonal, but here they add six files and no behavior.
 
 ---
 

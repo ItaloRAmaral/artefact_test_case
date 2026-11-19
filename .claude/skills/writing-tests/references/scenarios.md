@@ -27,7 +27,7 @@ Test at the public boundary of the unit (its seam: the entity's public methods, 
 | side effects (save, log, event, request sent)              | that it happens on success and does not happen on failure                                                                                        |
 | input that comes from a user                               | malformed, unknown fields (`id`, `createdAt` sent on create), whitespace-only title, over the length limit, script content shown as text         |
 | ordering and pagination                                    | two tasks with the same `createdAt` (tie-break), first page, last page, empty list, a deletion between two pages, a cursor that no longer exists |
-| time                                                       | `createdAt` comes from the clock, never from the input; a fixed clock in tests                                                                   |
+| time                                                       | `createdAt` is set by the server, never taken from the input; time frozen with fake timers in tests                                              |
 | UI states                                                  | loading, empty, error, success; submit disabled while sending; backend error shown; client validation error shown before any request             |
 | how callers really use it                                  | the realistic sequence of operations: interleaved calls, reuse after an error, retry                                                             |
 

@@ -37,11 +37,12 @@ Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-
 | React                | 19.3.1                                                                                       | accepted by Next 16 (`^19.0.0`)                                                                                                                           |
 | tRPC                 | 11.x, installed in sub-plan 3 (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | —                                                                                                                                                         |
 | TanStack Query       | 5.x, installed in sub-plan 3                                                                 | —                                                                                                                                                         |
-| Zod                  | 4.x, installed in sub-plan 2 or 3                                                            | —                                                                                                                                                         |
+| Zod                  | 4.x, installed in sub-plan 3                                                                 | —                                                                                                                                                         |
 | TypeScript           | 6.0.3                                                                                        | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported                                                                                         |
 | ESLint               | 10.x (10.14.0 installed)                                                                     | latest major, supported by `eslint-config-next@16` per its docs; its React, a11y and import plugins still declare peers up to 9 (accepted warnings, D-16) |
 | Vitest               | 5.1.0 (Testing Library and jsdom arrive in sub-plan 4)                                       | —                                                                                                                                                         |
 | Playwright           | 1.65.0, Chromium only                                                                        | production build on port 3100 (D-18)                                                                                                                      |
+| server-only          | 0.0.1                                                                                        | makes a client import of server wiring fail the build (D-13)                                                                                              |
 
 ## Language
 
@@ -59,7 +60,7 @@ Everything in the repository is English: code, identifiers, UI text, README, doc
 
 Style follows `.claude/rules/code-style.md`; its principles may be broken only with the justification it requires in the plan. The rules below never are.
 
-- The back end respects the dependency rule of `.claude/rules/backend.md`: `src/server/domains/` (entities, repositories, providers, use cases) imports nothing external; only `src/server/adapters/` knows frameworks and libraries.
+- The back end respects the dependency rule of `.claude/rules/backend.md`: `src/server/domains/` (entities, repositories, use cases) imports nothing external; only `src/server/adapters/` knows frameworks and libraries.
 - Every tRPC procedure validates its input shape with a strict Zod schema (unknown fields rejected), in `.input()`; the form reuses the same schema. Task invariants live in the `Task` entity; limits are constants defined once in `src/shared/tasks/task-limits.ts`, used by both the entity and the schema.
 - Expected failures are domain errors with a literal `code`, translated to a tRPC code in one place; the client tells errors apart by code, never by message text. No stack trace or internal detail reaches the client.
 - Procedures return explicit output objects built field by field, never an entity or a stored snapshot.
@@ -73,7 +74,7 @@ Style follows `.claude/rules/code-style.md`; its principles may be broken only w
 - Test names describe the behavior, not the mechanism.
 - TDD for the entity, the use cases, the router and form validation.
 - Coverage: at least 90% of lines and branches in server code (`src/server/**`), enforced by the Vitest config. No mutation testing.
-- Levels: unit (Vitest: entity, use cases with the in-memory repository and fixed clock/IDs, router through `createCaller`, schemas), component (Vitest + Testing Library + jsdom: the form), end to end (Playwright: one or two main flows).
+- Levels: unit (Vitest: entity, use cases with the in-memory repository and fake timers where time matters, router through `createCaller`, schemas), component (Vitest + Testing Library + jsdom: the form), end to end (Playwright: one or two main flows).
 
 ## Commands
 

@@ -6,6 +6,6 @@ export interface ListTasksInput {
 }
 
 export interface ListTasksOutput {
-  readonly items: Task[];
+  readonly items: readonly Task[];
   readonly nextCursor: string | null;
 }

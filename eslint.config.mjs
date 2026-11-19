@@ -97,13 +97,9 @@ export default defineConfig([
             EXTERNAL_TO_CORE,
             OUTER_RING,
             {
-              group: [
-                '**/use-cases/**',
-                '**/repositories/**',
-                '**/providers/**',
-              ],
+              group: ['**/use-cases/**', '**/repositories/**'],
               message:
-                'Entities hold the rules only: they know no use case, repository or provider (.claude/rules/backend.md).',
+                'Entities hold the rules only: they know no use case or repository (.claude/rules/backend.md).',
             },
           ],
         },

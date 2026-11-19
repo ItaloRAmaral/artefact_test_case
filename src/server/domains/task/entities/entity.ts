@@ -3,12 +3,12 @@ import {
   TASK_TITLE_MAX_LENGTH,
 } from '@/shared/tasks/task-limits';
 
+import type { TaskContent, TaskSnapshot } from './dto';
 import {
   TaskDescriptionTooLongError,
   TaskTitleRequiredError,
   TaskTitleTooLongError,
 } from './errors';
-import type { TaskContent, TaskSnapshot } from './dto';
 
 export class Task {
   private state: TaskSnapshot;

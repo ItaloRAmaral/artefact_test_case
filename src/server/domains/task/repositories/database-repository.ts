@@ -1,4 +1,5 @@
 import type { Task } from '@/server/domains/task/entities/entity';
+
 import type { TaskPosition } from './dto';
 
 export abstract class TaskRepository {

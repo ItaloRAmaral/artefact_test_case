@@ -1,5 +1,5 @@
-import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
 import type { Task } from '@/server/domains/task/entities/entity';
+import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
 
 import type { GetTaskInput } from './dto';
 

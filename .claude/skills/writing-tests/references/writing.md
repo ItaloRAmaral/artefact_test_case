@@ -39,7 +39,7 @@
 ## Doubles
 
 - **Prefer the real thing.** The repository implementation is already in memory: tests use a fresh real `InMemoryTaskRepository`, never a mock of its contract.
-- **Fake only at system boundaries:** time and ID generation (injected or fixed), and the network in component tests (pass callbacks or a test tRPC client; never mock your own hooks).
+- **Fake only at system boundaries:** time (Vitest fake timers), and the network in component tests (pass callbacks or a test tRPC client; never mock your own hooks).
 - **Never assert on a double** ("was called with"), unless the call itself is the contract (an e-mail sent, an audit entry written). Assert the outcome a caller sees.
 - A fake that accepts anything verifies nothing: each branch (success, error) gets its own fixture.
 - Cleanup used only by tests lives in test utilities, never in production code.

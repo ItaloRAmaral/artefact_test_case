@@ -10,20 +10,17 @@ export function encodeTaskCursor(position: TaskPosition): string {
 }
 
 export function decodeTaskCursor(cursor: string): TaskPosition {
-  let decoded: string;
+  const decoded = decodeBase64(cursor);
+  const separatorIndex = decoded.indexOf(SEPARATOR);
 
-  try {
-    decoded = atob(cursor);
-  } catch {
+  if (separatorIndex === -1) {
     throw new TaskCursorInvalidError();
   }
 
-  const separatorIndex = decoded.indexOf(SEPARATOR);
   const createdAt = new Date(decoded.slice(0, separatorIndex));
   const id = decoded.slice(separatorIndex + 1);
 
   if (
-    separatorIndex === -1 ||
     id === '' ||
     id.includes(SEPARATOR) ||
     Number.isNaN(createdAt.getTime())
@@ -32,4 +29,12 @@ export function decodeTaskCursor(cursor: string): TaskPosition {
   }
 
   return { createdAt, id };
+}
+
+function decodeBase64(cursor: string): string {
+  try {
+    return atob(cursor);
+  } catch {
+    throw new TaskCursorInvalidError();
+  }
 }

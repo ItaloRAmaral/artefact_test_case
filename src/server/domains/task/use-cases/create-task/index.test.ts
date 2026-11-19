@@ -1,53 +1,66 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
-import { FixedClock } from '@/test/fakes/fixed-clock';
-import { SequentialIdGenerator } from '@/test/fakes/sequential-id-generator';
 
 import { CreateTask } from '.';
 
 const NOW = new Date('2026-11-19T12:00:00.000Z');
+const UUID_V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe('CreateTask', () => {
-  it('saves the created task', async () => {
-    const repository = new InMemoryTaskRepository();
-    const createTask = new CreateTask(
-      repository,
-      new FixedClock(NOW),
-      new SequentialIdGenerator(),
-    );
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    await createTask.execute({
+  it('saves the created task', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    const repository = new InMemoryTaskRepository();
+    const createTask = new CreateTask(repository);
+
+    const task = await createTask.execute({
       title: 'Write the README',
       description: 'Explain how to run it',
     });
 
-    expect((await repository.findExistingById('task-1')).toSnapshot()).toEqual({
-      id: 'task-1',
+    expect((await repository.findExistingById(task.id)).toSnapshot()).toEqual({
+      id: task.id,
       title: 'Write the README',
       description: 'Explain how to run it',
       createdAt: NOW,
     });
   });
 
-  it('sets id and createdAt from the ports', async () => {
-    const createTask = new CreateTask(
-      new InMemoryTaskRepository(),
-      new FixedClock(NOW),
-      new SequentialIdGenerator(),
-    );
+  it('sets createdAt to the current time', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    const createTask = new CreateTask(new InMemoryTaskRepository());
 
     const task = await createTask.execute({ title: 'Write the README' });
 
-    expect(task.toSnapshot()).toMatchObject({ id: 'task-1', createdAt: NOW });
+    expect(task.createdAt).toEqual(NOW);
+  });
+
+  it('generates a UUID v4 as the id', async () => {
+    const createTask = new CreateTask(new InMemoryTaskRepository());
+
+    const task = await createTask.execute({ title: 'Write the README' });
+
+    expect(task.id).toMatch(UUID_V4);
+  });
+
+  it('generates a different id for each task', async () => {
+    const createTask = new CreateTask(new InMemoryTaskRepository());
+    const firstTask = await createTask.execute({ title: 'Write the README' });
+
+    const secondTask = await createTask.execute({ title: 'Review the plan' });
+
+    expect(secondTask.id).not.toBe(firstTask.id);
   });
 
   it('fails with TASK_STORAGE_FULL when the storage is full', async () => {
-    const createTask = new CreateTask(
-      new InMemoryTaskRepository(1),
-      new FixedClock(NOW),
-      new SequentialIdGenerator(),
-    );
+    const createTask = new CreateTask(new InMemoryTaskRepository(1));
     await createTask.execute({ title: 'Write the README' });
 
     const promise = createTask.execute({ title: 'Review the plan' });
@@ -57,11 +70,7 @@ describe('CreateTask', () => {
 
   it('fails with TASK_TITLE_REQUIRED and saves nothing', async () => {
     const repository = new InMemoryTaskRepository();
-    const createTask = new CreateTask(
-      repository,
-      new FixedClock(NOW),
-      new SequentialIdGenerator(),
-    );
+    const createTask = new CreateTask(repository);
 
     const promise = createTask.execute({ title: '   ' });
 
