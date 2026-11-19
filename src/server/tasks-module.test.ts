@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { makeTask } from '@/test/factories/make-task';
@@ -59,5 +59,20 @@ describe('createTasksModule', () => {
     await expect(repository.findExistingById('task-1')).rejects.toMatchObject({
       code: 'TASK_NOT_FOUND',
     });
+  });
+});
+
+describe('tasksModule', () => {
+  it('keeps the shared tasks when the module is evaluated again', async () => {
+    const first = await import('./tasks-module');
+    const created = await first.tasksModule.createTask.execute({
+      title: 'Write the README',
+    });
+    vi.resetModules();
+    const second = await import('./tasks-module');
+
+    const found = await second.tasksModule.getTask.execute({ id: created.id });
+
+    expect(found.id).toBe(created.id);
   });
 });

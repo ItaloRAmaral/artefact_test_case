@@ -17,7 +17,7 @@ src/
   shared/
     tasks/
       task-limits.ts         limits as plain constants, no imports (title and description max length, page size)
-      task-schemas.ts        Zod input/output schemas of the tRPC contract; imported by the controller AND the form
+      task-schemas.ts        strict Zod input schemas of the tRPC contract; imported by the controller AND the form (output types come from the router, D-26)
   server/
     domains/
       task/                  the core: imports nothing external
@@ -37,15 +37,18 @@ src/
           delete-task/       index.ts, dto.ts, index.test.ts
     adapters/                the outer ring: knows the framework, imports server-only
       trpc/
-        init.ts              initTRPC, context, error formatter (domain code → client)
-        app-router.ts        merges the controllers' routers
-        server-caller.ts     server-side caller for SSR
+        init.ts              initTRPC, the domain-error middleware (one translation table) and the error formatter
+        dto.ts               TrpcContext
+        app-router.ts        merges the controllers' routers; exports the AppRouter type
+        handler.ts           fetch adapter for /api/trpc (batching off, logs unexpected errors)
+        (sub-plan 4)         server options proxy and per-request query client for SSR
       controllers/
-        task/                the task procedures: input schema → use case → output object
+        task/                index.ts (procedures: input schema → use case → output object), dto.ts (TaskDto),
+                             to-task-dto.ts, index.test.ts
       middlewares/           only when one is needed
-    tasks-module.ts          composition root: builds the use cases with their implementations
+    tasks-module.ts          composition root: createTasksModule(repository), and the shared tasksModule on globalThis
   test/
-    factories/               make-task.ts, make-task-input.ts: fixed data with overrides
+    factories/               make-task.ts (fixed data with overrides), make-caller.ts, seed-tasks.ts
 ```
 
 Folders are created when their first file arrives (git keeps no empty folder). File and folder names are a starting point for the plan; the dependency rule below is not.
@@ -79,13 +82,13 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 ## Implementations
 
 - **`InMemoryTaskRepository`:** keeps snapshots in a `Map` and returns copies, so nothing outside can mutate stored state; reproduces only storage concerns (ordering, cursor), never business rules. It is the production implementation and the one tests use: no mocks of it.
-- **The single instance** lives in the composition root on `globalThis`, so dev hot reload does not wipe the list; a short comment says why.
+- **The single instance** lives in the composition root (`tasks-module.ts`, `tasksModule`) on `globalThis`, so dev hot reload does not wipe the list; a short comment says why.
 
 ## Adapters (tRPC controllers)
 
 - **Controller procedure:** input already validated by its strict Zod schema → call the use case → build the output object field by field from the entity (never return the entity or the snapshot as is).
-- **No `try/catch` in procedures.** One translation point (a middleware or the error formatter) maps a `DomainError` code to the tRPC code (`TASK_NOT_FOUND` → `NOT_FOUND`) and exposes the domain `code` to the client; anything else stays `INTERNAL_SERVER_ERROR` without internals.
-- **Composition:** `tasks-module.ts` builds the use cases with their implementations (plain functions and `new`, no DI container); the controller receives the use cases, so tests can build a router over a fresh repository.
+- **No `try/catch` in procedures.** One translation point, the middleware of `publicProcedure` in `init.ts` (the only procedure builder exported), maps a `DomainError` code to the tRPC code (`TASK_NOT_FOUND` → `NOT_FOUND`); the error formatter exposes it as `data.domainCode`. Anything else stays `INTERNAL_SERVER_ERROR` without its message or stack, and is logged on the server (D-25).
+- **Composition:** `tasks-module.ts` builds the use cases with their implementations (plain functions and `new`, no DI container); procedures get them from the tRPC context (`ctx.tasks`), so tests build a caller over a fresh repository (`makeCaller`).
 
 ## Do not repeat
 

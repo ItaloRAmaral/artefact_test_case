@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
+import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { CreateTask } from '@/server/domains/task/use-cases/create-task';
 import { DeleteTask } from '@/server/domains/task/use-cases/delete-task';
 import { GetTask } from '@/server/domains/task/use-cases/get-task';
@@ -16,3 +17,13 @@ export function createTasksModule(repository: TaskRepository) {
     deleteTask: new DeleteTask(repository),
   };
 }
+
+// Dev hot reload re-evaluates modules, so a module-level repository would empty the list
+// on every edit; globalThis survives it (DECISIONS D-05).
+const globalStore = globalThis as typeof globalThis & {
+  taskRepository?: TaskRepository;
+};
+
+globalStore.taskRepository ??= new InMemoryTaskRepository();
+
+export const tasksModule = createTasksModule(globalStore.taskRepository);

@@ -2,7 +2,7 @@
 
 A small task manager built for a technical test: a Next.js app whose back end keeps tasks in memory and exposes create, list, update and delete through tRPC, with a server-rendered list page and a create/edit form. The test statement is in [`docs/SPEC.md`](docs/SPEC.md).
 
-> Work in progress: this README grows with each part of the [roadmap](docs/plans/2026-11-19-roadmap.md). Today it covers the project setup and the back-end core.
+> Work in progress: this README grows with each part of the [roadmap](docs/plans/2026-11-19-roadmap.md). Today it covers the project setup, the back-end core and the API.
 
 ## Task model
 
@@ -14,6 +14,22 @@ The spec names the fields in Portuguese; the code is in English ([D-03](docs/DEC
 | `titulo`      | `title`       | string, required, up to 120 characters after trimming  |
 | `descricao`   | `description` | string or `null`, up to 1000 characters after trimming |
 | `dataCriacao` | `createdAt`   | date, set by the server                                |
+
+## API
+
+The back end is a tRPC router served at `/api/trpc` (one call per HTTP request: batching is off). Inputs are validated by strict Zod schemas that the create/edit form will reuse ([`src/shared/tasks/task-schemas.ts`](src/shared/tasks/task-schemas.ts)): unknown fields are rejected, and text is trimmed.
+
+| Procedure      | Kind     | Input                                                               | Output                                                        |
+| -------------- | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `task.list`    | query    | `{ cursor?: string \| null; limit?: number }` (1 to 50, default 10) | `{ items: Task[]; nextCursor: string \| null }`, newest first |
+| `task.getById` | query    | `{ id: string }`                                                    | `Task`                                                        |
+| `task.create`  | mutation | `{ title: string; description?: string }`                           | `Task`                                                        |
+| `task.update`  | mutation | `{ id: string; title: string; description?: string }`               | `Task` (an omitted `description` clears it)                   |
+| `task.delete`  | mutation | `{ id: string }`                                                    | `{ id: string }`                                              |
+
+`Task` is `{ id, title, description: string | null, createdAt }`, with `createdAt` as an ISO 8601 string.
+
+Errors carry `data.code` (the tRPC code), `data.domainCode` (for example `TASK_NOT_FOUND` with `NOT_FOUND`, or `TASK_STORAGE_FULL` with `CONFLICT` once 1000 tasks are stored) and, for invalid input, `data.fieldErrors` (`BAD_REQUEST`). Unexpected errors reach the client as `INTERNAL_SERVER_ERROR` without detail and are logged on the server. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-15, D-25).
 
 ## Requirements
 

@@ -28,6 +28,8 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-22](#d-22-storage-capped-at-1000-tasks)                                        | Storage capped at 1000 tasks                                         | 2026-11-19 |
 | [D-23](#d-23-back-end-folders-by-domain-and-adapters)                             | Back-end folders: `domains/<name>/` and `adapters/`                  | 2026-11-19 |
 | [D-24](#d-24-time-and-ids-without-ports)                                          | Time and IDs without ports                                           | 2026-11-19 |
+| [D-25](#d-25-error-responses-and-transport)                                       | Error responses and transport                                        | 2026-11-19 |
+| [D-26](#d-26-client-code-imports-only-types-from-srcserver)                       | Client code imports only types from `src/server/`                    | 2026-11-19 |
 
 ---
 
@@ -56,6 +58,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | Node                                                                | 24.22.2                                                                   | `.nvmrc`                                                                                                                                                 |
 
 - **Why:** exact pins make the install reproducible; the two held-back majors are each blocked by a declared peer range, checked on the npm registry on 2026-11-19.
+- _Superseded in part by [D-19](#d-19-newest-version-at-least-7-days-old): tRPC is 11.28.0 and TanStack Query 5.107.1, the newest releases at least 7 days old (sub-plan 3)._
 - **Revisit when:** typescript-eslint supports TypeScript 7, and Next's lint plugins declare ESLint 10.
 
 ## D-03: English everywhere, including the task fields
@@ -94,7 +97,7 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** the spec wants "no task without a title" on the back end and form validation on the front end.
 - **Decision:**
-  - The input and output schemas live in `src/shared/tasks/` as strict Zod schemas (unknown fields rejected). The tRPC procedures validate with them, and the form validates with the same schemas before sending.
+  - The input and output schemas live in `src/shared/tasks/` as strict Zod schemas (unknown fields rejected). The tRPC procedures validate with them, and the form validates with the same schemas before sending. _Superseded in part by [D-26](#d-26-client-code-imports-only-types-from-srcserver): only input schemas; the output type comes from the router._
   - The `Task` entity guards its own invariants (title not blank, length limits).
   - The limits are constants defined once in the domain and reused by the schemas. _Superseded in part by [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring): the limits live in `src/shared/tasks/`._
 - **Why:**
@@ -179,7 +182,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - `TaskDto = { id, title, description: string | null, createdAt: string }`.
   - The schemas trim text. A whitespace-only title is a field error. A blank or omitted `description` becomes `null`, also on update, which replaces `title` and `description` together.
   - `task.delete` returns `{ id }`.
-  - Errors carry the tRPC code, plus `data.domainCode` for domain errors and `data.fieldErrors` for validation.
+  - Errors carry the tRPC code, plus `data.domainCode` for domain errors and `data.fieldErrors` for validation. _Detailed in [D-25](#d-25-error-responses-and-transport), which also adds an ignored `direction` to `task.list`._
   - Routes: `/`, `/tasks/new`, `/tasks/[id]/edit`.
 - **Why:** each choice is the smallest one that lets the pages work and show precise errors. Fixing the contract in the roadmap lets the back-end and front-end sub-plans be written independently.
 
@@ -274,6 +277,27 @@ The main decisions behind this project, each with its context, the choice and wh
   - The dependency rule still holds: both are globals, not imports, and the entity stays deterministic (it receives `id` and `createdAt`).
 - **Cost:** tests that check time must turn fake timers on and off; tests cannot predict an id, so they read it from the created task.
 - **Alternative rejected:** keeping the ports. Textbook hexagonal, but here they add six files and no behavior.
+
+## D-25: Error responses and transport
+
+- **Context:** the roadmap fixed the error shape (`data.code`, `data.domainCode`, `data.fieldErrors`) and left the tRPC code of `TASK_STORAGE_FULL` open. The tRPC docs (read 2026-11-19) say a non-`TRPCError` keeps its message on the way to the client, in production too, and that `data.stack` is sent in development. The sub-plan 3 review found three more gaps: tRPC's infinite query adds `direction` to the input, unexpected errors left no trace, and batched requests had no limit.
+- **Decision:**
+  - One translation point: the middleware of `publicProcedure` (`src/server/adapters/trpc/init.ts`) maps each domain code to a tRPC code with a `Record<TaskErrorCode, …>` table: `TASK_NOT_FOUND` → `NOT_FOUND`; the title, description and cursor codes → `BAD_REQUEST`; `TASK_STORAGE_FULL` → `CONFLICT` (409, user decision: the request conflicts with the current state, and deleting a task resolves it).
+  - The error formatter builds `data` field by field: `code`, `httpStatus`, `path`, `domainCode` (or `null`) and `fieldErrors` (`z.flattenError(…).fieldErrors` for a validation error, or `null`). It never sends `stack`, and the message of an `INTERNAL_SERVER_ERROR` becomes `'Internal server error'`.
+  - The handler logs every `INTERNAL_SERVER_ERROR` with `console.error`, the one place where `no-console` is disabled, with the reason on the line (user decision).
+  - Batching is off (`allowBatching: false`, user decision): one HTTP request is one call. The React client uses `httpLink` (sub-plan 4).
+  - `task.list` accepts `direction: 'forward' | 'backward'` and ignores it, because `@trpc/tanstack-react-query` 11.28.0 sends `{ ...input, cursor, direction }` from an infinite query (checked in its source); every other unknown key is still rejected (user decision).
+- **Why:**
+  - The client tells errors apart by code (D-07) and sees no internal detail; the server log keeps what the client cannot see.
+  - A `Record` over the code union makes a new domain code fail type checking until it is mapped.
+  - Without batching, the field caps and the page-size cap bound each request.
+- **Alternative rejected:** catching errors in each procedure. It repeats the mapping five times, and the hard rules forbid `try/catch` in procedures.
+
+## D-26: Client code imports only types from `src/server/`
+
+- **Context:** the tRPC client needs the `AppRouter` type, which lives in `src/server/adapters/trpc/app-router.ts`; the hard rule said nothing under `src/server/` is imported by a client component.
+- **Decision:** a client file may `import type` from `src/server/` (user decision). A value import stays forbidden, and `server-only` makes it fail the build. Output types reach the client through the router's inferred types, so `src/shared/` holds only the input schemas.
+- **Why:** `import type` is erased at build (`verbatimModuleSyntax`), so no server code reaches the browser; writing the contract's types again by hand would duplicate the router and could drift from it.
 
 ---
 
