@@ -159,8 +159,8 @@ Each block's message names the rule ("domain imports nothing external, see `.cla
 - Produces: `catchError(fn: () => unknown): unknown`, which returns what `fn` throws and throws an `Error` when `fn` returns normally. Sync error tests in sub-plans 2 to 6 use it (`.claude/rules/tests.md`).
 - Produces: `test` (`vitest run`), `test:coverage` (`vitest run --coverage`).
 
-- [ ] **Step 1: `vitest.config.mts`:** `resolve.tsconfigPaths: true` (Vite 8 built-in, so no plugin); `test.include: ['src/**/*.test.{ts,tsx}']` so `e2e/` is never picked up; environment `node` (jsdom arrives with the first component test in sub-plan 4); `coverage`: provider `v8`, `include: ['src/server/**']`, `exclude: ['**/*.test.{ts,tsx}']`, `thresholds: { lines: 90, branches: 90 }`.
-- [ ] **Step 2: write the failing tests:**
+- [x] **Step 1: `vitest.config.mts`:** `resolve.tsconfigPaths: true` (Vite 8 built-in, so no plugin); `test.include: ['src/**/*.test.{ts,tsx}']` so `e2e/` is never picked up; environment `node` (jsdom arrives with the first component test in sub-plan 4); `coverage`: provider `v8`, `include: ['src/server/**']`, `exclude: ['**/*.test.{ts,tsx}']`, `thresholds: { lines: 90, branches: 90 }`.
+- [x] **Step 2: write the failing tests:**
 
 ```ts
 describe('catchError', () => {
@@ -182,9 +182,17 @@ describe('catchError', () => {
 });
 ```
 
-- [ ] **Step 3: run and watch them fail for the right reason:** create `src/test/catch-error.ts` exporting `catchError` that returns `undefined` without calling `fn`, so the tests compile and reach their assertions. `pnpm test`. Expected: both FAIL on their `expect` (the first gets `undefined` instead of the error, the second gets `undefined` instead of an `Error`), not on an import error.
-- [ ] **Step 4: implement `catchError`** in `src/test/catch-error.ts`: call `fn` inside `try`, return the caught value; after a normal return, throw an `Error`.
-- [ ] **Step 5: run and watch them pass:** `pnpm test`, expected PASS (2 tests). Then `pnpm test:coverage`: record what Vitest prints for the empty `src/server/**` include, and handle a failure as the review focus says. `pnpm lint` and `pnpm typecheck` stay green.
+- [x] **Step 3: run and watch them fail for the right reason:** create `src/test/catch-error.ts` exporting `catchError` that returns `undefined` without calling `fn`, so the tests compile and reach their assertions. `pnpm test`. Expected: both FAIL on their `expect` (the first gets `undefined` instead of the error, the second gets `undefined` instead of an `Error`), not on an import error.
+- [x] **Step 4: implement `catchError`** in `src/test/catch-error.ts`: call `fn` inside `try`, return the caught value; after a normal return, throw an `Error`.
+- [x] **Step 5: run and watch them pass:** `pnpm test`, expected PASS (2 tests). Then `pnpm test:coverage`: record what Vitest prints for the empty `src/server/**` include, and handle a failure as the review focus says. `pnpm lint` and `pnpm typecheck` stay green.
+
+**Execution notes (2026-11-19):**
+
+- Installed `vitest` and `@vitest/coverage-v8` 5.1.0 (D-19; 5.1.1 is younger than 7 days) and `vite` 8.3.8.
+- Red: with the stub returning `undefined`, both tests failed on their assertions (`expected undefined to be Error: boom`, `expected undefined to be an instance of Error`), not on an import. Green: 2 passed.
+- Coverage with nothing under `src/server/`: Vitest prints `Unknown% ( 0/0 )` and exits 0, so the gate passes vacuously until sub-plan 2 adds code. No change to the plan was needed.
+- The gate was proven without creating any file, by overriding the include on the command line. With `--coverage.include=src/test/** --coverage.include=next.config.ts` (a file no test runs), Vitest printed `ERROR: Coverage for lines (80%) does not meet global threshold (90%)` and exited 1. With `src/test/**` only, it exited 0.
+- Verified: `pnpm test`, `pnpm test:coverage`, `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0.
 
 **Suggested commit:** `test: set up Vitest with the server coverage gate and catchError helper` · files: `vitest.config.mts`, `src/test/catch-error.ts`, `src/test/catch-error.test.ts`, `package.json`, `pnpm-lock.yaml`
 
