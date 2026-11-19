@@ -16,13 +16,13 @@ One module per context (vertical slice); today there is only `tasks`.
 src/
   shared/
     tasks/
+      task-limits.ts         limits as plain constants, no imports (title and description max length, page size)
       task-schemas.ts        Zod input/output schemas of the tRPC contract; imported by the router AND the form
   server/
     tasks/
       domain/
         task.ts              Task entity
         task-errors.ts       domain errors, each with a literal code
-        task-limits.ts       limits as constants (title max length, page size cap)
       application/
         ports/               abstract classes: TaskRepository, Clock, IdGenerator
         use-cases/
@@ -51,16 +51,17 @@ File and folder names are a starting point for the plan; the dependency rule bel
 
 `trpc` → `application` → `domain`; `infra` → `application` (implements ports). Nothing points the other way.
 
-- **`domain/` imports nothing external:** no `zod`, no `@trpc/*`, no Node `crypto`, no Next. IDs and time arrive from outside.
+- **`domain/` imports nothing external:** no `zod`, no `@trpc/*`, no Node `crypto`, no Next, no `server-only`. IDs and time arrive from outside. Its one import from outside `src/server/` is `src/shared/tasks/task-limits.ts`, which is plain constants.
 - **`application/` imports only `domain/`** and its own ports: no `@trpc/*`, no Zod, no infra.
 - **`infra/` and `trpc/`** are the only places that know a framework or a library.
-- **`src/shared/`** holds only what both client and server need (the Zod contract); it imports `domain/` constants at most, never server code. Everything under `src/server/` imports `server-only`.
+- **`src/shared/`** holds only what both client and server need (the limits and the Zod contract); it never imports anything from `src/server/`.
+- **`server-only`** is imported by the modules that wire or expose the server (`tasks-module.ts`, `infra/`, `trpc/`, `src/server/trpc/`), so a client import of them fails the build. `domain/` and `application/` stay free of it; no client code imports them either.
 
 ## Domain
 
 - **Entity `Task`:** private state; `static create(props)` checks invariants (title not blank after trimming, within the length limit); `static restore(snapshot)` rehydrates without re-running creation rules; business-named methods (`edit({ title, description })`); `toSnapshot()` for the repository; no setters, no `Object.assign` from input.
 - **Domain errors** extend a small `DomainError` with a literal `code` (`TASK_NOT_FOUND`, `TASK_TITLE_REQUIRED`); no sentences for the user, no transport status.
-- **Limits** are constants defined once in `task-limits.ts`; the Zod schema reuses them. The schema checks shape for field-level feedback; the entity guarantees no invalid task exists whatever the caller. Same limit, one definition.
+- **Limits** are constants defined once in `src/shared/tasks/task-limits.ts`; the entity and the Zod schema both use them. The schema checks shape for field-level feedback; the entity guarantees no invalid task exists whatever the caller. Same limit, one definition.
 
 ## Application
 

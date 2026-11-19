@@ -13,6 +13,12 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-07](#d-07-errors-as-domain-codes-translated-in-one-place) | Errors as domain codes, translated in one place | 2026-11-19 |
 | [D-08](#d-08-lean-test-strategy) | Lean test strategy | 2026-11-19 |
 | [D-09](#d-09-no-authentication-no-database) | No authentication, no database | 2026-11-19 |
+| [D-10](#d-10-infinite-scroll-with-cursor-pagination-from-the-start) | Infinite scroll, with cursor pagination from the start | 2026-11-19 |
+| [D-11](#d-11-createdat-travels-as-an-iso-8601-string) | `createdAt` travels as an ISO 8601 string | 2026-11-19 |
+| [D-12](#d-12-newest-tasks-first) | Newest tasks first | 2026-11-19 |
+| [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring) | Limits live in `src/shared`; `server-only` only on server wiring | 2026-11-19 |
+| [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration) | Dates rendered in UTC on the server, local time after hydration | 2026-11-19 |
+| [D-15](#d-15-the-trpc-contract) | The tRPC contract | 2026-11-19 |
 
 ---
 
@@ -60,7 +66,7 @@ The main decisions behind this project, each with its context, the choice and wh
 ## D-04: Hexagonal architecture with a repository on the back end
 
 - **Context:** the spec asks for a small CRUD and says "less is more"; it also evaluates how the back end is structured.
-- **Decision:** ports and adapters with a repository pattern, kept lean. One `tasks` module with `domain/` (the `Task` entity, its errors and limits), `application/` (ports and one use case per operation), `infra/` (the in-memory repository, clock and ID generator) and `trpc/` (the inbound adapter). Dependencies point inward: `domain/` and `application/` import no framework or library. Details in [`.claude/rules/backend.md`](../.claude/rules/backend.md).
+- **Decision:** ports and adapters with a repository pattern, kept lean. One `tasks` module with `domain/` (the `Task` entity and its errors; limits in `src/shared`, D-13), `application/` (ports and one use case per operation), `infra/` (the in-memory repository, clock and ID generator) and `trpc/` (the inbound adapter). Dependencies point inward: `domain/` and `application/` import no framework or library. Details in [`.claude/rules/backend.md`](../.claude/rules/backend.md).
 - **Why:**
   - The spec makes storage in memory; the repository port isolates exactly that, so moving to a database changes one adapter and nothing else.
   - Business rules live in the entity and use cases, testable in milliseconds without tRPC or Next.
@@ -81,7 +87,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision:**
   - The input and output schemas live in `src/shared/tasks/` as strict Zod schemas (unknown fields rejected). The tRPC procedures validate with them, and the form validates with the same schemas before sending.
   - The `Task` entity guards its own invariants (title not blank, length limits).
-  - The limits are constants defined once in the domain and reused by the schemas.
+  - The limits are constants defined once in the domain and reused by the schemas. *Superseded in part by [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring): the limits live in `src/shared/tasks/`.*
 - **Why:**
   - The front end and back end cannot disagree, because the rules exist once.
   - Strict schemas block mass assignment: a client cannot set `id` or `createdAt`.
@@ -118,14 +124,61 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision:** neither is built.
 - **Why:** both are outside the spec, and "less is more". D-04 keeps the door open for a database adapter.
 
+## D-10: Infinite scroll, with cursor pagination from the start
+
+- **Context:** infinite scroll is a bonus, and it changes the list contract: a paginated list is not the same endpoint as "return every task".
+- **Decision:** implement it. `task.list` is cursor-paginated from the first version (`{ cursor, limit }` in, `{ items, nextCursor }` out); the server renders the first page, and the scroll trigger comes last ([roadmap](plans/2026-11-19-roadmap.md), sub-plan 6).
+- **Why:** designing the contract once avoids rewriting the endpoint, its tests and the list page when the bonus arrives. A cursor, unlike an offset, does not skip or repeat tasks when one is created or deleted between two pages.
+
+## D-11: `createdAt` travels as an ISO 8601 string
+
+- **Context:** tRPC sends JSON, where a `Date` becomes a string unless a transformer (such as superjson) is configured on the server, the client and the SSR hydration.
+- **Decision:** the output DTO carries `createdAt` as an ISO 8601 string; the UI formats it with `Intl` (how, without a hydration mismatch: [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration)). No transformer.
+- **Why:** no extra dependency and no serialization setup in three places; the type on the client is honest about what arrives.
+
+## D-12: Newest tasks first
+
+- **Context:** the spec does not set an order.
+- **Decision:** the list is ordered by `createdAt` descending, with `id` breaking ties between tasks created in the same millisecond.
+- **Why:** a task just created shows at the top, without scrolling through every page; the tie-break makes the order, and so the cursor, deterministic.
+
+## D-13: Limits live in `src/shared`; `server-only` only on server wiring
+
+- **Context:** the form runs in the browser and validates with the shared Zod schema (D-06), which uses the limits. With the limits in `src/server/tasks/domain/` (D-04, D-06), the client would import server code, and the earlier rule that every file under `src/server/` imports `server-only` would break the client build. It would also put an external package inside the domain, which imports nothing external.
+- **Decision:**
+  - The limits are plain constants with no imports, in `src/shared/tasks/task-limits.ts`. The entity and the schemas both use them.
+  - `server-only` is imported only by the modules that wire or expose the server: the composition root, `infra/`, `trpc/` and the server caller.
+  - `domain/` and `application/` stay free of external imports, and nothing in `src/server/` is imported by client code.
+- **Why:** each limit is still defined once, the client imports only `src/shared/`, and a client import of the server's wiring still fails the build.
+- **Supersedes in part:** D-04 and D-06, where the limits were placed in the domain.
+
+## D-14: Dates rendered in UTC on the server, local time after hydration
+
+- **Context:** the list is rendered on the server and hydrated in the browser. `Intl` without a fixed time zone formats with the server's zone in the HTML and the browser's zone during hydration, which React reports as a hydration mismatch.
+- **Decision:** the server renders `createdAt` in UTC inside `<time dateTime="…">`. After hydration, a small client component formats it again in the browser's time zone and locale.
+- **Why:** the HTML and the first client render match, so there is no mismatch, and users still see their own local time. The cost is a quick swap from UTC to local time on the first paint.
+- **Alternatives rejected:**
+  - Always UTC: no swap, but users see a time that is not their own.
+  - Date only: the mismatch still happens near midnight.
+
+## D-15: The tRPC contract
+
+- **Context:** the spec lists four operations and the task fields; the pages need a few details it leaves open.
+- **Decision** (full table in the [roadmap](plans/2026-11-19-roadmap.md#interfaces-between-sub-plans)):
+  - Five procedures: `task.list` (cursor page, D-10), `task.getById`, `task.create`, `task.update`, `task.delete`. `getById` is the one added to the spec's four, because the edit page must load a task opened directly by URL or after a refresh.
+  - `TaskDto = { id, title, description: string | null, createdAt: string }`.
+  - The schemas trim text. A whitespace-only title is a field error. A blank or omitted `description` becomes `null`, also on update, which replaces `title` and `description` together.
+  - `task.delete` returns `{ id }`.
+  - Errors carry the tRPC code, plus `data.domainCode` for domain errors and `data.fieldErrors` for validation.
+  - Routes: `/`, `/tasks/new`, `/tasks/[id]/edit`.
+- **Why:** each choice is the smallest one that lets the pages work and show precise errors. Fixing the contract in the roadmap lets the back-end and front-end sub-plans be written independently.
+
 ---
 
 ## Open decisions
 
 To be decided in the implementation plans, then recorded here.
 
-- **Infinite scroll (bonus):** whether to implement it. If so, the cursor (for example `createdAt` plus `id` as a tie-break), the page size and its cap, and what happens when a task is deleted between pages.
-- **Dates on the wire:** a tRPC transformer (superjson) or ISO strings.
-- **Limits:** the maximum lengths of `title` and `description`.
-- **List order:** newest first or oldest first.
+- **Limits:** the maximum lengths of `title` and `description`, the page size and its cap.
+- **Cursor encoding**, which must keep working when the task it points to was deleted.
 - **Layer boundaries in lint** (`eslint-plugin-boundaries`), or code review only.

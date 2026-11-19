@@ -37,7 +37,7 @@ Priority follows Kent Beck's four rules of simple design: **passes the tests, re
 
 ## Data at the edges
 
-- Input shape is validated **once** on the server, in the procedure's `.input()`, with a strict Zod schema. Inside, code trusts the types; the entity guards its own invariants with limits defined once in the domain.
+- Input shape is validated **once** on the server, in the procedure's `.input()`, with a strict Zod schema. Inside, code trusts the types; the entity guards its own invariants with the limits defined once in `src/shared/tasks/task-limits.ts`.
 - The form validates with the **same** schema before sending, for immediate feedback; it never hand-writes the rules again.
 - Output is an explicit object built from the entity; the repository never hands out a reference to what it stores.
 - Dates cross the wire in a form both sides agree on (the plan decides: a tRPC transformer or an ISO string), never implicitly.
@@ -65,7 +65,7 @@ Priority follows Kent Beck's four rules of simple design: **passes the tests, re
 
 - **Server Components by default.** `'use client'` only on components that need state, effects, event handlers or browser APIs, and as low in the tree as possible.
 - **SSR of the list:** the page prefetches on the server through the tRPC server caller and hands the data to the client cache (hydration); the client never refetches what the server just rendered on first paint.
-- **Server-only modules** (everything under `src/server/`) import `server-only`, so a client import fails the build.
+- **Server-only modules** (the ones that wire or expose the server, listed in `backend.md`) import `server-only`, so a client import fails the build; no client code imports anything from `src/server/`.
 - **Data on the client** goes through tRPC + TanStack Query only: no `fetch` to the API by hand, no copying query data into `useState`. After a mutation, invalidate or update the affected query.
 - **Form state** with `useState`/`useReducer` in a functional component; no form library unless the plan justifies it.
 - **Every async action has visible states:** loading (control disabled), success and failure messages, and an empty state for the list.
@@ -101,10 +101,10 @@ What no tool catches:
 
 - [ ] Names reveal intention.
 - [ ] Nothing the spec does not ask for; every deviation is recorded in the plan.
-- [ ] Task invariants live in the entity; limits are defined once in the domain; the schema reuses them; no rule in use cases, router, repository or UI.
+- [ ] Task invariants live in the entity; limits are defined once in `src/shared/tasks/task-limits.ts`, used by the entity and the schema; no rule in use cases, router, repository or UI.
 - [ ] Dependency rule of `backend.md` holds; no framework or library in `domain/` or `application/`.
 - [ ] Output is an explicit object; no entity or stored snapshot leaks.
 - [ ] Domain errors carry a literal code, translated in one place; the UI maps codes to text in one place; no stack trace reaches the client.
 - [ ] Every async action shows loading, success and failure; the list has an empty state.
-- [ ] `'use client'` only where needed; server-only modules import `server-only`.
+- [ ] `'use client'` only where needed; server wiring modules import `server-only`; nothing in `src/server/` is imported by client code.
 - [ ] Main decisions have a short *why* comment where they live; no comment restates code; tests have no comments.

@@ -60,11 +60,11 @@ Everything in the repository is English: code, identifiers, UI text, README, doc
 Style follows `.claude/rules/code-style.md`; its principles may be broken only with the justification it requires in the plan. The rules below never are.
 
 - The back end respects the dependency rule of `.claude/rules/backend.md`: `domain/` imports nothing external; `application/` imports no framework or library; only `infra/` and `trpc/` know libraries.
-- Every tRPC procedure validates its input shape with a strict Zod schema (unknown fields rejected), in `.input()`; the form reuses the same schema. Task invariants live in the `Task` entity; limits are defined once in the domain and reused by the schema.
+- Every tRPC procedure validates its input shape with a strict Zod schema (unknown fields rejected), in `.input()`; the form reuses the same schema. Task invariants live in the `Task` entity; limits are constants defined once in `src/shared/tasks/task-limits.ts`, used by both the entity and the schema.
 - Expected failures are domain errors with a literal `code`, translated to a tRPC code in one place; the client tells errors apart by code, never by message text. No stack trace or internal detail reaches the client.
 - Procedures return explicit output objects built field by field, never an entity or a stored snapshot.
 - Tasks change only through use cases and the `Task` entity; the repository stores and returns copies.
-- Everything under `src/server/` imports `server-only` and is never imported by a client component.
+- Nothing under `src/server/` is imported by a client component. The modules that wire or expose the server (composition root, `infra/`, `trpc/`, server caller) import `server-only`, so such an import fails the build; `domain/` and `application/` stay free of it (they import nothing external).
 - No secrets in the repository; no `console.log` left in code.
 
 ## Tests
