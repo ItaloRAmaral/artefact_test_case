@@ -13,7 +13,6 @@ export function handleTrpcRequest(req: Request): Promise<Response> {
     req,
     router: appRouter,
     createContext: () => ({ tasks: tasksModule }),
-    // One call per request, so a single request cannot ask for an unbounded number of pages (DECISIONS D-25).
     allowBatching: false,
     onError: logUnexpectedError,
   });
