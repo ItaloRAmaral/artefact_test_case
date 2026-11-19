@@ -124,6 +124,32 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ['src/client/**'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'server-only',
+              message:
+                'src/client runs in the browser: it never imports server-only modules (DECISIONS D-26).',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@/server/*'],
+              allowTypeImports: true,
+              message:
+                'src/client imports only types from src/server (import type), never values (DECISIONS D-26).',
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     '.next/**',
     'out/**',
