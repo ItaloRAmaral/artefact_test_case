@@ -2,26 +2,27 @@
 
 The main decisions behind this project, each with its context, the choice and why. The test statement is in [`SPEC.md`](SPEC.md). New decisions are added in the same change that makes them; a decision that changes is not edited away: the entry gets a "Superseded by D-NN" note and a new entry explains the change.
 
-| # | Decision | Date |
-| --- | --- | --- |
-| [D-01](#d-01-latest-nextjs-1646-instead-of-v15) | Latest Next.js (16.4.6) instead of v15 | 2026-11-19 |
-| [D-02](#d-02-newest-compatible-versions-for-the-rest-of-the-stack) | Newest compatible versions for the rest of the stack | 2026-11-19 |
-| [D-03](#d-03-english-everywhere-including-the-task-fields) | English everywhere, including the task fields | 2026-11-19 |
-| [D-04](#d-04-hexagonal-architecture-with-a-repository-on-the-back-end) | Hexagonal architecture with a repository on the back end | 2026-11-19 |
-| [D-05](#d-05-in-memory-repository-kept-on-globalthis) | In-memory repository kept on `globalThis` | 2026-11-19 |
+| #                                                                                 | Decision                                                             | Date       |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
+| [D-01](#d-01-latest-nextjs-1646-instead-of-v15)                                   | Latest Next.js (16.4.6) instead of v15                               | 2026-11-19 |
+| [D-02](#d-02-newest-compatible-versions-for-the-rest-of-the-stack)                | Newest compatible versions for the rest of the stack                 | 2026-11-19 |
+| [D-03](#d-03-english-everywhere-including-the-task-fields)                        | English everywhere, including the task fields                        | 2026-11-19 |
+| [D-04](#d-04-hexagonal-architecture-with-a-repository-on-the-back-end)            | Hexagonal architecture with a repository on the back end             | 2026-11-19 |
+| [D-05](#d-05-in-memory-repository-kept-on-globalthis)                             | In-memory repository kept on `globalThis`                            | 2026-11-19 |
 | [D-06](#d-06-one-zod-contract-shared-by-server-and-form-invariants-in-the-entity) | One Zod contract shared by server and form; invariants in the entity | 2026-11-19 |
-| [D-07](#d-07-errors-as-domain-codes-translated-in-one-place) | Errors as domain codes, translated in one place | 2026-11-19 |
-| [D-08](#d-08-lean-test-strategy) | Lean test strategy | 2026-11-19 |
-| [D-09](#d-09-no-authentication-no-database) | No authentication, no database | 2026-11-19 |
-| [D-10](#d-10-infinite-scroll-with-cursor-pagination-from-the-start) | Infinite scroll, with cursor pagination from the start | 2026-11-19 |
-| [D-11](#d-11-createdat-travels-as-an-iso-8601-string) | `createdAt` travels as an ISO 8601 string | 2026-11-19 |
-| [D-12](#d-12-newest-tasks-first) | Newest tasks first | 2026-11-19 |
-| [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring) | Limits live in `src/shared`; `server-only` only on server wiring | 2026-11-19 |
-| [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration) | Dates rendered in UTC on the server, local time after hydration | 2026-11-19 |
-| [D-15](#d-15-the-trpc-contract) | The tRPC contract | 2026-11-19 |
-| [D-16](#d-16-eslint-10) | ESLint 10 | 2026-11-19 |
-| [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports) | Layer rule enforced with `no-restricted-imports` | 2026-11-19 |
-| [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only) | e2e tests on a production build, Chromium only | 2026-11-19 |
+| [D-07](#d-07-errors-as-domain-codes-translated-in-one-place)                      | Errors as domain codes, translated in one place                      | 2026-11-19 |
+| [D-08](#d-08-lean-test-strategy)                                                  | Lean test strategy                                                   | 2026-11-19 |
+| [D-09](#d-09-no-authentication-no-database)                                       | No authentication, no database                                       | 2026-11-19 |
+| [D-10](#d-10-infinite-scroll-with-cursor-pagination-from-the-start)               | Infinite scroll, with cursor pagination from the start               | 2026-11-19 |
+| [D-11](#d-11-createdat-travels-as-an-iso-8601-string)                             | `createdAt` travels as an ISO 8601 string                            | 2026-11-19 |
+| [D-12](#d-12-newest-tasks-first)                                                  | Newest tasks first                                                   | 2026-11-19 |
+| [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring)          | Limits live in `src/shared`; `server-only` only on server wiring     | 2026-11-19 |
+| [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration)      | Dates rendered in UTC on the server, local time after hydration      | 2026-11-19 |
+| [D-15](#d-15-the-trpc-contract)                                                   | The tRPC contract                                                    | 2026-11-19 |
+| [D-16](#d-16-eslint-10)                                                           | ESLint 10                                                            | 2026-11-19 |
+| [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports)                      | Layer rule enforced with `no-restricted-imports`                     | 2026-11-19 |
+| [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only)                       | e2e tests on a production build, Chromium only                       | 2026-11-19 |
+| [D-19](#d-19-newest-version-at-least-7-days-old)                                  | Newest version at least 7 days old                                   | 2026-11-19 |
 
 ---
 
@@ -37,17 +38,17 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** "most recent versions" cannot apply blindly: some latest majors do not work together.
 - **Decision:** every dependency is pinned exactly at the newest version compatible with Next.js 16 and with the lint toolchain:
 
-| Piece | Version | Note |
-| --- | --- | --- |
-| React | 19.3.1 | accepted by Next.js 16 (`^19.0.0`) |
-| tRPC (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | 11.29.5 | the spec requires tRPC; the TanStack Query integration is tRPC's current recommended client for React |
-| TanStack Query | 5.108.0 | — |
-| Zod | 4.6.7 | — |
-| TypeScript | **6.0.3**, not 7.0.2 | typescript-eslint supports TypeScript `>=4.8.4 <6.1.0` |
-| ESLint | ~~**9.39.5**, not 10.x~~ *Superseded by [D-16](#d-16-eslint-10): 10.15.0* | `eslint-config-next@16` depends on `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import`, which declare support only up to ESLint 9 |
-| Vitest | 5.1.1 | with Testing Library and jsdom |
-| Playwright | 1.65.1 | — |
-| Node | 24.22.2 | `.nvmrc` |
+| Piece                                                               | Version                                                                   | Note                                                                                                                                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React                                                               | 19.3.1                                                                    | accepted by Next.js 16 (`^19.0.0`)                                                                                                                       |
+| tRPC (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | 11.29.5                                                                   | the spec requires tRPC; the TanStack Query integration is tRPC's current recommended client for React                                                    |
+| TanStack Query                                                      | 5.108.0                                                                   | —                                                                                                                                                        |
+| Zod                                                                 | 4.6.7                                                                     | —                                                                                                                                                        |
+| TypeScript                                                          | **6.0.3**, not 7.0.2                                                      | typescript-eslint supports TypeScript `>=4.8.4 <6.1.0`                                                                                                   |
+| ESLint                                                              | ~~**9.39.5**, not 10.x~~ _Superseded by [D-16](#d-16-eslint-10): 10.15.0_ | `eslint-config-next@16` depends on `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import`, which declare support only up to ESLint 9 |
+| Vitest                                                              | 5.1.1                                                                     | with Testing Library and jsdom                                                                                                                           |
+| Playwright                                                          | 1.65.1                                                                    | —                                                                                                                                                        |
+| Node                                                                | 24.22.2                                                                   | `.nvmrc`                                                                                                                                                 |
 
 - **Why:** exact pins make the install reproducible; the two held-back majors are each blocked by a declared peer range, checked on the npm registry on 2026-11-19.
 - **Revisit when:** typescript-eslint supports TypeScript 7, and Next's lint plugins declare ESLint 10.
@@ -57,12 +58,12 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the spec is written in Portuguese and names the fields `titulo`, `descricao` and `dataCriacao`.
 - **Decision:** code, identifiers, UI text and docs are in English. The fields are:
 
-| Spec | Code | Type |
-| --- | --- | --- |
-| `id` | `id` | string, generated by the server |
-| `titulo` | `title` | string, required |
-| `descricao` | `description` | string, optional |
-| `dataCriacao` | `createdAt` | timestamp, set by the server |
+| Spec          | Code          | Type                            |
+| ------------- | ------------- | ------------------------------- |
+| `id`          | `id`          | string, generated by the server |
+| `titulo`      | `title`       | string, required                |
+| `descricao`   | `description` | string, optional                |
+| `dataCriacao` | `createdAt`   | timestamp, set by the server    |
 
 - **Why:** one language in the code base avoids mixed identifiers (`task.titulo` next to `task.isValid()`); the mapping above keeps the link to the spec explicit.
 
@@ -90,7 +91,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision:**
   - The input and output schemas live in `src/shared/tasks/` as strict Zod schemas (unknown fields rejected). The tRPC procedures validate with them, and the form validates with the same schemas before sending.
   - The `Task` entity guards its own invariants (title not blank, length limits).
-  - The limits are constants defined once in the domain and reused by the schemas. *Superseded in part by [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring): the limits live in `src/shared/tasks/`.*
+  - The limits are constants defined once in the domain and reused by the schemas. _Superseded in part by [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring): the limits live in `src/shared/tasks/`._
 - **Why:**
   - The front end and back end cannot disagree, because the rules exist once.
   - Strict schemas block mass assignment: a client cannot set `id` or `createdAt`.
@@ -110,15 +111,15 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the spec values simplicity; tests must still prove the requirements.
 - **Decision:**
 
-| Level | Tool | Covers |
-| --- | --- | --- |
-| unit | Vitest | the entity, each use case with the in-memory repository and a fixed clock and IDs, the schemas, the tRPC router through `createCaller` |
-| component | Vitest + Testing Library + jsdom | the form (validation, loading, error display) and the delete feedback |
-| end to end | Playwright | one or two main flows: create, list (server-rendered), edit, delete |
+| Level      | Tool                             | Covers                                                                                                                                 |
+| ---------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| unit       | Vitest                           | the entity, each use case with the in-memory repository and a fixed clock and IDs, the schemas, the tRPC router through `createCaller` |
+| component  | Vitest + Testing Library + jsdom | the form (validation, loading, error display) and the delete feedback                                                                  |
+| end to end | Playwright                       | one or two main flows: create, list (server-rendered), edit, delete                                                                    |
 
-  - Tests are written test-first for the back end and the form validation. Each test follows Arrange, Act, Assert, with no comments and no logic.
-  - Coverage of at least 90% of lines and branches in `src/server/**`, enforced by the Vitest config.
-  - No mutation testing.
+- Tests are written test-first for the back end and the form validation. Each test follows Arrange, Act, Assert, with no comments and no logic.
+- Coverage of at least 90% of lines and branches in `src/server/**`, enforced by the Vitest config.
+- No mutation testing.
 - **Why:** most of the logic is on the server, where unit tests are fast and precise; a couple of end-to-end flows prove the pieces work together without duplicating the unit tests.
 
 ## D-09: No authentication, no database
@@ -199,6 +200,13 @@ The main decisions behind this project, each with its context, the choice and wh
   - Playwright starts its own server with `pnpm build && pnpm start` on port 3100 and never reuses a running one, so every run starts with an empty in-memory list.
   - Playwright runs one browser, Chromium.
 - **Why:** the tests see the app as it ships. One or two flows do not need three browser engines.
+
+## D-19: Newest version at least 7 days old
+
+- **Context:** pnpm 12 refuses by default any package version published less than 7 days ago (`minimumReleaseAge`: 10080 minutes), a supply-chain protection against compromised fresh releases. On 2026-11-19 it blocked ESLint 10.15.0 and typescript-eslint 8.73.0. Vitest 5.1.1, Playwright 1.65.1, tRPC 11.29.5, TanStack Query 5.108.0 and jsdom 31.0.1 would hit the same limit later.
+- **Decision:** keep the protection. "Most recent version" (D-01, D-02) means the newest version that is at least 7 days old when it is installed. `package.json` is the source of truth for the exact pins; the version tables here and in `CLAUDE.md` give the line and the reason.
+- **Why:** bypassing a security default to gain a few days of release age is a bad trade. Every piece is still on its latest major line, ESLint 10 (D-16) included.
+- **Supersedes in part:** the exact versions in D-02 and D-16, where they were newer than 7 days.
 
 ---
 

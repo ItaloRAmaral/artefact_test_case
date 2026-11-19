@@ -12,36 +12,36 @@ A small task manager for a technical test: a Next.js app whose back end keeps ta
 
 ## Where things live
 
-| Path | What |
-| --- | --- |
-| `docs/SPEC.md` | The test statement (source of truth for scope) |
-| `docs/plans/` | Implementation plans, written with the `planning-code-changes` skill |
-| `README.md` | How the system works and how to run it (a deliverable of the test) |
-| `docs/DECISIONS.md` | Main decisions (D-NN), each with context, the choice and why, plus the open ones |
-| `.claude/rules/code-style.md` | Code style guide (source of truth for style), always loaded |
-| `.claude/rules/backend.md` | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**` |
-| `.claude/rules/tests.md` | Test conventions, loaded on test files |
-| `.claude/skills/` | `planning-code-changes`, `writing-tests` |
-| `.claude/agents/plan-reviewer.md` | Read-only reviewer of plans |
-| `.claude/settings.json`, `.claude/hooks/` | Permissions and the hook that blocks git commands that create commits or publish |
+| Path                                      | What                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `docs/SPEC.md`                            | The test statement (source of truth for scope)                                                                      |
+| `docs/plans/`                             | Implementation plans, written with the `planning-code-changes` skill                                                |
+| `README.md`                               | How the system works and how to run it (a deliverable of the test)                                                  |
+| `docs/DECISIONS.md`                       | Main decisions (D-NN), each with context, the choice and why, plus the open ones                                    |
+| `.claude/rules/code-style.md`             | Code style guide (source of truth for style), always loaded                                                         |
+| `.claude/rules/backend.md`                | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**` |
+| `.claude/rules/tests.md`                  | Test conventions, loaded on test files                                                                              |
+| `.claude/skills/`                         | `planning-code-changes`, `writing-tests`                                                                            |
+| `.claude/agents/plan-reviewer.md`         | Read-only reviewer of plans                                                                                         |
+| `.claude/settings.json`, `.claude/hooks/` | Permissions and the hook that blocks git commands that create commits or publish                                    |
 
 ## Stack
 
-Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-19: the spec says both "NextJS (v15)" and "use the most recent versions"; we follow the latter, so Next.js is the latest stable (16.x) and every other piece is the newest version compatible with it and with the lint toolchain. `docs/DECISIONS.md` records this choice and why.
+Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-19: the spec says both "NextJS (v15)" and "use the most recent versions"; we follow the latter, so Next.js is the latest stable (16.x) and every other piece is the newest version compatible with it and with the lint toolchain that is at least 7 days old (pnpm 12 refuses fresher releases by default; DECISIONS D-19). `package.json` holds the exact pins; the table gives the line and why. `docs/DECISIONS.md` records each choice.
 
-| Piece | Version | Why this one |
-| --- | --- | --- |
-| Node | 24.22.2 (`.nvmrc`) | installed LTS |
-| pnpm | pinned in `packageManager` | — |
-| Next.js (App Router) | 16.4.6 | latest stable; the spec asks for the most recent versions (the "v15" mention is recorded in `docs/DECISIONS.md`) |
-| React | 19.3.1 | accepted by Next 16 (`^19.0.0`) |
-| tRPC | 11.29.5 (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | — |
-| TanStack Query | 5.108.0 | — |
-| Zod | 4.6.7 | — |
-| TypeScript | 6.0.3 | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported |
-| ESLint | 9.39.5 | `eslint-config-next@16` pulls `eslint-plugin-react`, `-jsx-a11y` and `-import`, which declare support only up to ESLint 9; 10.x is newer but unsupported |
-| Vitest | 5.1.1, with Testing Library and jsdom | — |
-| Playwright | 1.65.1 | — |
+| Piece                | Version                                                                | Why this one                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node                 | 24.22.2 (`.nvmrc`)                                                     | installed LTS                                                                                                                                             |
+| pnpm                 | 12.21.0 (`packageManager`)                                             | latest; pnpm switches to it automatically                                                                                                                 |
+| Next.js (App Router) | 16.4.6                                                                 | latest stable; the spec asks for the most recent versions (the "v15" mention is recorded in `docs/DECISIONS.md`)                                          |
+| React                | 19.3.1                                                                 | accepted by Next 16 (`^19.0.0`)                                                                                                                           |
+| tRPC                 | 11.29.5 (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | —                                                                                                                                                         |
+| TanStack Query       | 5.108.0                                                                | —                                                                                                                                                         |
+| Zod                  | 4.6.7                                                                  | —                                                                                                                                                         |
+| TypeScript           | 6.0.3                                                                  | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported                                                                                         |
+| ESLint               | 10.x (10.14.0 installed)                                               | latest major, supported by `eslint-config-next@16` per its docs; its React, a11y and import plugins still declare peers up to 9 (accepted warnings, D-16) |
+| Vitest               | 5.1.1, with Testing Library and jsdom                                  | —                                                                                                                                                         |
+| Playwright           | 1.65.1                                                                 | —                                                                                                                                                         |
 
 ## Language
 
@@ -79,13 +79,13 @@ Style follows `.claude/rules/code-style.md`; its principles may be broken only w
 
 The scripts are created by the setup plan; until it is done they do not exist. Never guess a command; ask.
 
-| Task | Command |
-| --- | --- |
-| Install | `pnpm install` |
-| Run (dev) | `pnpm dev` |
-| Build and start | `pnpm build && pnpm start` |
-| Unit and component tests | `pnpm test` |
-| Tests with the coverage gate | `pnpm test:coverage` |
-| End to end | `pnpm test:e2e` |
-| Lint and types | `pnpm lint`, `pnpm typecheck` |
-| Formatting | `pnpm format:check` |
+| Task                         | Command                       |
+| ---------------------------- | ----------------------------- |
+| Install                      | `pnpm install`                |
+| Run (dev)                    | `pnpm dev`                    |
+| Build and start              | `pnpm build && pnpm start`    |
+| Unit and component tests     | `pnpm test`                   |
+| Tests with the coverage gate | `pnpm test:coverage`          |
+| End to end                   | `pnpm test:e2e`               |
+| Lint and types               | `pnpm lint`, `pnpm typecheck` |
+| Formatting                   | `pnpm format:check`           |

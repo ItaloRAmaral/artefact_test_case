@@ -12,12 +12,12 @@
 
 A step is done when the implementer can write exactly one reasonable thing from it: unambiguous, not complete.
 
-| Kind of step | Carries |
-| --- | --- |
-| test | the test name (the behavior, in English) and its assertions, with the exact values from the spec |
-| code | the exact signature (name, parameters, return type), the file, and the values the spec pins; a body only for an algorithm the signature and tests do not determine |
-| verification | the command and the output that means it passed; take commands from `CLAUDE.md` "Commands", and if a command is not there, ask |
-| reference to another task | point to that task's "Interfaces" block; do not repeat its code |
+| Kind of step              | Carries                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| test                      | the test name (the behavior, in English) and its assertions, with the exact values from the spec                                                                   |
+| code                      | the exact signature (name, parameters, return type), the file, and the values the spec pins; a body only for an algorithm the signature and tests do not determine |
+| verification              | the command and the output that means it passed; take commands from `CLAUDE.md` "Commands", and if a command is not there, ask                                     |
+| reference to another task | point to that task's "Interfaces" block; do not repeat its code                                                                                                    |
 
 Two failures to avoid: a plan longer than the code it describes has written the code instead; a line that decides nothing ("TBD", "handle edge cases", "add appropriate validation", "write tests for the above", a type no task defines) is a gap.
 
@@ -29,7 +29,7 @@ Files: one clear responsibility per file; files that change together live togeth
 
 For a small, local change. No file; the user approves it in the conversation. If writing it shows the domain, a use case, the repository, the router, validation, the tRPC contract or SSR is involved, or the change is not local, stop and write a full plan instead.
 
-````markdown
+```markdown
 **Short plan: <the change>**
 
 1. **What changes:** <one or two sentences, with the exact value and its source (spec or request)>
@@ -39,20 +39,20 @@ For a small, local change. No file; the user approves it in the conversation. If
 5. **Questions:** <doubts the spec and code did not answer; empty if none>
 
 Shall I proceed?
-````
+```
 
 ## Detailed plan template
 
-````markdown
+```markdown
 # Plan: <name of the change>
 
-| Field | Value |
-| --- | --- |
-| Status | Proposed · Approved · Done |
-| Date | YYYY-MM-DD |
-| Request | <the user's words> |
+| Field   | Value                                                                           |
+| ------- | ------------------------------------------------------------------------------- |
+| Status  | Proposed · Approved · Done                                                      |
+| Date    | YYYY-MM-DD                                                                      |
+| Request | <the user's words>                                                              |
 | Context | <spec sections and docs that define the request, sent or confirmed by the user> |
-| Roadmap | <link to the roadmap, if this is a sub-plan> |
+| Roadmap | <link to the roadmap, if this is a sub-plan>                                    |
 
 **Goal:** <one sentence on what this delivers>
 
@@ -65,7 +65,7 @@ Shall I proceed?
 ## Decisions with the user
 
 | Question | Answer | Date |
-| --- | --- | --- |
+| -------- | ------ | ---- |
 
 ## Review focus
 
@@ -74,14 +74,14 @@ Shall I proceed?
 ## Security
 
 | Threat | How this plan handles it | Task and test |
-| --- | --- | --- |
+| ------ | ------------------------ | ------------- |
 
 <One row per applicable threat (strict input schemas and mass assignment, length limits and page-size cap, XSS in rendered task text, no internals in errors, server-only modules out of client bundles, secrets). If a threat does not apply, say why instead of omitting it.>
 
 ## Test plan
 
 | Requirement or review-focus line | Level | Test name | Task |
-| --- | --- | --- | --- |
+| -------------------------------- | ----- | --------- | ---- |
 
 - **Levels used and why:** <which levels from `CLAUDE.md` this plan uses (unit, component, end to end) and why the others do not apply>
 - **Test data:** <factories and fixed values; each test creates its own data; nothing random without a seed>
@@ -92,7 +92,7 @@ Shall I proceed?
 ## Style deviations
 
 | Principle broken | Criterion and evidence | Alternative rejected | Review trigger | Impact on tests |
-| --- | --- | --- | --- | --- |
+| ---------------- | ---------------------- | -------------------- | -------------- | --------------- |
 
 <Empty when there is no deviation. Never includes a `CLAUDE.md` hard rule: those are questions to the user.>
 
@@ -106,11 +106,11 @@ Shall I proceed?
 
 ## Review
 
-| # | Finding | Source | Accepted? | Reason |
-| --- | --- | --- | --- | --- |
+| #   | Finding | Source | Accepted? | Reason |
+| --- | ------- | ------ | --------- | ------ |
 
 <Source: self-review or plan-reviewer. A rejected finding stays recorded with its reason.>
-````
+```
 
 ## Task format
 
@@ -118,11 +118,13 @@ Shall I proceed?
 ## Task N: <component>
 
 **Files:**
+
 - Create: `exact/path/file.ts`
 - Modify: `exact/path/existing.ts`
 - Test: `exact/path/file.spec.ts`
 
 **Interfaces:**
+
 - Consumes: <what it uses from earlier tasks, with exact signatures>
 - Produces: <what later tasks use: names, parameters and return types; for a tRPC procedure, its name, input and output shapes, and error codes>
 
@@ -132,7 +134,10 @@ Shall I proceed?
 it('rejects updating a task that does not exist', async () => {
   const caller = makeCaller();
 
-  const promise = caller.task.update({ id: 'missing-id', title: 'Write the README' });
+  const promise = caller.task.update({
+    id: 'missing-id',
+    title: 'Write the README',
+  });
 
   await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND' });
 });
@@ -159,14 +164,14 @@ Expected errors are errors with a `code`, asserted by `code` with the Act on its
 
 Use when the request covers several parts that can each ship and be tested on their own.
 
-````markdown
+```markdown
 # Roadmap: <name>
 
-| Field | Value |
-| --- | --- |
-| Status | Proposed · Approved · Done |
-| Date | YYYY-MM-DD |
-| Request | <...> |
+| Field   | Value                                            |
+| ------- | ------------------------------------------------ |
+| Status  | Proposed · Approved · Done                       |
+| Date    | YYYY-MM-DD                                       |
+| Request | <...>                                            |
 | Context | <spec sections and docs that define the request> |
 
 **Goal:** <one sentence>
@@ -174,13 +179,13 @@ Use when the request covers several parts that can each ship and be tested on th
 ## Decisions with the user
 
 | Question | Answer | Date |
-| --- | --- | --- |
+| -------- | ------ | ---- |
 
 ## Sub-plans
 
-| # | Sub-plan | Testable deliverable | Tests that prove it | Depends on | Status |
-| --- | --- | --- | --- | --- | --- |
-| 1 | <name> | <what works> | <levels and main cases> | — | To plan |
+| #   | Sub-plan | Testable deliverable | Tests that prove it     | Depends on | Status  |
+| --- | -------- | -------------------- | ----------------------- | ---------- | ------- |
+| 1   | <name>   | <what works>         | <levels and main cases> | —          | To plan |
 
 ## Test strategy for the whole
 
@@ -193,6 +198,6 @@ Use when the request covers several parts that can each ship and be tested on th
 ## Risks and pending decisions
 
 <Open decisions that block a sub-plan, with the sub-plan affected.>
-````
+```
 
 Each sub-plan is then written with the detailed template, one at a time, after the roadmap is approved.

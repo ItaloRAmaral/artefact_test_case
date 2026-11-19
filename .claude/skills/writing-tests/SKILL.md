@@ -9,10 +9,10 @@ A test earns its place by catching a real break: a wrong branch, a missing check
 
 ## References
 
-| Open when you need to... | Read |
-| --- | --- |
+| Open when you need to...                                   | Read                      |
+| ---------------------------------------------------------- | ------------------------- |
 | find the scenarios to test, from the spec or from the code | `references/scenarios.md` |
-| write a test: structure, names, data, doubles, levels | `references/writing.md` |
+| write a test: structure, names, data, doubles, levels      | `references/writing.md`   |
 | run the tests, coverage and mutation, and read the results | `references/verifying.md` |
 
 ## Ground rules

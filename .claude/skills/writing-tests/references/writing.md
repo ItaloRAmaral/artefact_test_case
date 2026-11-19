@@ -46,11 +46,11 @@
 
 ## Levels
 
-| Level | Tool | For | Notes |
-| --- | --- | --- | --- |
-| unit | Vitest | the `Task` entity, each use case (with the in-memory repository), the in-memory repository's ordering and cursor, the shared Zod schema, the tRPC router through `createCaller` (validation, error translation, output shape) | milliseconds; fresh repository and fixed clock/IDs per test |
-| component | Vitest + Testing Library + jsdom | the form (client validation, submit disabled while sending, backend error shown), the delete feedback | query by role and label; no snapshot tests |
-| end to end | Playwright | create → see in list → edit → delete with feedback; SSR shows tasks without client fetch | one or two flows against the running app; not edge cases |
+| Level      | Tool                             | For                                                                                                                                                                                                                           | Notes                                                       |
+| ---------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| unit       | Vitest                           | the `Task` entity, each use case (with the in-memory repository), the in-memory repository's ordering and cursor, the shared Zod schema, the tRPC router through `createCaller` (validation, error translation, output shape) | milliseconds; fresh repository and fixed clock/IDs per test |
+| component  | Vitest + Testing Library + jsdom | the form (client validation, submit disabled while sending, backend error shown), the delete feedback                                                                                                                         | query by role and label; no snapshot tests                  |
+| end to end | Playwright                       | create → see in list → edit → delete with feedback; SSR shows tasks without client fetch                                                                                                                                      | one or two flows against the running app; not edge cases    |
 
 ## Example
 
@@ -59,7 +59,10 @@ describe('task router', () => {
   it('rejects updating a task that does not exist', async () => {
     const caller = makeCaller();
 
-    const promise = caller.task.update({ id: 'missing-id', title: 'Write the README' });
+    const promise = caller.task.update({
+      id: 'missing-id',
+      title: 'Write the README',
+    });
 
     await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });

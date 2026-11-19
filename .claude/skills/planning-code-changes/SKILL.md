@@ -13,11 +13,11 @@ The plan is where mistakes are cheapest. A gap found here costs a line; found in
 
 ## References
 
-| Open when you need to... | Read |
-| --- | --- |
+| Open when you need to...                                                        | Read                          |
+| ------------------------------------------------------------------------------- | ----------------------------- |
 | write a short plan, a full plan or a roadmap (structure, task format, sections) | `references/plan-template.md` |
-| run the self-review before showing the plan | `references/self-review.md` |
-| decide on the reviewer, dispatch it, handle findings | `references/reviews.md` |
+| run the self-review before showing the plan                                     | `references/self-review.md`   |
+| decide on the reviewer, dispatch it, handle findings                            | `references/reviews.md`       |
 
 ## Ground rules
 
@@ -34,12 +34,12 @@ The plan is where mistakes are cheapest. A gap found here costs a line; found in
 2. Read the request, the spec sections it touches, `CLAUDE.md`, `.claude/rules/` and the existing code.
 3. Size it:
 
-| Size | Signal | What to produce |
-| --- | --- | --- |
-| no plan | only prose docs, comments or formatting, with no change in behavior | no plan; make the edit and say what changed |
-| small | a small, local change, even one the user fully specified | a short plan in the conversation; the user approves it there |
-| one deliverable | one feature, endpoint, page or component that ships working and tested on its own | a full plan in `docs/plans/` |
-| several parts | parts that could each ship and be tested independently ("the API", "the front end", "the whole test") | a roadmap of sub-plans first; the user approves it; then one full plan per sub-plan, one at a time |
+| Size            | Signal                                                                                                | What to produce                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| no plan         | only prose docs, comments or formatting, with no change in behavior                                   | no plan; make the edit and say what changed                                                        |
+| small           | a small, local change, even one the user fully specified                                              | a short plan in the conversation; the user approves it there                                       |
+| one deliverable | one feature, endpoint, page or component that ships working and tested on its own                     | a full plan in `docs/plans/`                                                                       |
+| several parts   | parts that could each ship and be tested independently ("the API", "the front end", "the whole test") | a roadmap of sub-plans first; the user approves it; then one full plan per sub-plan, one at a time |
 
 Even a change the user fully specified can leave gaps (an edge case, a caller it breaks, a test it breaks); the short plan exists to catch them. When in doubt between small and one deliverable, write the full plan.
 

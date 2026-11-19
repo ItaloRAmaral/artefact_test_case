@@ -2,7 +2,16 @@
 // Exit code 2 blocks the tool call and sends stderr back to Claude.
 import { readFileSync } from 'node:fs';
 
-const BLOCKED_SUBCOMMANDS = ['commit', 'push', 'merge', 'rebase', 'cherry-pick', 'revert', 'am', 'tag'];
+const BLOCKED_SUBCOMMANDS = [
+  'commit',
+  'push',
+  'merge',
+  'rebase',
+  'cherry-pick',
+  'revert',
+  'am',
+  'tag',
+];
 
 const MESSAGE = [
   `Blocked by project rule: Claude never runs git ${BLOCKED_SUBCOMMANDS.join(', ')} (CLAUDE.md, "How we work").`,

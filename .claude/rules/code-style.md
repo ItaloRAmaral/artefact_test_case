@@ -8,22 +8,22 @@ On doubt about a rule: look for the answer in the code and the docs first; if it
 
 Priority follows Kent Beck's four rules of simple design: **passes the tests, reveals intention, no duplication, fewest elements**. An element (component, function, file, parameter, dependency) exists only if it serves the first three. The spec's "less is more" is the tie-breaker.
 
-| Principle | Rule | Check |
-| --- | --- | --- |
-| Names | Reveal intention, with full and consistent words. A quantity carries its unit (`timeoutMs`, `pageSize` is a count so no unit); a count ends in `Count`. Acronyms as words (`taskId`, not `taskID`). | Review |
-| One level of abstraction | A function or component works at a single level of abstraction. | Review |
-| Function size | No fixed limit. Extract when there is an **intention worth a name**. Do not extract if the result is shallow (only forwards the call) or tangled (only understood by reading the caller). Above about 40 lines, the reviewer asks whether there is a nameable intention. | Review |
-| YAGNI | No feature or generalization for a presumed requirement. Nothing the spec does not ask for: no database, no auth, no filters, no state library beyond TanStack Query. | Review |
-| Duplication | Business knowledge lives in one place from the start (the task schema validates both the form and the procedure). Code that only looks alike becomes an abstraction at the **third** copy. | Review |
-| Wrong abstraction | An abstraction that accumulates parameters and conditionals per caller is inlined back into each caller and extracted again. | Review |
-| Deep modules | Prefer simple interfaces that hide a lot of work (Ousterhout). A function that only forwards the call is a warning sign. | Review |
-| Design patterns | Only for a variation that exists today, or the ones `backend.md` sets (repository, ports and adapters, one use case per operation). Nothing else "just in case". | Review |
-| Inheritance | Avoid. Composition and plain functions. | Review |
+| Principle                | Rule                                                                                                                                                                                                                                                                     | Check  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Names                    | Reveal intention, with full and consistent words. A quantity carries its unit (`timeoutMs`, `pageSize` is a count so no unit); a count ends in `Count`. Acronyms as words (`taskId`, not `taskID`).                                                                      | Review |
+| One level of abstraction | A function or component works at a single level of abstraction.                                                                                                                                                                                                          | Review |
+| Function size            | No fixed limit. Extract when there is an **intention worth a name**. Do not extract if the result is shallow (only forwards the call) or tangled (only understood by reading the caller). Above about 40 lines, the reviewer asks whether there is a nameable intention. | Review |
+| YAGNI                    | No feature or generalization for a presumed requirement. Nothing the spec does not ask for: no database, no auth, no filters, no state library beyond TanStack Query.                                                                                                    | Review |
+| Duplication              | Business knowledge lives in one place from the start (the task schema validates both the form and the procedure). Code that only looks alike becomes an abstraction at the **third** copy.                                                                               | Review |
+| Wrong abstraction        | An abstraction that accumulates parameters and conditionals per caller is inlined back into each caller and extracted again.                                                                                                                                             | Review |
+| Deep modules             | Prefer simple interfaces that hide a lot of work (Ousterhout). A function that only forwards the call is a warning sign.                                                                                                                                                 | Review |
+| Design patterns          | Only for a variation that exists today, or the ones `backend.md` sets (repository, ports and adapters, one use case per operation). Nothing else "just in case".                                                                                                         | Review |
+| Inheritance              | Avoid. Composition and plain functions.                                                                                                                                                                                                                                  | Review |
 
 ## Comments
 
 - **Code should explain itself.** When a passage needs a comment, first make the code clear: a better name, an extracted function named after its intent, a more precise type.
-- **Decision comments are expected** (the spec asks for them): at the few places where a main decision lives, say *why* in one to three lines. For example: why the repository instance is kept on `globalThis` (survives hot reload in dev), why the list is prefetched on the server and hydrated, why the cursor is the one chosen. The README links the big picture; the comment stays where the decision is.
+- **Decision comments are expected** (the spec asks for them): at the few places where a main decision lives, say _why_ in one to three lines. For example: why the repository instance is kept on `globalThis` (survives hot reload in dev), why the list is prefetched on the server and hydrated, why the cursor is the one chosen. The README links the big picture; the comment stays where the decision is.
 - Comment also what the code cannot say: invariants and units the type does not express, workarounds.
 - Never write a comment that restates the code. Tests have no comments at all.
 
@@ -44,22 +44,22 @@ Priority follows Kent Beck's four rules of simple design: **passes the tests, re
 
 ## TypeScript
 
-| Convention | Tool | Review |
-| --- | --- | --- |
-| `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `forceConsistentCasingInFileNames` in `tsconfig.json` | `tsc` | — |
-| typescript-eslint `strict-type-checked` and `stylistic-type-checked`, plus `switch-exhaustiveness-check` and `consistent-type-imports`, on top of `next/core-web-vitals` | ESLint | — |
-| Cases: `UpperCamelCase` for types and components, `lowerCamelCase` for values and functions, `UPPER_SNAKE_CASE` for global constants; no `I` prefix | ESLint | Clarity |
-| Files in kebab-case, except the names Next.js requires (`page.tsx`, `layout.tsx`, `route.ts`) | — | Review |
-| No `any`; use `unknown` and narrow. No `!`; `as` only with a comment saying why | ESLint | The reason |
-| `interface` for object shapes; `type` for unions and `z.infer` types | ESLint | — |
-| No `enum`: union of literals or `as const` object | — | Review |
-| `switch` over a union is exhaustive with no `default` | ESLint | — |
-| Named exports only, except where Next.js requires a default export (pages, layouts, config files) | — | Review |
-| `import type` for types | `verbatimModuleSyntax` | — |
-| Promises always handled | `no-floating-promises`, `no-misused-promises` | — |
-| `===` always; `const` by default | ESLint | — |
-| No `console.log` | `no-console` | — |
-| Formatting by Prettier | Prettier | — |
+| Convention                                                                                                                                                                                   | Tool                                          | Review                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `forceConsistentCasingInFileNames` in `tsconfig.json` | `tsc`                                         | —                                                                                                                    |
+| typescript-eslint `strict-type-checked` and `stylistic-type-checked`, plus `switch-exhaustiveness-check` and `consistent-type-imports`, on top of `next/core-web-vitals`                     | ESLint                                        | —                                                                                                                    |
+| Cases: `UpperCamelCase` for types and components, `lowerCamelCase` for values and functions, `UPPER_SNAKE_CASE` for global constants; no `I` prefix                                          | —                                             | Clarity and cases (no `naming-convention` rule: its React-component setup would cost more config than it saves here) |
+| Files in kebab-case, except the names Next.js requires (`page.tsx`, `layout.tsx`, `route.ts`)                                                                                                | —                                             | Review                                                                                                               |
+| No `any`; use `unknown` and narrow. No `!`; `as` only with a comment saying why                                                                                                              | ESLint                                        | The reason                                                                                                           |
+| `interface` for object shapes; `type` for unions and `z.infer` types                                                                                                                         | ESLint                                        | —                                                                                                                    |
+| No `enum`: union of literals or `as const` object                                                                                                                                            | —                                             | Review                                                                                                               |
+| `switch` over a union is exhaustive with no `default`                                                                                                                                        | ESLint                                        | —                                                                                                                    |
+| Named exports only, except where Next.js requires a default export (pages, layouts, config files)                                                                                            | —                                             | Review                                                                                                               |
+| `import type` for types                                                                                                                                                                      | `verbatimModuleSyntax`                        | —                                                                                                                    |
+| Promises always handled                                                                                                                                                                      | `no-floating-promises`, `no-misused-promises` | —                                                                                                                    |
+| `===` always; `const` by default                                                                                                                                                             | ESLint                                        | —                                                                                                                    |
+| No `console.log`                                                                                                                                                                             | `no-console`                                  | —                                                                                                                    |
+| Formatting by Prettier                                                                                                                                                                       | Prettier                                      | —                                                                                                                    |
 
 ## Next.js and React
 
@@ -107,4 +107,4 @@ What no tool catches:
 - [ ] Domain errors carry a literal code, translated in one place; the UI maps codes to text in one place; no stack trace reaches the client.
 - [ ] Every async action shows loading, success and failure; the list has an empty state.
 - [ ] `'use client'` only where needed; server wiring modules import `server-only`; nothing in `src/server/` is imported by client code.
-- [ ] Main decisions have a short *why* comment where they live; no comment restates code; tests have no comments.
+- [ ] Main decisions have a short _why_ comment where they live; no comment restates code; tests have no comments.

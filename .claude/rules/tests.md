@@ -1,8 +1,8 @@
 ---
 paths:
-  - "**/*.test.ts"
-  - "**/*.test.tsx"
-  - "e2e/**"
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - 'e2e/**'
 ---
 
 # Test rules

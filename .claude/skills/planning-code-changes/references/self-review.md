@@ -9,10 +9,10 @@ Run every check after the plan is written, with the request and the spec open, a
 5. **Hard rules and architecture.** Nothing breaks `CLAUDE.md` or the dependency rule of `.claude/rules/backend.md`; each back-end file sits in the layer that owns it; the "Do not repeat" table holds (no rule in the repository, entities in and out of ports, codes not sentences). Anything that would break a hard rule is a question to the user, not a task.
 6. **Style and deviations.** The design follows `.claude/rules/code-style.md`. Every principle the plan breaks is in "Style deviations" with all five items, and its criterion really applies. Nothing is added "for the future".
 7. **Interfaces.** Names, signatures and types match across tasks: what task 3 produces is exactly what task 7 consumes. The UI uses the tRPC contract (procedure, input and output shapes, error codes, date format) exactly as the router defines it.
-12. **Decisions and docs.** Each main decision the plan makes has an entry for `docs/DECISIONS.md` in the task that makes it; the README changes when how to run the app changes.
-8. **Step scan.** Each step lets the implementer write exactly one reasonable thing. Remove lines that decide nothing; replace function bodies that the signature and tests already determine with the signature.
-9. **Proportion.** If the plan is several times longer than the request and code blocks are most of it, it transcribes the program; cut bodies down to signatures, test names and assertions.
-10. **Tests are planned, not implied.** "Test plan" maps every requirement, "Review focus" line and "Security" row to a named test at the right level, with its data and the targets in `CLAUDE.md`. Each task is test-first and follows AAA with no comments and no logic.
-11. **Context.** The "Context" field lists the spec sections and docs that define the request; every value in the plan comes from them, from the code or from a recorded answer.
+8. **Decisions and docs.** Each main decision the plan makes has an entry for `docs/DECISIONS.md` in the task that makes it; the README changes when how to run the app changes.
+9. **Step scan.** Each step lets the implementer write exactly one reasonable thing. Remove lines that decide nothing; replace function bodies that the signature and tests already determine with the signature.
+10. **Proportion.** If the plan is several times longer than the request and code blocks are most of it, it transcribes the program; cut bodies down to signatures, test names and assertions.
+11. **Tests are planned, not implied.** "Test plan" maps every requirement, "Review focus" line and "Security" row to a named test at the right level, with its data and the targets in `CLAUDE.md`. Each task is test-first and follows AAA with no comments and no logic.
+12. **Context.** The "Context" field lists the spec sections and docs that define the request; every value in the plan comes from them, from the code or from a recorded answer.
 
 An empty "Review focus", "Security", "Test plan" or "Style deviations" section means you checked and found nothing, never that you skipped the check.

@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/server/**"
-  - "src/shared/**"
+  - 'src/server/**'
+  - 'src/shared/**'
 ---
 
 # Back-end architecture
@@ -87,15 +87,15 @@ File and folder names are a starting point for the plan; the dependency rule bel
 
 Common anti-patterns of this architecture, and the rule that avoids each.
 
-| Anti-pattern | Rule here |
-| --- | --- |
+| Anti-pattern                                                                                                        | Rule here                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | the repository checks existence and throws a framework exception (business rule and transport error in the adapter) | the use case loads, the entity decides, the use case throws the domain error; the adapter only stores |
-| the repository receives use-case DTOs (`createTask(dto)`, `updateTask(dto)`) | the repository receives and returns entities (`save(task)`) |
-| framework imports in the core | `domain/` and `application/` import no framework |
-| errors as sentences from a message table | errors carry a literal `code`; the UI owns the text |
-| anemic entities filled by spreading input | private state, `create` checks invariants, business-named methods |
-| port methods left unimplemented (`throw new Error('Method not implemented.')`) | a port method exists only when a use case calls it |
-| a use case that instantiates infrastructure with `new` | ports injected through the constructor, wired in the composition root |
+| the repository receives use-case DTOs (`createTask(dto)`, `updateTask(dto)`)                                        | the repository receives and returns entities (`save(task)`)                                           |
+| framework imports in the core                                                                                       | `domain/` and `application/` import no framework                                                      |
+| errors as sentences from a message table                                                                            | errors carry a literal `code`; the UI owns the text                                                   |
+| anemic entities filled by spreading input                                                                           | private state, `create` checks invariants, business-named methods                                     |
+| port methods left unimplemented (`throw new Error('Method not implemented.')`)                                      | a port method exists only when a use case calls it                                                    |
+| a use case that instantiates infrastructure with `new`                                                              | ports injected through the constructor, wired in the composition root                                 |
 
 ## SOLID and clean code, when they pay off
 
