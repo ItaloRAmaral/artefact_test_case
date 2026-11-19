@@ -1,4 +1,4 @@
-import type { TRPCLink } from '@trpc/client';
+import type { OperationLink, TRPCLink } from '@trpc/client';
 import { localLink, splitLink, TRPCClientError } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 
@@ -79,4 +79,51 @@ export function failingProcedureLink(
     true: failingLink,
     false: routerLink(repository),
   });
+}
+
+export function scriptedListLink(
+  repository: TaskRepository,
+  script: readonly ('serve' | 'fail' | 'hang')[],
+): TRPCLink<AppRouter> {
+  let listCallCount = 0;
+
+  return (runtime) => {
+    const links: Record<'serve' | 'fail' | 'hang', OperationLink<AppRouter>> = {
+      serve: routerLink(repository)(runtime),
+      fail: failingLink(runtime),
+      hang: neverSettlingLink(runtime),
+    };
+
+    return (options) => {
+      if (options.op.path !== 'task.list') {
+        return links.serve(options);
+      }
+
+      listCallCount += 1;
+
+      return links[script[listCallCount - 1] ?? 'serve'](options);
+    };
+  };
+}
+
+export function countingLink(link: TRPCLink<AppRouter>): {
+  link: TRPCLink<AppRouter>;
+  listCallCount: () => number;
+} {
+  let listCallCount = 0;
+
+  return {
+    link: (runtime) => {
+      const operation = link(runtime);
+
+      return (options) => {
+        if (options.op.path === 'task.list') {
+          listCallCount += 1;
+        }
+
+        return operation(options);
+      };
+    },
+    listCallCount: () => listCallCount,
+  };
 }

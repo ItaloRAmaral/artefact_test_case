@@ -3,12 +3,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { makeTask } from '@/test/factories/make-task';
+import { seedTasks } from '@/test/factories/seed-tasks';
+import { FakeIntersectionObserver } from '@/test/intersection-observer';
 import { renderWithTrpc } from '@/test/render-with-trpc';
 import {
+  countingLink,
   failingAfterFirstCallLink,
-  failingProcedureLink,
   failingLink,
+  failingProcedureLink,
   pendingRefreshLink,
+  routerLink,
+  scriptedListLink,
 } from '@/test/trpc-links';
 
 import { TaskList } from './task-list';
@@ -291,5 +296,174 @@ describe('TaskList', () => {
     });
 
     expect(screen.getByRole('status')).toHaveTextContent('Task deleted.');
+  });
+
+  it('loads the next page when the end of the list is reached', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    renderWithTrpc(<TaskList />, { repository });
+    await screen.findAllByRole('listitem');
+
+    FakeIntersectionObserver.revealAll();
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('listitem')).toHaveLength(11);
+    });
+  });
+
+  it('shows a loading indicator while the next page loads', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    renderWithTrpc(<TaskList />, { link: pendingRefreshLink(repository) });
+    await screen.findAllByRole('listitem');
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(await screen.findByText('Loading more tasks…')).toBeInTheDocument();
+  });
+
+  it('does not request the same page twice while it loads', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const counting = countingLink(pendingRefreshLink(repository));
+    renderWithTrpc(<TaskList />, { link: counting.link });
+    await screen.findAllByRole('listitem');
+    FakeIntersectionObserver.revealAll();
+    await screen.findByText('Loading more tasks…');
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(counting.listCallCount()).toBe(2);
+  });
+
+  it('waits for a running refresh before loading the next page', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const counting = countingLink(pendingRefreshLink(repository));
+    const { queryClient } = renderWithTrpc(<TaskList />, {
+      link: counting.link,
+    });
+    await screen.findAllByRole('listitem');
+    await act(() => {
+      void queryClient.invalidateQueries();
+
+      return Promise.resolve();
+    });
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(counting.listCallCount()).toBe(2);
+  });
+
+  it('shows an error with a retry when the next page fails', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    renderWithTrpc(<TaskList />, {
+      link: scriptedListLink(repository, ['serve', 'fail']),
+    });
+    await screen.findAllByRole('listitem');
+
+    FakeIntersectionObserver.revealAll();
+
+    const message = await screen.findByText(
+      'Something went wrong. Check your connection and try again.',
+    );
+    expect(message).toHaveAttribute('role', 'alert');
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(10);
+  });
+
+  it('does not retry a failed page on scroll', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const counting = countingLink(
+      scriptedListLink(repository, ['serve', 'fail']),
+    );
+    renderWithTrpc(<TaskList />, { link: counting.link });
+    await screen.findAllByRole('listitem');
+    FakeIntersectionObserver.revealAll();
+    await screen.findByRole('button', { name: 'Retry' });
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(counting.listCallCount()).toBe(2);
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('loads the failed page again on retry', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const { user } = renderWithTrpc(<TaskList />, {
+      link: scriptedListLink(repository, ['serve', 'fail']),
+    });
+    await screen.findAllByRole('listitem');
+    FakeIntersectionObserver.revealAll();
+    const retry = await screen.findByRole('button', { name: 'Retry' });
+
+    await user.click(retry);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('listitem')).toHaveLength(11);
+    });
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('hides the error while the page loads again', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const { user } = renderWithTrpc(<TaskList />, {
+      link: scriptedListLink(repository, ['serve', 'fail', 'hang']),
+    });
+    await screen.findAllByRole('listitem');
+    FakeIntersectionObserver.revealAll();
+    const retry = await screen.findByRole('button', { name: 'Retry' });
+
+    await user.click(retry);
+
+    expect(await screen.findByText('Loading more tasks…')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(
+      screen.queryByText(
+        'Something went wrong. Check your connection and try again.',
+      ),
+    ).toBeNull();
+  });
+
+  it('shows the end of the list after the last page', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    renderWithTrpc(<TaskList />, { repository });
+    await screen.findAllByRole('listitem');
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(await screen.findByText('No more tasks.')).toBeInTheDocument();
+  });
+
+  it('does not request another page after the last one', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 11);
+    const counting = countingLink(routerLink(repository));
+    renderWithTrpc(<TaskList />, { link: counting.link });
+    await screen.findAllByRole('listitem');
+    FakeIntersectionObserver.revealAll();
+    await screen.findByText('No more tasks.');
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(counting.listCallCount()).toBe(2);
+  });
+
+  it('does not request a page when everything fits in one', async () => {
+    const repository = new InMemoryTaskRepository();
+    await seedTasks(repository, 10);
+    const counting = countingLink(routerLink(repository));
+    renderWithTrpc(<TaskList />, { link: counting.link });
+    await screen.findAllByRole('listitem');
+
+    FakeIntersectionObserver.revealAll();
+
+    expect(counting.listCallCount()).toBe(1);
+    expect(screen.queryByText('No more tasks.')).toBeNull();
   });
 });
