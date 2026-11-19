@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
 import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { CreateTask } from '@/server/domains/task/use-cases/create-task';
@@ -18,12 +19,16 @@ export function createTasksModule(repository: TaskRepository) {
   };
 }
 
-// Dev hot reload re-evaluates modules, so a module-level repository would empty the list
-// on every edit; globalThis survives it (DECISIONS D-05).
+// globalThis keeps the stored tasks across dev hot reloads (DECISIONS D-05) and across
+// Next.js bundles: pages and the API route each load their own copy of the domain
+// classes, so only plain data is shared, and each copy builds its own repository over it
+// (an error class from another copy would fail instanceof, DECISIONS D-30).
 const globalStore = globalThis as typeof globalThis & {
-  taskRepository?: TaskRepository;
+  taskSnapshots?: Map<string, TaskSnapshot>;
 };
 
-globalStore.taskRepository ??= new InMemoryTaskRepository();
+globalStore.taskSnapshots ??= new Map<string, TaskSnapshot>();
 
-export const tasksModule = createTasksModule(globalStore.taskRepository);
+export const tasksModule = createTasksModule(
+  new InMemoryTaskRepository({ snapshots: globalStore.taskSnapshots }),
+);

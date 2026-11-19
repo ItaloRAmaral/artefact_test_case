@@ -28,3 +28,18 @@ test('reads a created task back through the API', async ({ request }) => {
   expect(fetched.status()).toBe(200);
   expect(await fetched.json()).toMatchObject({ result: { data: { title } } });
 });
+
+test('returns NOT_FOUND for a missing task after a page has rendered', async ({
+  request,
+}) => {
+  await request.get('/');
+
+  const response = await request.get(
+    `/api/trpc/task.getById?input=${encodeURIComponent(JSON.stringify({ id: 'missing-task' }))}`,
+  );
+
+  expect(response.status()).toBe(404);
+  expect(await response.json()).toMatchObject({
+    error: { data: { code: 'NOT_FOUND', domainCode: 'TASK_NOT_FOUND' } },
+  });
+});

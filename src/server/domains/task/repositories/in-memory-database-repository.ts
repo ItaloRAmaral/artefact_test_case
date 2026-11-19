@@ -6,17 +6,22 @@ import {
 } from '@/server/domains/task/entities/errors';
 
 import { TaskRepository } from './database-repository';
-import type { TaskPosition } from './dto';
+import type { InMemoryTaskRepositoryOptions, TaskPosition } from './dto';
 
 export class InMemoryTaskRepository extends TaskRepository {
   private static readonly DEFAULT_CAPACITY = 1000;
 
-  private readonly snapshots = new Map<string, TaskSnapshot>();
+  private readonly capacity: number;
 
-  constructor(
-    private readonly capacity = InMemoryTaskRepository.DEFAULT_CAPACITY,
-  ) {
+  private readonly snapshots: Map<string, TaskSnapshot>;
+
+  constructor({
+    capacity = InMemoryTaskRepository.DEFAULT_CAPACITY,
+    snapshots = new Map<string, TaskSnapshot>(),
+  }: InMemoryTaskRepositoryOptions = {}) {
     super();
+    this.capacity = capacity;
+    this.snapshots = snapshots;
   }
 
   override findExistingById(id: string): Promise<Task> {

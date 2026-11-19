@@ -60,7 +60,9 @@ describe('CreateTask', () => {
   });
 
   it('fails with TASK_STORAGE_FULL when the storage is full', async () => {
-    const createTask = new CreateTask(new InMemoryTaskRepository(1));
+    const createTask = new CreateTask(
+      new InMemoryTaskRepository({ capacity: 1 }),
+    );
     await createTask.execute({ title: 'Write the README' });
 
     const promise = createTask.execute({ title: 'Review the plan' });

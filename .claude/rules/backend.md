@@ -31,7 +31,7 @@ src/
         repositories/
           database-repository.ts             TaskRepository, the contract (abstract class)
           in-memory-database-repository.ts   InMemoryTaskRepository, beside its contract (+ .test.ts)
-          dto.ts                             shapes of the contract (TaskPosition)
+          dto.ts                             shapes of the contract (TaskPosition) and the in-memory options ({ capacity?, snapshots? })
         use-cases/
           create-task/       index.ts (the use case), dto.ts (input/output), index.test.ts; one folder per use case
           list-tasks/        index.ts, dto.ts, task-cursor.ts, index.test.ts
@@ -49,7 +49,7 @@ src/
         task/                index.ts (procedures: input schema → use case → output object), dto.ts (TaskDto),
                              to-task-dto.ts, index.test.ts
       middlewares/           only when one is needed
-    tasks-module.ts          composition root: createTasksModule(repository), and the shared tasksModule on globalThis
+    tasks-module.ts          composition root: createTasksModule(repository), and tasksModule over the snapshots Map kept on globalThis
   test/
     factories/               make-task.ts (fixed data with overrides), make-caller.ts, seed-tasks.ts
 ```
@@ -85,7 +85,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 ## Implementations
 
 - **`InMemoryTaskRepository`:** keeps snapshots in a `Map` and returns copies, so nothing outside can mutate stored state; reproduces only storage concerns (ordering, cursor), never business rules. It is the production implementation and the one tests use: no mocks of it.
-- **The single instance** lives in the composition root (`tasks-module.ts`, `tasksModule`) on `globalThis`, so dev hot reload does not wipe the list; a short comment says why.
+- **The stored tasks** live in one `Map` of snapshots on `globalThis` (`tasks-module.ts`), so dev hot reload does not wipe the list; each Next.js bundle builds its own `InMemoryTaskRepository` over it (`{ snapshots }`), because only plain data may cross bundles: a class instance from another bundle's copy fails `instanceof` (D-30). A short comment says why.
 
 ## Adapters (tRPC controllers)
 

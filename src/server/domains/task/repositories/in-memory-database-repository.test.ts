@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
 import { makeTask } from '@/test/factories/make-task';
 
 import { InMemoryTaskRepository } from './in-memory-database-repository';
@@ -34,6 +35,18 @@ describe('InMemoryTaskRepository', () => {
     });
   });
 
+  it('shares tasks with another repository over the same store', async () => {
+    const snapshots = new Map<string, TaskSnapshot>();
+    await new InMemoryTaskRepository({ snapshots }).save(
+      makeTask({ id: 'task-1' }),
+    );
+    const otherRepository = new InMemoryTaskRepository({ snapshots });
+
+    const found = await otherRepository.findExistingById('task-1');
+
+    expect(found.toSnapshot().id).toBe('task-1');
+  });
+
   it('returns copies, not stored state', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(
@@ -61,7 +74,7 @@ describe('InMemoryTaskRepository', () => {
   });
 
   it('rejects a new task when the storage is full', async () => {
-    const repository = new InMemoryTaskRepository(2);
+    const repository = new InMemoryTaskRepository({ capacity: 2 });
     await repository.save(makeTask({ id: 'task-1' }));
     await repository.save(makeTask({ id: 'task-2' }));
 
@@ -71,7 +84,7 @@ describe('InMemoryTaskRepository', () => {
   });
 
   it('still saves an existing task when the storage is full', async () => {
-    const repository = new InMemoryTaskRepository(2);
+    const repository = new InMemoryTaskRepository({ capacity: 2 });
     await repository.save(
       makeTask({ id: 'task-1', title: 'Write the README' }),
     );
@@ -85,7 +98,7 @@ describe('InMemoryTaskRepository', () => {
   });
 
   it('accepts a new task again after one is deleted', async () => {
-    const repository = new InMemoryTaskRepository(2);
+    const repository = new InMemoryTaskRepository({ capacity: 2 });
     await repository.save(makeTask({ id: 'task-1' }));
     await repository.save(makeTask({ id: 'task-2' }));
     await repository.delete('task-1');

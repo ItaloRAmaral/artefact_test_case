@@ -321,7 +321,7 @@ describe('task router', () => {
   });
 
   it('fails with CONFLICT when the storage is full', async () => {
-    const caller = makeCaller(new InMemoryTaskRepository(1));
+    const caller = makeCaller(new InMemoryTaskRepository({ capacity: 1 }));
     await caller.task.create({ title: 'Write the README' });
 
     const promise = caller.task.create({ title: 'Review the plan' });
