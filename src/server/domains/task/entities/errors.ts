@@ -1,5 +1,7 @@
+import type { TaskErrorCode } from './dto';
+
 export abstract class DomainError extends Error {
-  abstract readonly code: string;
+  abstract readonly code: TaskErrorCode;
 
   constructor(message: string) {
     super(message);
