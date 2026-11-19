@@ -32,6 +32,17 @@ describe('TaskList', () => {
     expect(loading).toBeInTheDocument();
   });
 
+  it('keeps the feedback regions on the page before any delete', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    renderWithTrpc(<TaskList />, { repository });
+
+    await screen.findByRole('heading', { name: 'Write the README' });
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+  });
+
   it('shows each task with its title, description and date', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask({ description: 'Explain how to run it' }));
@@ -84,11 +95,11 @@ describe('TaskList', () => {
   it('shows an error when the list fails to load', async () => {
     renderWithTrpc(<TaskList />, { link: failingLink });
 
-    const alert = await screen.findByRole('alert');
-
-    expect(alert).toHaveTextContent(
+    const message = await screen.findByText(
       'Something went wrong. Check your connection and try again.',
     );
+
+    expect(message).toHaveAttribute('role', 'alert');
   });
 
   it('keeps the tasks when a refresh fails', async () => {
@@ -104,7 +115,11 @@ describe('TaskList', () => {
     expect(
       screen.getByRole('heading', { name: 'Write the README' }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(
+      screen.queryByText(
+        'Something went wrong. Check your connection and try again.',
+      ),
+    ).toBeNull();
   });
 
   it('shows a success toast after deleting a task', async () => {
@@ -117,9 +132,9 @@ describe('TaskList', () => {
 
     await user.click(button);
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Task deleted.',
-    );
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Task deleted.');
+    });
   });
 
   it('removes the deleted task from the list', async () => {
@@ -156,9 +171,9 @@ describe('TaskList', () => {
 
     await user.click(button);
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Task deleted.',
-    );
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Task deleted.');
+    });
     expect(button).toBeDisabled();
     expect(
       screen.getByRole('button', { name: 'Delete Review the plan' }),
@@ -190,9 +205,11 @@ describe('TaskList', () => {
 
     await user.click(button);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'This task no longer exists.',
-    );
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'This task no longer exists.',
+      );
+    });
     await waitFor(() => {
       expect(
         screen.queryByRole('heading', { name: 'Write the README' }),
@@ -212,9 +229,11 @@ describe('TaskList', () => {
 
     await user.click(button);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Something went wrong. Check your connection and try again.',
-    );
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Something went wrong. Check your connection and try again.',
+      );
+    });
     expect(
       screen.getByRole('heading', { name: 'Write the README' }),
     ).toBeInTheDocument();
@@ -228,13 +247,13 @@ describe('TaskList', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Delete Write the README' }),
     );
-    await screen.findByRole('status');
+    await screen.findByText('Task deleted.');
 
     act(() => {
       vi.advanceTimersByTime(4000);
     });
 
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
   it('restarts the toast timer on a new delete', async () => {
@@ -246,7 +265,7 @@ describe('TaskList', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Delete Write the README' }),
     );
-    await screen.findByRole('status');
+    await screen.findByText('Task deleted.');
     act(() => {
       vi.advanceTimersByTime(3000);
     });

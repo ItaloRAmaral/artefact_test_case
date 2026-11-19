@@ -6,7 +6,7 @@ import { TaskList } from '@/client/tasks/task-list';
 import {
   getNextTaskListCursor,
   TASK_LIST_INPUT,
-} from '@/client/tasks/task-list-query';
+} from '@/shared/tasks/task-list-query';
 import { getQueryClient, trpc } from '@/server/adapters/trpc/server';
 
 export default function HomePage() {

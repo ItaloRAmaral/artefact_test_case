@@ -9,20 +9,20 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { useTRPC } from '@/client/trpc/provider';
+import {
+  getNextTaskListCursor,
+  TASK_LIST_INPUT,
+} from '@/shared/tasks/task-list-query';
 
+import type { ToastMessage } from './dto';
 import { getErrorMessage } from './error-message';
 import { TaskDate } from './task-date';
-import { getNextTaskListCursor, TASK_LIST_INPUT } from './task-list-query';
-import { Toast } from './toast';
+import { ToastRegion } from './toast';
 
 export function TaskList() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [toast, setToast] = useState<{
-    id: number;
-    kind: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
   const list = useInfiniteQuery(
     trpc.task.list.infiniteQueryOptions(TASK_LIST_INPUT, {
       getNextPageParam: getNextTaskListCursor,
@@ -45,7 +45,7 @@ export function TaskList() {
   const tasks = list.data?.pages.flatMap((page) => page.items) ?? [];
   let content: ReactNode;
 
-  function showToast(kind: 'success' | 'error', text: string) {
+  function showToast(kind: ToastMessage['kind'], text: string) {
     setToast((current) => ({ id: (current?.id ?? 0) + 1, kind, text }));
   }
 
@@ -82,9 +82,7 @@ export function TaskList() {
   return (
     <section aria-label="Tasks">
       {content}
-      {toast === null ? null : (
-        <Toast key={toast.id} kind={toast.kind} text={toast.text} />
-      )}
+      <ToastRegion toast={toast} />
     </section>
   );
 }

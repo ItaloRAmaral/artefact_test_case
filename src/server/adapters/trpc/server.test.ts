@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import {
   getNextTaskListCursor,
   TASK_LIST_INPUT,
-} from '@/client/tasks/task-list-query';
+} from '@/shared/tasks/task-list-query';
 import { tasksModule } from '@/server/tasks-module';
 
 import { getQueryClient, trpc } from './server';
