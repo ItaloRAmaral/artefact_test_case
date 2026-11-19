@@ -29,19 +29,19 @@ A small task manager for a technical test: a Next.js app whose back end keeps ta
 
 Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-19: the spec says both "NextJS (v15)" and "use the most recent versions"; we follow the latter, so Next.js is the latest stable (16.x) and every other piece is the newest version compatible with it and with the lint toolchain that is at least 7 days old (pnpm 12 refuses fresher releases by default; DECISIONS D-19). `package.json` holds the exact pins; the table gives the line and why. `docs/DECISIONS.md` records each choice.
 
-| Piece                | Version                                                                | Why this one                                                                                                                                              |
-| -------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Node                 | 24.22.2 (`.nvmrc`)                                                     | installed LTS                                                                                                                                             |
-| pnpm                 | 12.21.0 (`packageManager`)                                             | latest; pnpm switches to it automatically                                                                                                                 |
-| Next.js (App Router) | 16.4.6                                                                 | latest stable; the spec asks for the most recent versions (the "v15" mention is recorded in `docs/DECISIONS.md`)                                          |
-| React                | 19.3.1                                                                 | accepted by Next 16 (`^19.0.0`)                                                                                                                           |
-| tRPC                 | 11.29.5 (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | —                                                                                                                                                         |
-| TanStack Query       | 5.108.0                                                                | —                                                                                                                                                         |
-| Zod                  | 4.6.7                                                                  | —                                                                                                                                                         |
-| TypeScript           | 6.0.3                                                                  | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported                                                                                         |
-| ESLint               | 10.x (10.14.0 installed)                                               | latest major, supported by `eslint-config-next@16` per its docs; its React, a11y and import plugins still declare peers up to 9 (accepted warnings, D-16) |
-| Vitest               | 5.1.1, with Testing Library and jsdom                                  | —                                                                                                                                                         |
-| Playwright           | 1.65.1                                                                 | —                                                                                                                                                         |
+| Piece                | Version                                                                                      | Why this one                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node                 | 24.22.2 (`.nvmrc`)                                                                           | installed LTS                                                                                                                                             |
+| pnpm                 | 12.21.0 (`packageManager`)                                                                   | latest; pnpm switches to it automatically                                                                                                                 |
+| Next.js (App Router) | 16.4.6                                                                                       | latest stable; the spec asks for the most recent versions (the "v15" mention is recorded in `docs/DECISIONS.md`)                                          |
+| React                | 19.3.1                                                                                       | accepted by Next 16 (`^19.0.0`)                                                                                                                           |
+| tRPC                 | 11.x, installed in sub-plan 3 (`@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`) | —                                                                                                                                                         |
+| TanStack Query       | 5.x, installed in sub-plan 3                                                                 | —                                                                                                                                                         |
+| Zod                  | 4.x, installed in sub-plan 2 or 3                                                            | —                                                                                                                                                         |
+| TypeScript           | 6.0.3                                                                                        | typescript-eslint supports `<6.1.0`; 7.x is newer but unsupported                                                                                         |
+| ESLint               | 10.x (10.14.0 installed)                                                                     | latest major, supported by `eslint-config-next@16` per its docs; its React, a11y and import plugins still declare peers up to 9 (accepted warnings, D-16) |
+| Vitest               | 5.1.0 (Testing Library and jsdom arrive in sub-plan 4)                                       | —                                                                                                                                                         |
+| Playwright           | 1.65.0, Chromium only                                                                        | production build on port 3100 (D-18)                                                                                                                      |
 
 ## Language
 
@@ -77,15 +77,17 @@ Style follows `.claude/rules/code-style.md`; its principles may be broken only w
 
 ## Commands
 
-The scripts are created by the setup plan; until it is done they do not exist. Never guess a command; ask.
+Never guess a command; ask.
 
-| Task                         | Command                       |
-| ---------------------------- | ----------------------------- |
-| Install                      | `pnpm install`                |
-| Run (dev)                    | `pnpm dev`                    |
-| Build and start              | `pnpm build && pnpm start`    |
-| Unit and component tests     | `pnpm test`                   |
-| Tests with the coverage gate | `pnpm test:coverage`          |
-| End to end                   | `pnpm test:e2e`               |
-| Lint and types               | `pnpm lint`, `pnpm typecheck` |
-| Formatting                   | `pnpm format:check`           |
+| Task                                                       | Command                                                         |
+| ---------------------------------------------------------- | --------------------------------------------------------------- |
+| Install                                                    | `pnpm install`                                                  |
+| Run (dev)                                                  | `pnpm dev`                                                      |
+| Build and start                                            | `pnpm build && pnpm start`                                      |
+| Unit and component tests                                   | `pnpm test`                                                     |
+| Tests with the coverage gate                               | `pnpm test:coverage`                                            |
+| End to end (once: `pnpm exec playwright install chromium`) | `pnpm test:e2e` (builds and starts its own server on port 3100) |
+| Lint and types                                             | `pnpm lint`, `pnpm typecheck` (runs `next typegen` first)       |
+| Formatting                                                 | `pnpm format:check`, `pnpm format` to fix                       |
+
+The version-matched Next.js docs are in `node_modules/next/dist/docs/` (see `AGENTS.md`); read them before relying on Next.js behavior from memory.

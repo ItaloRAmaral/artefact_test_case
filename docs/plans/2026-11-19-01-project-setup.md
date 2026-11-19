@@ -196,6 +196,174 @@ describe('catchError', () => {
 
 **Suggested commit:** `test: set up Vitest with the server coverage gate and catchError helper` · files: `vitest.config.mts`, `src/test/catch-error.ts`, `src/test/catch-error.test.ts`, `package.json`, `pnpm-lock.yaml`
 
+## Review focus
+
+- **Peer warnings from ESLint 10** (`eslint-plugin-react`, `-jsx-a11y`, `-import` declare up to 9): pnpm warns but installs; a rule that crashes under ESLint 10 fails `pnpm lint`, which Task 2's verification catches. If one crashes, stop and ask (fall back to 9.39.5, or disable that rule).
+- **`create-next-app` refuses a non-empty folder** (the repo has `docs/`, `.claude/`, `CLAUDE.md`): the scaffold is generated in the scratchpad as a reference, and only the files listed in Task 1 are copied.
+- **Next.js rewrites `tsconfig.json` on the first `dev`/`build`** (fields it requires): the change is accepted and kept, never fought.
+- **`pnpm test` with no test files exits with an error**: Task 3 adds the first real test, so there is no `passWithNoTests`.
+- **Coverage gate with no files under `src/server/`**: what Vitest prints is recorded in Task 3's verification. If it fails on an empty include, the gate is added in sub-plan 2's first task instead, and this plan's status says so.
+- **e2e server port**: Playwright starts its own production server on port 3100 and never reuses one already running. A `pnpm dev` on 3000 cannot be tested by mistake, and every e2e run starts with an empty in-memory list.
+- **Browsers not installed**: `pnpm test:e2e` fails until `pnpm exec playwright install chromium` runs once. The README says so.
+- **Layer rules on folders that do not exist yet**: verified by piping a violating snippet through `eslint --stdin` with a fake file name, so no violating file is ever created.
+
+## Security
+
+| Threat                               | How this plan handles it                                                                                                           | Task and test                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Secrets committed                    | `.gitignore` covers `.env*`; no secrets are needed                                                                                 | Task 1, review                              |
+| Supply chain drift                   | exact versions and the committed `pnpm-lock.yaml`; installs use the lockfile                                                       | Task 1 (`pnpm install` writes the lockfile) |
+| Server code in client bundles        | lint blocks `src/shared/**` from importing `@/server/**` (D-13, D-17); `server-only` arrives with its first importer in sub-plan 2 | Task 2, `eslint --stdin` check              |
+| Input validation, XSS, error leakage | not applicable: no input, no data, no API in this sub-plan                                                                         | —                                           |
+
+## Test plan
+
+| Requirement or review-focus line                     | Level      | Test name                                            | Task |
+| ---------------------------------------------------- | ---------- | ---------------------------------------------------- | ---- |
+| `catchError` returns what the function throws        | unit       | `returns the error the function throws`              | 3    |
+| `catchError` fails loudly when nothing is thrown     | unit       | `throws when the function does not throw`            | 3    |
+| The app serves its home page from a production build | e2e        | `renders the home page`                              | 4    |
+| Layer rule enforced                                  | lint check | `eslint --stdin` violations in Task 2's verification | 2    |
+
+- **Levels used and why:** unit for the one helper that exists; e2e for the running app; the component level starts in sub-plan 4 with the first component worth testing.
+- **Test data:** literals only.
+- **Targets:** the 90% gate on `src/server/**` is configured (Task 3) and enforced from sub-plan 2 on.
+- **How to run:** `pnpm test`, `pnpm test:coverage`, `pnpm test:e2e` (after `pnpm exec playwright install chromium`).
+
+## Style deviations
+
+| Principle broken | Criterion and evidence | Alternative rejected | Review trigger | Impact on tests |
+| ---------------- | ---------------------- | -------------------- | -------------- | --------------- |
+
+None. One change to the style guide itself: in `code-style.md` "TypeScript", the naming-cases row moves from "Tool: ESLint" to review only. Configuring `@typescript-eslint/naming-convention` for React components (UpperCamelCase functions) would add more config than it saves on a codebase this size. The row is edited in Task 2.
+
+---
+
+## Task 1: Next.js app skeleton
+
+**Files:**
+
+- Create: `package.json`, `pnpm-lock.yaml` (by `pnpm install`), `tsconfig.json`, `next.config.ts`, `.gitignore`, `.nvmrc`, `src/app/layout.tsx`, `src/app/page.tsx`
+
+**Interfaces:**
+
+- Produces: scripts `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `typecheck` (`next typegen && tsc --noEmit`, see the execution notes); import alias `@/*` → `src/*`; the home page `/` with the heading `Tasks` (role `heading`, level 1), which sub-plan 4 replaces with the list.
+
+- [x] **Step 1: generate the reference scaffold** in the scratchpad: `pnpm create next-app@16.4.6 <scratchpad>/next-reference --ts --eslint --app --src-dir --no-tailwind --empty --use-pnpm --import-alias "@/*" --skip-install --disable-git --yes`. Copy `tsconfig.json`, `next.config.ts` and `.gitignore` from it; read its `package.json` for the generated scripts and its `src/app/` for the minimal layout. Nothing else is copied.
+- [x] **Step 2: write `package.json`** with name `task-manager`, `private: true`, `packageManager: "pnpm@12.21.0"`, the four scripts above, `next`/`react`/`react-dom` as dependencies and `typescript`, `@types/node`, `@types/react`, `@types/react-dom` as dev dependencies, all at the exact versions in "Global constraints".
+- [x] **Step 3: harden `tsconfig.json`** with the options in `code-style.md` "TypeScript" (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, `forceConsistentCasingInFileNames`), keeping every field the scaffold sets.
+- [x] **Step 4: placeholder page and layout:** `layout.tsx` with `<html lang="en">` and metadata title `Tasks`; `page.tsx` renders `<h1>Tasks</h1>`. Add `.gitignore` entries for `coverage/`, `test-results/`, `playwright-report/` and `.env*` if the scaffold does not have them; write `.nvmrc`.
+- [x] **Step 5: verify:** `pnpm install` (peer warnings for the ESLint plugins arrive in Task 2, not here) · `pnpm build` succeeds · `pnpm typecheck` exits 0 · `pnpm dev` serves `Tasks` at `http://localhost:3000`. Keep any change Next.js makes to `tsconfig.json`.
+
+**Execution notes (2026-11-19):**
+
+- The scaffold also generated `pnpm-workspace.yaml` (`allowBuilds: { sharp: false, unrs-resolver: false }`, pnpm's build-script approval). It is copied too; without it `pnpm install` asks about those builds.
+- `typecheck` is `next typegen && tsc --noEmit`, not `tsc --noEmit`: the layout uses the global `LayoutProps` route type, which lives in the generated (and gitignored) `next-env.d.ts` and `.next/types`. On a clean tree `tsc` alone failed with `TS2304: Cannot find name 'LayoutProps'`; with `next typegen` first it exits 0.
+- The scaffold's `next.config.ts` enables `cacheComponents: true` and `partialPrefetching: true` by default, kept as generated. `pnpm build` lists `/` as `○ (Static)`, the risk sub-plan 4 must handle (roadmap updated).
+- The scaffold's `tsconfig.json` already includes `**/*.mts`. Next.js changed nothing in it on build or dev. Task 2's `disableTypeChecked` therefore covers only `**/*.mjs`.
+- `next dev` created `AGENTS.md`, a block Next.js manages that points AI agents to the version-matched docs in `node_modules/next/dist/docs/`. It is written only when an AI agent runs `next dev`, re-created if deleted, and disabled with `agentRules: false`. Kept and committed, so the tree stays clean.
+- Verified: `pnpm install` (pnpm switched to 12.21.0 from `packageManager`), `pnpm build` green, `pnpm typecheck` exit 0 on a clean tree, `pnpm dev` served `<h1>Tasks</h1>`.
+
+**Suggested commit:** `chore: scaffold Next.js 16 app with pinned versions` · files: `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `tsconfig.json`, `next.config.ts`, `.gitignore`, `.nvmrc`, `src/app/layout.tsx`, `src/app/page.tsx`, `AGENTS.md`
+
+## Task 2: lint, layer rule and formatting
+
+**Files:**
+
+- Create: `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore`
+- Modify: `package.json` (scripts `lint`, `format`, `format:check`; dev dependencies `eslint`, `eslint-config-next`, `typescript-eslint`, `prettier`), `.claude/rules/code-style.md` (naming-cases row → review)
+
+**Interfaces:**
+
+- Produces: `lint` (`eslint .`), `format` (`prettier --write .`), `format:check` (`prettier --check .`).
+
+- [x] **Step 1: `eslint.config.mjs`** (flat, `defineConfig` from `eslint/config`):
+  - `eslint-config-next/core-web-vitals`, then `eslint-config-next/typescript`;
+  - `typescript-eslint` `strictTypeChecked` and `stylisticTypeChecked` with `parserOptions.projectService: true`, plus `@typescript-eslint/switch-exhaustiveness-check`, `@typescript-eslint/consistent-type-imports`, and core `no-console`, `eqeqeq`, `prefer-const` (`code-style.md` "TypeScript");
+  - `disableTypeChecked` for `**/*.mjs` (`eslint.config.mjs`); `.mts` files are in the scaffold's `tsconfig.json` include, so `vitest.config.mts` is type-checked (see Task 1's execution notes);
+  - the Next.js default ignores (`.next/**`, `out/**`, `build/**`, `next-env.d.ts`) plus `coverage/**`, `playwright-report/**`, `test-results/**`.
+- [x] **Step 2: layer rule** (D-17), `no-restricted-imports` blocks:
+
+| Files                          | Forbidden imports                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/server/**/domain/**`      | `zod`, `@trpc/*`, `@tanstack/*`, `next`, `next/*`, `react`, `react-dom`, `server-only`, `node:*`, any path into `application`, `infra` or `trpc` |
+| `src/server/**/application/**` | the same external packages, any path into `infra` or `trpc`                                                                                      |
+| `src/shared/**`                | `@/server/*` and any relative path into `src/server/`, `server-only`                                                                             |
+
+Each block's message names the rule ("domain imports nothing external, see `.claude/rules/backend.md`").
+
+- [x] **Step 3: Prettier:** `.prettierrc.json` `{ "singleQuote": true }`, Prettier's defaults otherwise (single quotes match every code example in the rules and skills); `.prettierignore` with `pnpm-lock.yaml`, `.next`, `coverage`, `playwright-report`, `test-results`. Run `pnpm format` once over the repository.
+- [x] **Step 4: verify:**
+  - `pnpm lint` exits 0, `pnpm format:check` exits 0, `pnpm typecheck` exits 0;
+  - pipe `import { z } from 'zod';` through `pnpm exec eslint --stdin --stdin-filename src/server/tasks/domain/check.ts`: expected an error from `no-restricted-imports`;
+  - the same with `import 'server-only';` for `src/server/tasks/application/check.ts`, and `import { x } from '@/server/tasks/domain/task';` for `src/shared/tasks/check.ts`: errors from `no-restricted-imports`;
+  - the output of each is pasted in the hand-over. If a Next plugin crashes under ESLint 10, stop and ask (review focus).
+
+**Execution notes (2026-11-19):**
+
+- Installed `eslint` 10.14.0 and `typescript-eslint` 8.72.2 instead of 10.15.0 and 8.73.0: pnpm 12's default `minimumReleaseAge` (7 days) refused the newer ones (D-19). `pnpm peers check` lists exactly the three expected warnings (`eslint-plugin-import`, `-jsx-a11y`, `-react` want ESLint up to 9). No rule crashed: `pnpm lint` exits 0.
+- `eslint --stdin` cannot check the layer rules: with type-aware linting, the project service rejects a file name that does not exist (`was not found by the project service`). The rules were checked instead with the ESLint Node API, using the real `eslint.config.mjs` and only type-aware linting switched off, on in-memory snippets (a script in the scratchpad, not versioned). Result:
+  - `console.log` in `src/app/` → `no-console`;
+  - `zod` in `domain/` → `no-restricted-imports`;
+  - `../application/...` in `domain/` → `no-restricted-imports`;
+  - `server-only` in `application/` → `no-restricted-imports`;
+  - `../../infra/...` in `application/use-cases/` → `no-restricted-imports`;
+  - `@/server/...` in `src/shared/` → `no-restricted-imports`;
+  - `@/shared/tasks/task-limits` in `domain/` → no error (allowed, D-13).
+- `.prettierignore` also lists `AGENTS.md`, which Next.js manages; reformatting it would make `next dev` rewrite it. `pnpm format` reformatted the Markdown docs, the rules and skills (table alignment, list numbering), `eslint.config.mjs` and `next.config.ts`; content unchanged.
+- Verified: `pnpm lint`, `pnpm format:check` and `pnpm typecheck` exit 0.
+
+**Suggested commit:** `chore: add ESLint 10 flat config, layer import rules and Prettier` · files: `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore`, `package.json`, `pnpm-lock.yaml`, `.claude/rules/code-style.md`, plus files reformatted by `pnpm format`
+
+## Task 3: Vitest with the coverage gate and the first helper (TDD)
+
+**Files:**
+
+- Create: `vitest.config.mts`, `src/test/catch-error.ts`, `src/test/catch-error.test.ts`
+- Modify: `package.json` (scripts `test`, `test:coverage`; dev dependencies `vitest`, `@vitest/coverage-v8`, `vite`)
+
+**Interfaces:**
+
+- Produces: `catchError(fn: () => unknown): unknown`, which returns what `fn` throws and throws an `Error` when `fn` returns normally. Sync error tests in sub-plans 2 to 6 use it (`.claude/rules/tests.md`).
+- Produces: `test` (`vitest run`), `test:coverage` (`vitest run --coverage`).
+
+- [x] **Step 1: `vitest.config.mts`:** `resolve.tsconfigPaths: true` (Vite 8 built-in, so no plugin); `test.include: ['src/**/*.test.{ts,tsx}']` so `e2e/` is never picked up; environment `node` (jsdom arrives with the first component test in sub-plan 4); `coverage`: provider `v8`, `include: ['src/server/**']`, `exclude: ['**/*.test.{ts,tsx}']`, `thresholds: { lines: 90, branches: 90 }`.
+- [x] **Step 2: write the failing tests:**
+
+```ts
+describe('catchError', () => {
+  it('returns the error the function throws', () => {
+    const thrown = new Error('boom');
+
+    const error = catchError(() => {
+      throw thrown;
+    });
+
+    expect(error).toBe(thrown);
+  });
+
+  it('throws when the function does not throw', () => {
+    const error = catchError(() => catchError(() => 'no error'));
+
+    expect(error).toBeInstanceOf(Error);
+  });
+});
+```
+
+- [x] **Step 3: run and watch them fail for the right reason:** create `src/test/catch-error.ts` exporting `catchError` that returns `undefined` without calling `fn`, so the tests compile and reach their assertions. `pnpm test`. Expected: both FAIL on their `expect` (the first gets `undefined` instead of the error, the second gets `undefined` instead of an `Error`), not on an import error.
+- [x] **Step 4: implement `catchError`** in `src/test/catch-error.ts`: call `fn` inside `try`, return the caught value; after a normal return, throw an `Error`.
+- [x] **Step 5: run and watch them pass:** `pnpm test`, expected PASS (2 tests). Then `pnpm test:coverage`: record what Vitest prints for the empty `src/server/**` include, and handle a failure as the review focus says. `pnpm lint` and `pnpm typecheck` stay green.
+
+**Execution notes (2026-11-19):**
+
+- Installed `vitest` and `@vitest/coverage-v8` 5.1.0 (D-19; 5.1.1 is younger than 7 days) and `vite` 8.3.8.
+- Red: with the stub returning `undefined`, both tests failed on their assertions (`expected undefined to be Error: boom`, `expected undefined to be an instance of Error`), not on an import. Green: 2 passed.
+- Coverage with nothing under `src/server/`: Vitest prints `Unknown% ( 0/0 )` and exits 0, so the gate passes vacuously until sub-plan 2 adds code. No change to the plan was needed.
+- The gate was proven without creating any file, by overriding the include on the command line. With `--coverage.include=src/test/** --coverage.include=next.config.ts` (a file no test runs), Vitest printed `ERROR: Coverage for lines (80%) does not meet global threshold (90%)` and exited 1. With `src/test/**` only, it exited 0.
+- Verified: `pnpm test`, `pnpm test:coverage`, `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0.
+
+**Suggested commit:** `test: set up Vitest with the server coverage gate and catchError helper` · files: `vitest.config.mts`, `src/test/catch-error.ts`, `src/test/catch-error.test.ts`, `package.json`, `pnpm-lock.yaml`
+
 ## Task 4: Playwright smoke test, README and closing docs
 
 **Files:**
