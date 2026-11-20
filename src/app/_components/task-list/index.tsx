@@ -89,14 +89,17 @@ export function TaskList() {
   }, [canLoadNextPage, fetchNextPage]);
 
   if (list.isPending) {
-    content = <p>Loading tasks…</p>;
+    content = <p className="text-muted">Loading tasks…</p>;
   } else if (list.isLoadingError) {
     content = (
       <>
-        <p role="alert">{getErrorMessage(list.error)}</p>
+        <p role="alert" className="text-error">
+          {getErrorMessage(list.error)}
+        </p>
         {isTemporaryError(list.error) ? (
           <button
             type="button"
+            className="button button-secondary mt-3"
             onClick={() => {
               void list.refetch();
             }}
@@ -107,50 +110,74 @@ export function TaskList() {
       </>
     );
   } else if (tasks.length === 0) {
-    content = <p>No tasks yet.</p>;
+    content = (
+      <p className="text-muted rounded-lg border border-dashed border-zinc-300 py-10 text-center dark:border-zinc-700">
+        No tasks yet.
+      </p>
+    );
   } else {
     content = (
       <>
-        <ul>
+        <ul className="space-y-3">
           {tasks.map((task) => (
-            <li key={task.id}>
-              <h2>{task.title}</h2>
-              {task.description === null ? null : <p>{task.description}</p>}
-              <TaskDate iso={task.createdAt} />
-              <Link
-                href={`/tasks/${task.id}/edit`}
-                aria-label={`Edit ${task.title}`}
-              >
-                Edit
-              </Link>
-              <button
-                type="button"
-                aria-label={`Delete ${task.title}`}
-                disabled={deleteTask.isPending}
-                onClick={() => {
-                  deleteTask.mutate({ id: task.id });
-                }}
-              >
-                Delete
-              </button>
+            <li
+              key={task.id}
+              className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <h2 className="font-medium break-words">{task.title}</h2>
+              {task.description === null ? null : (
+                <p className="mt-1 text-sm break-words whitespace-pre-line text-zinc-600 dark:text-zinc-300">
+                  {task.description}
+                </p>
+              )}
+              <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <TaskDate iso={task.createdAt} />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Link
+                  href={`/tasks/${task.id}/edit`}
+                  aria-label={`Edit ${task.title}`}
+                  className="button button-secondary"
+                >
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  className="button button-danger"
+                  aria-label={`Delete ${task.title}`}
+                  disabled={deleteTask.isPending}
+                  onClick={() => {
+                    deleteTask.mutate({ id: task.id });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>
-        {isFetchingNextPage ? <p>Loading more tasks…</p> : null}
+        {isFetchingNextPage ? (
+          <p className="text-muted mt-4 text-center">Loading more tasks…</p>
+        ) : null}
         {showsNextPageError ? (
-          <>
-            <p role="alert">{getErrorMessage(list.error)}</p>
+          <div className="mt-4 text-center">
+            <p role="alert" className="text-error">
+              {getErrorMessage(list.error)}
+            </p>
             <button
               type="button"
+              className="button button-secondary mt-2"
               onClick={() => {
                 void fetchNextPage();
               }}
             >
               Retry
             </button>
-          </>
+          </div>
         ) : null}
-        {!hasNextPage && pageCount > 1 ? <p>No more tasks.</p> : null}
+        {!hasNextPage && pageCount > 1 ? (
+          <p className="text-muted mt-4 text-center">No more tasks.</p>
+        ) : null}
         <div ref={sentinelRef} />
       </>
     );

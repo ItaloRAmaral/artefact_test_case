@@ -19,16 +19,19 @@ export function EditTask({ id }: { id: string }) {
   );
 
   if (task.isPending) {
-    return <p>Loading task…</p>;
+    return <p className="text-muted">Loading task…</p>;
   }
 
   if (task.isLoadingError) {
     return (
       <>
-        <p role="alert">{getErrorMessage(task.error)}</p>
+        <p role="alert" className="text-error">
+          {getErrorMessage(task.error)}
+        </p>
         {isTemporaryError(task.error) ? (
           <button
             type="button"
+            className="button button-secondary mt-3"
             onClick={() => {
               void task.refetch();
             }}

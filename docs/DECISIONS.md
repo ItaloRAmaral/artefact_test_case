@@ -36,6 +36,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-30](#d-30-only-plain-data-is-shared-on-globalthis)                                           | Only plain data is shared on `globalThis`                                                | 2026-11-19 |
 | [D-31](#d-31-infinite-scroll-on-the-list)                                                       | Infinite scroll on the list                                                              | 2026-11-19 |
 | [D-32](#d-32-front-end-folders-page-components-next-to-the-page-shared-ones-in-srcclientshared) | Front-end folders: page components next to the page, shared ones in `src/client/shared/` | 2026-11-20 |
+| [D-33](#d-33-styling-with-tailwind-css-only)                                                    | Styling with Tailwind CSS only                                                           | 2026-11-20 |
 
 ---
 
@@ -370,6 +371,17 @@ The main decisions behind this project, each with its context, the choice and wh
   - The D-26 ESLint block covers `src/client/**` and `src/app/**/_components/**`, so a page component cannot import a server value either.
 - **Why:** where a file lives says who uses it; moving a component to `shared/` is the signal that a second page needs it.
 - **Alternative rejected:** one folder per feature (`src/client/tasks/`), the previous layout: it hid which page owns each component.
+
+## D-33: Styling with Tailwind CSS only
+
+- **Context:** the app had no styles. The spec asks for a simple layout ("não é necessário um design elaborado").
+- **Decision (user decision):**
+  - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
+  - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
+  - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `field`, `text-muted`, `text-error`), so a change to a button or a field happens once.
+  - A neutral look: a centered column, tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge; dark mode follows the system (`prefers-color-scheme`).
+- **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
+- **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
 
 ---
 

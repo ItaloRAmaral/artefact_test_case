@@ -32,6 +32,8 @@ The controller validates the input shape with the shared Zod schema, calls one u
 | `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup                                                          |
 | `e2e/`        | Playwright tests                                                                                                                                      |
 
+**Look.** Styled with Tailwind CSS: a centered column, tasks as cards, and dark mode following the system ([D-33](docs/DECISIONS.md#d-33-styling-with-tailwind-css-only)).
+
 The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md); short comments in the code point to them.
 
 ## Task model

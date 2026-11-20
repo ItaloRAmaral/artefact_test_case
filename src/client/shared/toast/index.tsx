@@ -45,22 +45,22 @@ export function useShowToast(): ShowToast {
 // change inside an existing region, but often miss a region inserted with its text.
 function ToastRegion({ toast }: { toast: ToastMessage | null }) {
   return (
-    <div style={{ position: 'fixed', right: '1rem', bottom: '1rem' }}>
+    <div className="fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2">
       <div role="status">
         {toast?.kind === 'success' ? (
-          <ToastText key={toast.id} text={toast.text} />
+          <ToastText key={toast.id} kind="success" text={toast.text} />
         ) : null}
       </div>
       <div role="alert">
         {toast?.kind === 'error' ? (
-          <ToastText key={toast.id} text={toast.text} />
+          <ToastText key={toast.id} kind="error" text={toast.text} />
         ) : null}
       </div>
     </div>
   );
 }
 
-function ToastText({ text }: { text: string }) {
+function ToastText({ kind, text }: Pick<ToastMessage, 'kind' | 'text'>) {
   const [isVisible, setIsVisible] = useState(true);
 
   // Runs once per mount: each result has a new key, so a new result remounts the text and
@@ -81,13 +81,11 @@ function ToastText({ text }: { text: string }) {
 
   return (
     <p
-      style={{
-        margin: 0,
-        padding: '0.5rem 1rem',
-        border: '1px solid',
-        background: 'Canvas',
-        color: 'CanvasText',
-      }}
+      className={`rounded-md border-l-4 bg-white px-4 py-3 text-sm shadow-lg dark:bg-zinc-900 ${
+        kind === 'success'
+          ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300'
+          : 'border-red-500 text-red-700 dark:text-red-400'
+      }`}
     >
       {text}
     </p>

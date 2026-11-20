@@ -10,13 +10,15 @@ export default function EditTaskPage({
   // need it read inside Suspense; the static shell is the heading and the fallback.
   return (
     <main>
-      <h1>Edit task</h1>
-      <Suspense fallback={<p>Loading task…</p>}>
+      <Link href="/" className="text-muted hover:underline">
+        ← Back to tasks
+      </Link>
+      <h1 className="page-title mt-2 mb-6">Edit task</h1>
+      <Suspense fallback={<p className="text-muted">Loading task…</p>}>
         {params.then(({ id }) => (
           <EditTask id={id} />
         ))}
       </Suspense>
-      <Link href="/">Back to tasks</Link>
     </main>
   );
 }

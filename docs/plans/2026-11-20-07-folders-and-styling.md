@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                                                                                                                                                                                                                                                       |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status  | Approved                                                                                                                                                                                                                                                                                                                    |
+| Status  | Done                                                                                                                                                                                                                                                                                                                        |
 | Date    | 2026-11-20                                                                                                                                                                                                                                                                                                                  |
 | Request | "não tem CSS NENHUM né? Fora a arquitetura de pastas do front que está uma bagunça. Se é componente compartilhado [...] renomeie para Shared e dentro dela uma pasta para cada componente. Se o componente é só de uma página específica, crie uma pasta componente dentro da página [...]. Para o CSS vamos usar tailwind" |
 | Context | `docs/SPEC.md` §3 ("layout simples, não é necessário um design elaborado"); `docs/DECISIONS.md` D-19, D-26, D-28; Next.js 16.4.6 docs `01-getting-started/02-project-structure.md` (private folders) and `11-css.md` (Tailwind CSS)                                                                                         |
@@ -110,10 +110,20 @@ None.
 
 **Interfaces:** none (classes only).
 
-- [ ] **Step 1:** install and wire Tailwind as `11-css.md` shows; `pnpm build` passes and the CSS is served.
-- [ ] **Step 2:** add the classes of "Visual design"; the toast's inline `style` becomes classes.
-- [ ] **Step 3:** run every test (unchanged, all green); run the e2e sabotage without `End` (must fail); take the screenshots from the production build and review them; fix what reads badly.
-- [ ] **Step 4:** docs as listed; this plan Done.
+- [x] **Step 1:** install and wire Tailwind as `11-css.md` shows; `pnpm build` passes and the CSS is served.
+- [x] **Step 2:** add the classes of "Visual design"; the toast's inline `style` becomes classes.
+- [x] **Step 3:** run every test (unchanged, all green); run the e2e sabotage without `End` (must fail); take the screenshots from the production build and review them; fix what reads badly.
+- [x] **Step 4:** docs as listed; this plan Done.
+
+**Execution notes (2026-11-20):**
+
+- `pnpm add -D --save-exact tailwindcss@4.3.5 @tailwindcss/postcss@4.3.5`; the peer warnings are the known ESLint 10 ones (D-16). pnpm lists "agent skills awaiting approval" for the tRPC packages; nothing was approved (left to the user). ESLint asked for a named object in `postcss.config.mjs` (`import/no-anonymous-default-export`).
+- The patterns used on several pages are component classes in `globals.css` (`@apply`): the secondary button appears three times (`Retry`), the primary button and the field more than once; the rest are utilities in the markup. Field errors use `aria-[invalid=true]:` (Tailwind has no built-in `aria-invalid` variant). The toast's inline `style` became classes, with the kind passed to `ToastText`.
+- Structure kept for the tests: the task date and the actions sit in `<div>` wrappers (a `<p>` would break `shows no description for a task without one`); the form fields are grouped in `<div>`s; `Back to tasks` moved above the heading (no test uses its position). The description keeps its line breaks (`whitespace-pre-line`).
+- Screenshots from the production build (`/` light, dark and 390 px wide, `/tasks/new` with a field error, an edit page with the focus ring, the toast after a save), reviewed: readable in both schemes, focus visible, the toast at the bottom right. The toast shot also shows `/` streaming its list behind the `Loading tasks…` fallback, as before the styles.
+- Result: 190 unit and component tests and 14 e2e tests unchanged and green; the no-`End` sabotage still fails with the taller cards (`Received: 10`); `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0; no inline `style` left in `src/`.
+- Review (user approved): `.button` has `cursor-pointer` (Tailwind 4's preflight leaves buttons with the default cursor); `:root` sets `color-scheme: light dark`, so native controls follow the theme; the page container moved to the root layout and the heading style became `.page-title` (each was repeated on the three pages); an invalid field keeps its red border while focused in dark mode too (`dark:aria-[invalid=true]:`). Checked with a dark screenshot of the form (computed cursor `pointer`) and the 14 e2e tests.
+- Docs: D-33 and its index row; `CLAUDE.md` stack row; README "Look"; the e2e viewport comment no longer says "unstyled".
 
 **Suggested commit:** `feat(web): style the app with Tailwind CSS` · files: the list above
 

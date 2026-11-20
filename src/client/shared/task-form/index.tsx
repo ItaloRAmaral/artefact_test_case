@@ -112,43 +112,68 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit}>
-      <label htmlFor={titleId}>Title</label>
-      <input
-        ref={titleRef}
-        id={titleId}
-        value={title}
-        aria-required
-        aria-invalid={fieldErrors.title !== undefined}
-        aria-describedby={
-          fieldErrors.title === undefined ? undefined : `${titleId}-error`
-        }
-        onChange={(event) => {
-          setTitle(event.target.value);
-        }}
-      />
-      {fieldErrors.title === undefined ? null : (
-        <p id={`${titleId}-error`}>{fieldErrors.title}</p>
-      )}
-      <label htmlFor={descriptionId}>Description</label>
-      <textarea
-        ref={descriptionRef}
-        id={descriptionId}
-        value={description}
-        aria-invalid={fieldErrors.description !== undefined}
-        aria-describedby={
-          fieldErrors.description === undefined
-            ? undefined
-            : `${descriptionId}-error`
-        }
-        onChange={(event) => {
-          setDescription(event.target.value);
-        }}
-      />
-      {fieldErrors.description === undefined ? null : (
-        <p id={`${descriptionId}-error`}>{fieldErrors.description}</p>
-      )}
-      <button type="submit" disabled={save.isPending || save.isSuccess}>
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <div>
+        <label htmlFor={titleId} className="mb-1 block text-sm font-medium">
+          Title
+        </label>
+        <input
+          ref={titleRef}
+          className="field"
+          id={titleId}
+          value={title}
+          aria-required
+          aria-invalid={fieldErrors.title !== undefined}
+          aria-describedby={
+            fieldErrors.title === undefined ? undefined : `${titleId}-error`
+          }
+          onChange={(event) => {
+            setTitle(event.target.value);
+          }}
+        />
+        {fieldErrors.title === undefined ? null : (
+          <p id={`${titleId}-error`} className="text-error mt-1">
+            {fieldErrors.title}
+          </p>
+        )}
+      </div>
+      <div>
+        <label
+          htmlFor={descriptionId}
+          className="mb-1 block text-sm font-medium"
+        >
+          Description
+        </label>
+        <textarea
+          ref={descriptionRef}
+          className="field min-h-28"
+          id={descriptionId}
+          value={description}
+          aria-invalid={fieldErrors.description !== undefined}
+          aria-describedby={
+            fieldErrors.description === undefined
+              ? undefined
+              : `${descriptionId}-error`
+          }
+          onChange={(event) => {
+            setDescription(event.target.value);
+          }}
+        />
+        {fieldErrors.description === undefined ? null : (
+          <p id={`${descriptionId}-error`} className="text-error mt-1">
+            {fieldErrors.description}
+          </p>
+        )}
+      </div>
+      <button
+        type="submit"
+        className="button button-primary"
+        disabled={save.isPending || save.isSuccess}
+      >
         {save.isPending ? 'Saving…' : 'Save'}
       </button>
     </form>

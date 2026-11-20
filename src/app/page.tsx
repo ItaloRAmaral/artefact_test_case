@@ -13,9 +13,13 @@ import { getQueryClient, trpc } from '@/server/adapters/trpc/server';
 export default function HomePage() {
   return (
     <main>
-      <h1>Tasks</h1>
-      <Link href="/tasks/new">New task</Link>
-      <Suspense fallback={<p>Loading tasks…</p>}>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="page-title">Tasks</h1>
+        <Link href="/tasks/new" className="button button-primary">
+          New task
+        </Link>
+      </div>
+      <Suspense fallback={<p className="text-muted">Loading tasks…</p>}>
         <TaskListSection />
       </Suspense>
     </main>

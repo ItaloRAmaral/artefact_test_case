@@ -1,7 +1,7 @@
 import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-// Ten unstyled tasks are taller than 400 px plus the list's 200 px load-ahead margin, so
+// Ten tasks are taller than 400 px plus the list's 200 px load-ahead margin, so
 // the first page fills the screen: the first load requests no other page, and loading
 // more takes a scroll (DECISIONS D-31).
 test.use({ viewport: { width: 1280, height: 400 } });
