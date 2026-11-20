@@ -16,7 +16,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm build && pnpm start --port ${String(PORT)}`,
+    command: 'pnpm build && pnpm start',
+    env: { PORT: String(PORT), HOSTNAME: 'localhost' },
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 180_000,

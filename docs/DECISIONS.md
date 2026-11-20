@@ -41,7 +41,8 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-35](#d-35-create-and-edit-in-a-modal-over-the-list)                                          | Create and edit in a modal over the list                                                 | 2026-11-20 |
 | [D-36](#d-36-task-status-to-do-doing-done)                                                      | Task status (to do, doing, done)                                                         | 2026-11-20 |
 | [D-37](#d-37-a-colored-board-look)                                                              | A colored board look                                                                     | 2026-11-20 |
-| [D-38](#d-38-jsdoc-on-exported-code-no-other-comments)                                          | JSDoc on exported code, no other comments                                                | 2026-11-20 |
+| [D-38](#d-38-jsdoc-on-exported-functions-no-other-comments)                                     | JSDoc on exported functions, no other comments                                           | 2026-11-20 |
+| [D-39](#d-39-docker-image-from-the-standalone-output)                                           | Docker image from the standalone output                                                  | 2026-11-20 |
 
 ---
 
@@ -514,6 +515,20 @@ The main decisions behind this project, each with its context, the choice and wh
   - `.claude/rules/code-style.md` ("Comments") holds the rule.
 - **Why:** an explanation in the code repeats this file and goes stale when the code changes (a review on 2026-11-20 found three such comments); a JSDoc on an exported function documents its interface.
 - **Alternatives rejected:** comments explaining each decision where it lives (the earlier rule); JSDoc linking each decision with `@see` (tried, rejected by the user).
+
+## D-39: Docker image from the standalone output
+
+- **Context:** the user asked for a small multi-stage Docker image (2026-11-20). The spec does not ask for Docker; it is an addition the user requested.
+- **Decision (user decision: `node:24.22.2-alpine` as the base):**
+  - `next.config.ts` sets `output: 'standalone'`: `next build` also writes `.next/standalone`, with a minimal `server.js` and only the files the server imports (`node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/output.md`). `next start` "does not work with `output: standalone`" (Next.js's warning, seen 2026-11-20), so `pnpm start` runs the same `server.js` as the image: it copies `.next/static` into `.next/standalone` (with Node's `fs.cpSync`, so it works in any shell) and starts `node .next/standalone/server.js`, which reads `PORT` (default 3000) and `HOSTNAME`. Playwright passes them as environment variables (`PORT=3100`, `HOSTNAME=localhost`), so the e2e tests run the server the image runs (user decision).
+  - `Dockerfile` with two stages on `node:24.22.2-alpine`, the version of `.nvmrc`:
+    - **build:** `corepack enable` (pnpm from `packageManager`), the manifests and `pnpm install --frozen-lockfile` first, so the install layer is cached while the dependencies do not change, then the source and `pnpm build`;
+    - **runner:** only `.next/standalone` and `.next/static` (the app has no `public/`), owned by and run as the non-root `node` user, on `0.0.0.0:3000`, with `node server.js`.
+  - `.dockerignore` keeps `node_modules`, `.next`, `.git`, docs and test output out of the build context.
+  - The build needs internet: pnpm and the font are downloaded (D-37).
+- **Measured (2026-11-20, Docker 24.0.7):** the image is 212 MB, of which the app is about 40 MB (39.7 MB standalone, 1 MB static) and the rest the base image. In the container: the list renders on the server, a task created through the API shows on the page, the CSS is served, and the process runs as `node` on Node 24.22.2.
+- **Why:** the standalone output is the Next.js way to ship only what the server needs; a second stage leaves the source, pnpm and dev dependencies behind; a non-root user limits what a compromised process can do; the pinned base matches the Node version used everywhere else.
+- **Alternatives rejected (offered to the user):** distroless (smaller, no shell, but no exact Node pin), `node:24.22.2-slim` (larger); a single stage (would ship the source and every dependency).
 
 ---
 

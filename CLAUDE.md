@@ -82,15 +82,16 @@ Style follows `.claude/rules/code-style.md`; its principles may be broken only w
 
 Never guess a command; ask.
 
-| Task                                                       | Command                                                         |
-| ---------------------------------------------------------- | --------------------------------------------------------------- |
-| Install                                                    | `pnpm install`                                                  |
-| Run (dev)                                                  | `pnpm dev`                                                      |
-| Build and start                                            | `pnpm build && pnpm start`                                      |
-| Unit and component tests                                   | `pnpm test`                                                     |
-| Tests with the coverage gate                               | `pnpm test:coverage`                                            |
-| End to end (once: `pnpm exec playwright install chromium`) | `pnpm test:e2e` (builds and starts its own server on port 3100) |
-| Lint and types                                             | `pnpm lint`, `pnpm typecheck` (runs `next typegen` first)       |
-| Formatting                                                 | `pnpm format:check`, `pnpm format` to fix                       |
+| Task                                                       | Command                                                                       |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Install                                                    | `pnpm install`                                                                |
+| Run (dev)                                                  | `pnpm dev`                                                                    |
+| Build and start                                            | `pnpm build && pnpm start`                                                    |
+| Unit and component tests                                   | `pnpm test`                                                                   |
+| Tests with the coverage gate                               | `pnpm test:coverage`                                                          |
+| End to end (once: `pnpm exec playwright install chromium`) | `pnpm test:e2e` (builds and starts its own server on port 3100)               |
+| Lint and types                                             | `pnpm lint`, `pnpm typecheck` (runs `next typegen` first)                     |
+| Docker image, build and run                                | `docker build -t task-manager .`, `docker run --rm -p 3000:3000 task-manager` |
+| Formatting                                                 | `pnpm format:check`, `pnpm format` to fix                                     |
 
 The version-matched Next.js docs are in `node_modules/next/dist/docs/` (see `AGENTS.md`); read them before relying on Next.js behavior from memory.

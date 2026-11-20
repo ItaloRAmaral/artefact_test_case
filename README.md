@@ -95,6 +95,15 @@ pnpm dev                    # development server on http://localhost:3000
 pnpm build && pnpm start    # production build and server
 ```
 
+### With Docker
+
+```bash
+docker build -t task-manager .
+docker run --rm -p 3000:3000 task-manager   # http://localhost:3000
+```
+
+A two-stage build: the first stage installs the dependencies and builds the app; the second holds only Node.js and Next.js's standalone output, and runs it as the non-root `node` user, so the image carries no source, no pnpm and no dev dependencies ([D-39](docs/DECISIONS.md#d-39-docker-image-from-the-standalone-output)).
+
 Tasks live in memory, so restarting the server empties the list. Tasks created before the task status was added (D-36) in a dev server that was already running have no status: restart `pnpm dev` once.
 
 ## Test
