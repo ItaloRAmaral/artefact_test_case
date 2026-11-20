@@ -134,6 +134,82 @@ describe('task router', () => {
     expect(page.items).toHaveLength(1);
   });
 
+  it('lists only tasks whose title contains the trimmed search', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask({ id: 'task-2', title: 'Plan the week' }));
+    const caller = makeCaller(repository);
+
+    const page = await caller.task.list({ titleContains: '  readme ' });
+
+    expect(page.items.map((task) => task.id)).toEqual(['task-1']);
+  });
+
+  it('lists only tasks created within the date range', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(
+      makeTask({
+        id: 'task-1',
+        createdAt: new Date('2026-11-19T12:00:00.000Z'),
+      }),
+    );
+    await repository.save(
+      makeTask({
+        id: 'task-2',
+        createdAt: new Date('2026-11-20T12:00:00.000Z'),
+      }),
+    );
+    await repository.save(
+      makeTask({
+        id: 'task-3',
+        createdAt: new Date('2026-11-21T12:00:00.000Z'),
+      }),
+    );
+    const caller = makeCaller(repository);
+
+    const page = await caller.task.list({
+      createdFrom: '2026-11-20T03:00:00.000Z',
+      createdBefore: '2026-11-21T03:00:00.000Z',
+    });
+
+    expect(page.items.map((task) => task.id)).toEqual(['task-2']);
+  });
+
+  it('continues a filtered list with its cursor', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(
+      makeTask({
+        id: 'task-2',
+        title: 'Plan the week',
+        createdAt: new Date('2026-11-19T12:01:00.000Z'),
+      }),
+    );
+    await repository.save(
+      makeTask({
+        id: 'task-3',
+        title: 'Review the README',
+        createdAt: new Date('2026-11-19T12:02:00.000Z'),
+      }),
+    );
+    const caller = makeCaller(repository);
+    const firstPage = await caller.task.list({
+      titleContains: 'readme',
+      limit: 1,
+    });
+
+    const lastPage = await caller.task.list({
+      titleContains: 'readme',
+      limit: 1,
+      cursor: firstPage.nextCursor,
+    });
+
+    expect(lastPage).toMatchObject({
+      items: [{ id: 'task-1' }],
+      nextCursor: null,
+    });
+  });
+
   it('returns the id of the deleted task', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
@@ -272,6 +348,53 @@ describe('task router', () => {
       await expect(promise).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     },
   );
+
+  it.each([
+    {
+      invalid: 'an empty search',
+      field: 'titleContains',
+      input: { titleContains: '' },
+    },
+    {
+      invalid: 'a blank search',
+      field: 'titleContains',
+      input: { titleContains: '   ' },
+    },
+    {
+      invalid: 'a search over 120 characters',
+      field: 'titleContains',
+      input: { titleContains: 'a'.repeat(121) },
+    },
+    {
+      invalid: 'a createdFrom that is not a date',
+      field: 'createdFrom',
+      input: { createdFrom: 'yesterday' },
+    },
+    {
+      invalid: 'a createdFrom with an offset',
+      field: 'createdFrom',
+      input: { createdFrom: '2026-11-20T03:00:00-03:00' },
+    },
+    {
+      invalid: 'a createdFrom with more than milliseconds',
+      field: 'createdFrom',
+      input: { createdFrom: '2026-11-20T03:00:00.000000000Z' },
+    },
+    {
+      invalid: 'a createdBefore without a time',
+      field: 'createdBefore',
+      input: { createdBefore: '2026-11-20' },
+    },
+  ])('rejects $invalid on list', async ({ field, input }) => {
+    const caller = makeCaller();
+
+    const promise = caller.task.list(input);
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      cause: { issues: [{ path: [field] }] },
+    });
+  });
 
   it('fails with BAD_REQUEST for an undecodable cursor', async () => {
     const caller = makeCaller();

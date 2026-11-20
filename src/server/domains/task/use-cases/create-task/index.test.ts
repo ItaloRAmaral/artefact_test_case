@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
+import { makeTaskListFilter } from '@/test/factories/make-task-list-filter';
 
 import { CreateTask } from '.';
 
@@ -79,6 +80,8 @@ describe('CreateTask', () => {
     await expect(promise).rejects.toMatchObject({
       code: 'TASK_TITLE_REQUIRED',
     });
-    expect(await repository.listAfter(null, 10)).toEqual([]);
+    expect(await repository.listAfter(null, 10, makeTaskListFilter())).toEqual(
+      [],
+    );
   });
 });

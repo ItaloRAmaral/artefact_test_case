@@ -33,7 +33,15 @@ export const updateTaskInputSchema = z.strictObject({ id, title, description });
 
 export const taskIdInputSchema = z.strictObject({ id });
 
-export const listTasksInputSchema = z.strictObject({
+export const taskListFilterSchema = z.strictObject({
+  titleContains: z.string().trim().min(1).max(TASK_TITLE_MAX_LENGTH).optional(),
+  createdFrom: z.iso.datetime({ precision: 3 }).optional(),
+  createdBefore: z.iso.datetime({ precision: 3 }).optional(),
+});
+
+export type TaskListFilterInput = z.infer<typeof taskListFilterSchema>;
+
+export const listTasksInputSchema = taskListFilterSchema.extend({
   cursor: z.string().max(TASK_CURSOR_MAX_LENGTH).nullish(),
   limit: z
     .number()

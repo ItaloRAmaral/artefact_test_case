@@ -10,7 +10,11 @@ export class ListTasks {
     const position =
       input.cursor === null ? null : decodeTaskCursor(input.cursor);
     // One task beyond the limit tells whether another page exists, without counting.
-    const tasks = await this.repository.listAfter(position, input.limit + 1);
+    const tasks = await this.repository.listAfter(position, input.limit + 1, {
+      titleContains: input.titleContains,
+      createdFrom: input.createdFrom,
+      createdBefore: input.createdBefore,
+    });
     const hasNextPage = tasks.length > input.limit;
     const lastTaskOfPage = hasNextPage ? tasks[input.limit - 1] : undefined;
 

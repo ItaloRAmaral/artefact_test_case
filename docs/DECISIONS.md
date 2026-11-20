@@ -379,9 +379,28 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `field`, `text-muted`, `text-error`), so a change to a button or a field happens once.
-  - A neutral look: a centered column, the list's heading and `New task` pinned to the top while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge; dark mode follows the system (`prefers-color-scheme`).
+  - A neutral look: a centered column, the list's heading and `New task` pinned to the top while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
+
+## D-34: Title search and creation-date filter on the list
+
+- **Context:** the user asked for a search by title and a filter by creation date on 2026-11-20. The spec does not ask for filters, and `code-style.md` listed "no filters" under YAGNI; the user's request overrides it. The list is cursor-paginated (D-10, D-21) and loaded by infinite scroll (D-31).
+- **Decision (user decisions: a From/To range, applied as you type, kept in the URL):**
+  - `task.list` takes three optional fields, in `taskListFilterSchema` (`src/shared/tasks/task-schemas.ts`), which `listTasksInputSchema` extends (still strict):
+    - `titleContains`: trimmed, 1 to 120 characters (`TASK_TITLE_MAX_LENGTH`: a longer search matches no title);
+    - `createdFrom` (inclusive) and `createdBefore` (exclusive): ISO 8601 UTC strings with milliseconds, the form `toISOString()` produces (`z.iso.datetime({ precision: 3 })`: always 24 characters; it rejects offsets, date-only values and longer fractions; D-11).
+  - An invalid field is a `BAD_REQUEST` with its field issue, through the existing formatter (D-25).
+  - The repository applies the filter while it pages: `listAfter(position, count, filter)` filters before it slices, like a `WHERE` clause, so every page holds only matching tasks and the cursor of D-21 is unchanged. `ListTasks` passes the filter through.
+  - The search is a substring match that ignores case and accents (user decision: "acao" finds "Ação"). Both sides are normalized to NFD, their diacritic marks dropped and lower-cased; the match uses `includes`, never a `RegExp` built from input.
+  - A task created or edited while a filter is active may not match it, and then it leaves the list after the save (user decision: accepted).
+- **Why:**
+  - Filtering on the server is the only correct option with pagination: filtering the pages already loaded in the browser would miss matches on pages not loaded yet.
+  - The cost is one extra pass over at most 1000 tasks (D-22).
+  - An exclusive upper bound lets the client express "up to the end of a day" as the start of the next one, with no millisecond edge.
+- **Alternative rejected:**
+  - Client-side filtering of loaded pages: wrong with infinite scroll.
+  - A separate search procedure: a second contract for the same list.
 
 ---
 

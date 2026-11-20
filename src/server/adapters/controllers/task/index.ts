@@ -17,6 +17,13 @@ export const taskRouter = createTrpcRouter({
       const page = await ctx.tasks.listTasks.execute({
         cursor: input.cursor ?? null,
         limit: input.limit,
+        titleContains: input.titleContains ?? null,
+        createdFrom:
+          input.createdFrom === undefined ? null : new Date(input.createdFrom),
+        createdBefore:
+          input.createdBefore === undefined
+            ? null
+            : new Date(input.createdBefore),
       });
 
       return {

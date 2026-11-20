@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { makeTask } from '@/test/factories/make-task';
+import { makeTaskListFilter } from '@/test/factories/make-task-list-filter';
 
 import { createTasksModule } from './tasks-module';
 
@@ -22,7 +23,11 @@ describe('createTasksModule', () => {
     await repository.save(makeTask({ id: 'task-1' }));
     const tasks = createTasksModule(repository);
 
-    const page = await tasks.listTasks.execute({ cursor: null, limit: 10 });
+    const page = await tasks.listTasks.execute({
+      cursor: null,
+      limit: 10,
+      ...makeTaskListFilter(),
+    });
 
     expect(page.items.map((task) => task.id)).toEqual(['task-1']);
   });

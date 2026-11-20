@@ -31,7 +31,7 @@ src/
         repositories/
           database-repository.ts             TaskRepository, the contract (abstract class)
           in-memory-database-repository.ts   InMemoryTaskRepository, beside its contract (+ .test.ts)
-          dto.ts                             shapes of the contract (TaskPosition) and the in-memory options ({ capacity?, snapshots? })
+          dto.ts                             shapes of the contract (TaskPosition, TaskListFilter) and the in-memory options ({ capacity?, snapshots? })
         use-cases/
           create-task/       index.ts (the use case), dto.ts (input/output), index.test.ts; one folder per use case
           list-tasks/        index.ts, dto.ts, task-cursor.ts, index.test.ts
@@ -78,7 +78,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 - **Use case:** plain class, `execute(input)`, contracts through the constructor; no framework decorators. Thin script: load → call the entity → save → return the entity. A business `if` here means the rule belongs in the entity.
 - **One use case per operation** (`CreateTask`, `ListTasks`, `UpdateTask`, `DeleteTask`): single responsibility, each tested alone.
 - **A contract (abstract class) exists only where it pays off:** `TaskRepository`, because storage is the part that would change (memory today, a database later). Time and IDs are direct calls in `CreateTask` (`new Date()`, the global `crypto.randomUUID()`): tests freeze time with Vitest fake timers and assert the id by its shape, so a `Clock` or `IdGenerator` contract would only wrap one line (user decision, D-24).
-- **Repository:** collection-like methods that receive and return entities, never DTOs. A method exists only when a use case calls it (`findExistingById`, `save`, `delete`, `listAfter(position, count)`). No `update(dto)`, no generic `findAll()`.
+- **Repository:** collection-like methods that receive and return entities, never DTOs. A method exists only when a use case calls it (`findExistingById`, `save`, `delete`, `listAfter(position, count, filter)`). No `update(dto)`, no generic `findAll()`.
 - **Not found is part of the repository contract** (user decision, 2026-11-19): the contract declares `findExistingById(id): Promise<Task>`, and every implementation rejects with the domain error `TaskNotFoundError` when the task does not exist. Use cases never check for `null`. Like the storage cap (D-22), this is the only domain error an implementation raises, and it is part of the contract; implementations still hold no business rule.
 - **Interface segregation:** contracts stay small; no method "for later".
 

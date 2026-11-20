@@ -6,7 +6,11 @@ import {
 } from '@/server/domains/task/entities/errors';
 
 import { TaskRepository } from './database-repository';
-import type { InMemoryTaskRepositoryOptions, TaskPosition } from './dto';
+import type {
+  InMemoryTaskRepositoryOptions,
+  TaskListFilter,
+  TaskPosition,
+} from './dto';
 
 export class InMemoryTaskRepository extends TaskRepository {
   private static readonly DEFAULT_CAPACITY = 1000;
@@ -55,19 +59,46 @@ export class InMemoryTaskRepository extends TaskRepository {
   override listAfter(
     position: TaskPosition | null,
     count: number,
+    filter: TaskListFilter,
   ): Promise<Task[]> {
-    // Filters by position, not by id, so a cursor still works after its task is deleted (DECISIONS D-21).
+    // Filters by position, not by id, so a cursor still works after its task is deleted
+    // (DECISIONS D-21). The filter is applied before the slice, like a WHERE clause, so a
+    // page holds only matching tasks and paging continues with the same filter (D-34).
     const tasks = [...this.snapshots.values()]
       .sort((a, b) => InMemoryTaskRepository.compareNewestFirst(a, b))
       .filter(
         (snapshot) =>
-          position === null ||
-          InMemoryTaskRepository.compareNewestFirst(position, snapshot) < 0,
+          (position === null ||
+            InMemoryTaskRepository.compareNewestFirst(position, snapshot) <
+              0) &&
+          InMemoryTaskRepository.matches(snapshot, filter),
       )
       .slice(0, count)
       .map((snapshot) => Task.restore(snapshot));
 
     return Promise.resolve(tasks);
+  }
+
+  private static matches(snapshot: TaskSnapshot, filter: TaskListFilter) {
+    return (
+      (filter.titleContains === null ||
+        InMemoryTaskRepository.toSearchable(snapshot.title).includes(
+          InMemoryTaskRepository.toSearchable(filter.titleContains),
+        )) &&
+      (filter.createdFrom === null ||
+        snapshot.createdAt.getTime() >= filter.createdFrom.getTime()) &&
+      (filter.createdBefore === null ||
+        snapshot.createdAt.getTime() < filter.createdBefore.getTime())
+    );
+  }
+
+  // Ignores case and accents, so "acao" finds "Ação" (user decision, D-34): NFD splits each
+  // accented letter into the letter and its mark, and the marks are dropped.
+  private static toSearchable(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
   }
 
   private static compareNewestFirst(a: TaskPosition, b: TaskPosition): number {
