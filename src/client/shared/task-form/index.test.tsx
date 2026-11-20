@@ -318,19 +318,16 @@ describe('TaskForm', () => {
   it('starts a new task in To do', () => {
     renderWithTrpc(<TaskForm />);
 
-    const status = screen.getByRole('combobox', { name: 'Status' });
+    const todo = screen.getByRole('radio', { name: 'To do' });
 
-    expect(status).toHaveDisplayValue('To do');
+    expect(todo).toBeChecked();
   });
 
   it('saves the chosen status', async () => {
     const repository = new InMemoryTaskRepository();
     const { user } = renderWithTrpc(<TaskForm />, { repository });
     await user.type(screen.getByLabelText('Title'), 'Write the README');
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Status' }),
-      'Doing',
-    );
+    await user.click(screen.getByRole('radio', { name: 'Doing' }));
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 

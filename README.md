@@ -32,7 +32,7 @@ The controller validates the input shape with the shared Zod schema, calls one u
 | `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup                                                          |
 | `e2e/`        | Playwright tests                                                                                                                                      |
 
-**Look.** Styled with Tailwind CSS: a centered column, tasks as cards, and dark mode following the system ([D-33](docs/DECISIONS.md#d-33-styling-with-tailwind-css-only)).
+**Look.** Styled with Tailwind CSS as a colored board: each task card is tinted and edged with its status color, in the Bricolage Grotesque typeface, with dark mode following the system ([D-33](docs/DECISIONS.md#d-33-styling-with-tailwind-css-only), [D-37](docs/DECISIONS.md#d-37-a-colored-board-look)).
 
 The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md); short comments in the code point to them.
 
@@ -85,6 +85,7 @@ Each task shows its status (`To do`, `Doing` or `Done`) as a colored pill. Choos
 
 - Node.js 24.22.2 (see `.nvmrc`)
 - pnpm 12. The exact version is pinned in `package.json` (`packageManager`), and pnpm switches to it automatically.
+- Internet access for `pnpm build` and `pnpm dev`: Next.js downloads the font (Bricolage Grotesque) and serves it from the app ([D-37](docs/DECISIONS.md#d-37-a-colored-board-look)).
 
 ## Run
 

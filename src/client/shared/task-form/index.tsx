@@ -11,14 +11,11 @@ import { useTRPC } from '@/client/trpc/provider';
 import type { TaskDto } from '@/server/adapters/controllers/task/dto';
 import { updateTaskInputSchema } from '@/shared/tasks/task-schemas';
 import type { TaskStatus } from '@/shared/tasks/task-statuses';
-import {
-  TASK_STATUS_DEFAULT,
-  TASK_STATUSES,
-} from '@/shared/tasks/task-statuses';
+import { TASK_STATUS_DEFAULT } from '@/shared/tasks/task-statuses';
 
 import { getErrorMessage } from '@/client/shared/error-message';
 import { useCloseModal } from '@/client/shared/modal';
-import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
+import { StatusPicker } from '@/client/shared/status-picker';
 import { useShowToast } from '@/client/shared/toast';
 
 // The form edits everything but the id, with the update rules, so the data it validates
@@ -42,7 +39,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   const closeModal = useCloseModal();
   const titleId = useId();
   const descriptionId = useId();
-  const statusId = useId();
   const titleRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState(task?.title ?? '');
@@ -185,25 +181,12 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           </p>
         )}
       </div>
-      <div>
-        <label htmlFor={statusId} className="mb-1 block text-sm font-medium">
-          Status
-        </label>
-        <select
-          id={statusId}
-          className="field w-auto"
-          value={status}
-          onChange={(event) => {
-            setStatus(toTaskStatus(event.target.value) ?? status);
-          }}
-        >
-          {TASK_STATUSES.map((option) => (
-            <option key={option} value={option}>
-              {TASK_STATUS_LABELS[option]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <StatusPicker
+        value={status}
+        onChange={(next) => {
+          setStatus(next ?? status);
+        }}
+      />
       <div className="flex items-center gap-3">
         <button
           type="submit"

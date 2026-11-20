@@ -251,19 +251,16 @@ describe('EditTask', () => {
     await repository.save(makeTask({ status: 'doing' }));
     renderWithTrpc(<EditTask id="task-1" />, { repository });
 
-    const status = await screen.findByRole('combobox', { name: 'Status' });
+    const doing = await screen.findByRole('radio', { name: 'Doing' });
 
-    expect(status).toHaveDisplayValue('Doing');
+    expect(doing).toBeChecked();
   });
 
   it('saves a changed status', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
     const { user } = renderWithTrpc(<EditTask id="task-1" />, { repository });
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Status' }),
-      'Done',
-    );
+    await user.click(await screen.findByRole('radio', { name: 'Done' }));
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -283,7 +280,7 @@ describe('EditTask', () => {
       </>,
       { repository },
     );
-    await screen.findByRole('combobox', { name: 'Status' });
+    await screen.findByRole('group', { name: 'Status' });
     rerender(<TaskList filter={{}} />);
     const cardStatus = screen.getByRole('combobox', {
       name: 'Status of Write the README',
@@ -300,9 +297,7 @@ describe('EditTask', () => {
       </>,
     );
 
-    expect(
-      await screen.findByRole('combobox', { name: 'Status' }),
-    ).toHaveDisplayValue('Done');
+    expect(await screen.findByRole('radio', { name: 'Done' })).toBeChecked();
   });
 
   it('loads the task again on retry', async () => {

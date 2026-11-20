@@ -1,5 +1,31 @@
 @import 'tailwindcss';
 
+/* The board's palette and typeface (DECISIONS D-37). Each color is a token, redefined
+   once for dark mode below, so the markup uses one class where it needed a light and a
+   dark one. */
+@theme {
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #eef1f6;
+  --color-surface: #ffffff;
+  --color-ink: #18202e;
+  --color-ink-muted: #5b6578;
+  --color-line: #d9dee7;
+  --color-accent: #2f4bd8;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #c9372c;
+
+  --color-todo: #7c8aa5;
+  --color-todo-tint: #f6f8fb;
+  --color-todo-ink: #3e4a61;
+  --color-doing: #e5a00d;
+  --color-doing-tint: #fff7e2;
+  --color-doing-ink: #7a4e00;
+  --color-done: #23a26d;
+  --color-done-tint: #ecf8f2;
+  --color-done-ink: #11643f;
+}
+
 @layer base {
   /* Native controls (scrollbars, the textarea's resize handle, autofill) follow the theme. */
   :root {
@@ -8,58 +34,110 @@
     scrollbar-gutter: stable;
   }
 
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-canvas: #0f131a;
+      --color-surface: #171c25;
+      --color-ink: #e6e9ef;
+      --color-ink-muted: #9aa3b5;
+      --color-line: #2a3140;
+      --color-accent: #8ea2ff;
+      --color-accent-contrast: #0f131a;
+      --color-danger: #f07167;
+
+      --color-todo: #8e9bb5;
+      --color-todo-tint: #1a202b;
+      --color-todo-ink: #c9d2e3;
+      --color-doing: #f2b53a;
+      --color-doing-tint: #2a2312;
+      --color-doing-ink: #f6cd72;
+      --color-done: #3cc48a;
+      --color-done-tint: #12261e;
+      --color-done-ink: #7fe0b2;
+    }
+  }
+
+  /* A status maps to its colors here only; a card, a pill or a picker segment sets
+     data-status and reads --status (band, dot), --status-tint and --status-ink (D-37). */
+  [data-status='todo'] {
+    --status: var(--color-todo);
+    --status-tint: var(--color-todo-tint);
+    --status-ink: var(--color-todo-ink);
+  }
+
+  [data-status='doing'] {
+    --status: var(--color-doing);
+    --status-tint: var(--color-doing-tint);
+    --status-ink: var(--color-doing-ink);
+  }
+
+  [data-status='done'] {
+    --status: var(--color-done);
+    --status-tint: var(--color-done-tint);
+    --status-ink: var(--color-done-ink);
+  }
+
   /* The list behind an open modal stays still (DECISIONS D-35). */
   :root:has(dialog:modal) {
     overflow: hidden;
   }
 
   body {
-    @apply min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+    @apply bg-canvas text-ink min-h-screen antialiased;
   }
 }
 
 /* The few patterns repeated across pages (DECISIONS D-33). */
 @layer components {
   .button {
-    @apply inline-flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:outline-zinc-100;
+    @apply focus-visible:outline-accent inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .button-primary {
-    @apply bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300;
+    @apply bg-accent text-accent-contrast hover:bg-accent/90;
   }
 
   .button-secondary {
-    @apply border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800;
+    @apply border-line bg-surface text-ink hover:bg-ink/5 border;
   }
 
   .button-danger {
-    @apply border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950;
+    @apply border-danger/40 bg-surface text-danger hover:bg-danger/10 border;
+  }
+
+  .icon-button {
+    @apply text-ink-muted hover:bg-ink/5 hover:text-ink focus-visible:outline-accent inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .card {
-    @apply rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900;
+    @apply border-line bg-surface rounded-2xl border;
   }
 
   .field {
-    @apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:outline-none aria-[invalid=true]:border-red-500 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/20 dark:aria-[invalid=true]:border-red-500;
+    @apply border-line bg-surface text-ink placeholder:text-ink-muted focus:border-accent focus:ring-accent/25 aria-[invalid=true]:border-danger w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:outline-none;
   }
 
   /* A select's native arrow hugs the right edge; this one sits as far in as the text
-     does on the left (DECISIONS D-33). */
+     does on the left (DECISIONS D-33). A data URL cannot read a token, so the arrow's
+     color is written once per theme (ink-muted). */
   select.field {
     @apply appearance-none bg-size-[0.75rem] bg-position-[right_0.75rem_center] bg-no-repeat pr-9;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%235b6578' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+
+    @media (prefers-color-scheme: dark) {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%239aa3b5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    }
   }
 
   .page-title {
-    @apply text-2xl font-semibold tracking-tight;
+    @apply text-3xl font-semibold tracking-tight sm:text-4xl;
   }
 
   .text-muted {
-    @apply text-sm text-zinc-500 dark:text-zinc-400;
+    @apply text-ink-muted text-sm;
   }
 
   .text-error {
-    @apply text-sm text-red-600 dark:text-red-400;
+    @apply text-danger text-sm;
   }
 }

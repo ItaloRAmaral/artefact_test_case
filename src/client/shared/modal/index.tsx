@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import type { CloseModal } from './dto';
+import { CloseIcon } from '@/client/shared/icons';
 
 const CloseModalContext = createContext<CloseModal | null>(null);
 
@@ -87,7 +88,8 @@ export function Modal({
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      className="card m-auto w-[min(42rem,calc(100%-2rem))] p-0 text-inherit shadow-xl backdrop:bg-zinc-950/50"
+      // The backdrop is a fixed dark veil in both themes: ink turns light in dark mode.
+      className="card m-auto w-[min(42rem,calc(100%-2rem))] p-0 text-inherit shadow-2xl backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm"
       onCancel={(event) => {
         event.preventDefault();
         goBack();
@@ -100,15 +102,17 @@ export function Modal({
     >
       <div className="p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 id={titleId} className="page-title">
+          <h2 id={titleId} className="text-2xl font-semibold tracking-tight">
             {title}
           </h2>
           <button
             type="button"
-            className="button button-secondary"
+            className="icon-button -mr-2"
+            aria-label="Close"
+            title="Close"
             onClick={goBack}
           >
-            Close
+            <CloseIcon className="size-5" />
           </button>
         </div>
         <CloseModalContext value={closeModal}>{children}</CloseModalContext>

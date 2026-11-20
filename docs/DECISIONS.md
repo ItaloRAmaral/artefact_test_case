@@ -40,6 +40,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-34](#d-34-title-search-and-creation-date-filter-on-the-list)                                 | Title search and creation-date filter on the list                                        | 2026-11-20 |
 | [D-35](#d-35-create-and-edit-in-a-modal-over-the-list)                                          | Create and edit in a modal over the list                                                 | 2026-11-20 |
 | [D-36](#d-36-task-status-to-do-doing-done)                                                      | Task status (to do, doing, done)                                                         | 2026-11-20 |
+| [D-37](#d-37-a-colored-board-look)                                                              | A colored board look                                                                     | 2026-11-20 |
 
 ---
 
@@ -382,7 +383,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `card`, `field`, `page-title`, `text-muted`, `text-error`); a `select.field` draws its own arrow, as far in from the right edge as the text is from the left, because the native one hugs the edge (user report, 2026-11-20), so a change to a button or a field happens once.
-  - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards with their status as a colored pill (D-36), a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
+  - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards with their status as a colored pill (D-36), a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`). _Superseded in part by [D-37](#d-37-a-colored-board-look): the neutral zinc look gave way to a colored board, with color tokens, the Bricolage Grotesque typeface and an `icon-button` class; the layout, the sticky block and the toast's place stay._
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
 
@@ -474,6 +475,7 @@ The main decisions behind this project, each with its context, the choice and wh
       - On success the saved task is written to its `task.getById` cache entry. An inactive query is not refetched by an invalidation, so the edit form would open with the old status and saving would bring it back (found by a test while implementing).
     - **Form:** a `Status` select, `To do` for a new task (`TASK_STATUS_DEFAULT`). The form validates with `updateTaskInputSchema.omit({ id: true })`, so its data fits both `create` and `update`, and the rules still come from one schema.
     - **Filter bar:** a `Status` select (`All` and the three labels), applied on change, kept in the URL (`status`) and reset by `Clear filters`.
+    - _Superseded in part by [D-37](#d-37-a-colored-board-look): the form and the filter bar pick the status with a segmented control (`StatusPicker`) instead of a select; the card keeps its pill._
 - **Why:**
   - Three states are what the user named.
   - One shared set of values keeps the entity, the schema and the UI in step.
@@ -482,6 +484,24 @@ The main decisions behind this project, each with its context, the choice and wh
   - A boolean `done`: two states, and the user asked for three.
   - A kanban board: the user chose the list.
   - A status change through `task.update` from the card: it would overwrite a concurrent edit of the title.
+
+## D-37: A colored board look
+
+- **Context:** the user asked for a more modern design (2026-11-20). The look of D-33 was the generic card kit: identical cards with the same shadow, zinc greys and outlined buttons.
+- **Decision (user decisions: the "colored board" direction, changes to structure as well as look, a web font):**
+  - **Status leads the color:** each card is tinted and edged with its status color; everything else stays quiet (a cool neutral canvas, one blue accent for actions).
+  - **Tokens:** colors are Tailwind theme tokens in `globals.css` (`canvas`, `surface`, `ink`, `ink-muted`, `line`, `accent`, `accent-contrast`, `danger`, and `todo`, `doing`, `done` with `-tint` and `-ink`), redefined once under `prefers-color-scheme: dark`, so the markup uses one class where it needed a light and a `dark:` one. Every text pair passes WCAG AA (5.16:1 to 10.74:1, computed).
+  - **One rule per status:** `[data-status='todo' | 'doing' | 'done']` sets `--status`, `--status-tint` and `--status-ink`. A card, a pill or a picker segment only sets `data-status`, so a status's colors live in one place.
+  - **Typeface:** Bricolage Grotesque, through `next/font/google` with its optical-size axis: expressive at heading sizes, calm at small ones, so one family is enough. Next downloads it at build time and serves it from the app (no request to Google from the browser), so `pnpm build` needs internet.
+  - **Status picker:** the form and the filter bar pick the status with `StatusPicker` (`src/client/shared/status-picker/`), a segmented control of radios under a `Status` legend, with `All` first in the filter. Every status is in sight and one click away, where a select hid them. Each radio lies invisible over its segment, so a click anywhere on it picks it and the arrow keys move between segments; the checked one takes its status's tint. The card keeps its pill over a select (D-36), where a row of segments would not fit.
+  - **Layout:** the search (its label kept for screen readers only, a magnifier inside) and a quiet `Clear filters` share the first row of the sticky block; the status picker and the two days share the second, and wrap on a phone. A card shows the title and its pill, the description, then the date with a calendar icon and the Edit and Delete icon buttons (their accessible names, `Edit <title>` and `Delete <title>`, are unchanged, with a `title` tooltip). A done task's title is muted, not struck through, so it stays readable. The modal's `Close` is an icon button over a blurred, fixed dark backdrop (`ink` turns light in dark mode, so the veil does not use it). The toast is a surface card with a green or red dot.
+  - **Shape:** cards `rounded-xl` with no shadow, controls `rounded-lg`, pills `rounded-full`; the modal and the toast keep a shadow. A new `icon-button` class serves the icon-only actions.
+  - Plan: `docs/plans/2026-11-20-10-board-look.md`.
+- **Why:** the status is what a task list is scanned for, so it carries the color; tokens keep the light and dark themes in step from one table.
+- **Alternatives rejected:**
+  - A focus list (rows in one panel, Linear-like) and a minimal refinement of the old cards: offered, not chosen.
+  - A component or icon library: still not needed (D-33); icons are inline SVG.
+  - The system font stack: it changes with each system, and Segoe UI had already shown text sitting low in a select (D-36).
 
 ---
 

@@ -247,9 +247,7 @@ describe('TaskFilters', () => {
     const onChange = vi.fn();
     render(<TaskFilters filter={{}} onChange={onChange} />);
 
-    fireEvent.change(screen.getByLabelText('Status'), {
-      target: { value: 'doing' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'Doing' }));
 
     expect(onChange).toHaveBeenCalledWith({ status: 'doing' });
   });
@@ -258,9 +256,7 @@ describe('TaskFilters', () => {
     const onChange = vi.fn();
     render(<TaskFilters filter={{ status: 'doing' }} onChange={onChange} />);
 
-    fireEvent.change(screen.getByLabelText('Status'), {
-      target: { value: '' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'All' }));
 
     expect(onChange).toHaveBeenCalledWith({ status: undefined });
   });
@@ -268,21 +264,21 @@ describe('TaskFilters', () => {
   it('shows the status of the filter', () => {
     render(<TaskFilters filter={{ status: 'done' }} onChange={vi.fn()} />);
 
-    const status = screen.getByLabelText('Status');
+    const done = screen.getByRole('radio', { name: 'Done' });
 
-    expect(status).toHaveDisplayValue('Done');
+    expect(done).toBeChecked();
   });
 
   it('offers every status and All', () => {
     render(<TaskFilters filter={{}} onChange={vi.fn()} />);
 
-    const options = screen.getAllByRole('option');
+    const options = screen.getAllByRole('radio');
 
-    expect(options.map((option) => option.textContent)).toEqual([
-      'All',
-      'To do',
-      'Doing',
-      'Done',
+    expect(options).toEqual([
+      screen.getByRole('radio', { name: 'All' }),
+      screen.getByRole('radio', { name: 'To do' }),
+      screen.getByRole('radio', { name: 'Doing' }),
+      screen.getByRole('radio', { name: 'Done' }),
     ]);
   });
 
@@ -300,9 +296,7 @@ describe('TaskFilters', () => {
       <TaskFilters filter={{ titleContains: 'readme' }} onChange={onChange} />,
     );
 
-    fireEvent.change(screen.getByLabelText('Status'), {
-      target: { value: 'done' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: 'Done' }));
 
     expect(onChange).toHaveBeenCalledWith({
       titleContains: 'readme',

@@ -44,7 +44,7 @@ export function FilteredTaskList({
   return (
     <>
       {/* The header and the filters stay on screen while the page scrolls (DECISIONS D-33). */}
-      <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-zinc-200 bg-zinc-50 px-4 pb-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="border-line bg-canvas sticky top-0 z-10 -mx-4 mb-5 border-b px-4 pb-4">
         {header}
         <TaskFilters filter={filter} onChange={changeFilter} />
       </div>

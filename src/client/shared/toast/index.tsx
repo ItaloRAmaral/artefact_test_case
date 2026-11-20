@@ -80,13 +80,11 @@ function ToastText({ kind, text }: Pick<ToastMessage, 'kind' | 'text'>) {
   }
 
   return (
-    <p
-      className={`rounded-md border-l-4 bg-white px-4 py-3 text-sm shadow-lg dark:bg-zinc-900 ${
-        kind === 'success'
-          ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300'
-          : 'border-red-500 text-red-700 dark:text-red-400'
-      }`}
-    >
+    <p className="border-line bg-surface flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg">
+      <span
+        aria-hidden
+        className={`size-2 shrink-0 rounded-full ${kind === 'success' ? 'bg-done' : 'bg-danger'}`}
+      />
       {text}
     </p>
   );

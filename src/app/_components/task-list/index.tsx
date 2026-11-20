@@ -20,19 +20,13 @@ import {
   getErrorMessage,
   isTemporaryError,
 } from '@/client/shared/error-message';
+import { CalendarIcon, PencilIcon, TrashIcon } from '@/client/shared/icons';
 import { TaskDate } from '../task-date';
 import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 import { useShowToast } from '@/client/shared/toast';
 
 // Start loading the next page a little before the user reaches the end.
 const LOAD_AHEAD_MARGIN = '200px';
-
-const STATUS_PILL_COLORS: Record<TaskStatus, string> = {
-  todo: 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200',
-  doing:
-    'border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  done: 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-};
 
 export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const trpc = useTRPC();
@@ -153,7 +147,7 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
     );
   } else if (tasks.length === 0) {
     content = (
-      <p className="text-muted rounded-lg border border-dashed border-zinc-300 py-10 text-center dark:border-zinc-700">
+      <p className="text-muted border-line rounded-xl border border-dashed py-12 text-center">
         {isFiltered ? 'No tasks match the filters.' : 'No tasks yet.'}
       </p>
     );
@@ -164,15 +158,27 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
           className={`space-y-3 ${list.isPlaceholderData ? 'opacity-60' : ''}`}
         >
           {tasks.map((task) => (
-            <li key={task.id} className="card p-4">
+            // The card takes its status's colors from data-status: the band, the tint
+            // and the pill's dot and text (DECISIONS D-37).
+            <li
+              key={task.id}
+              data-status={shownStatus(task)}
+              className="border-line rounded-xl border border-l-4 border-l-(--status) bg-(--status-tint) py-4 pr-3 pl-5 transition-colors"
+            >
               <div className="flex items-start justify-between gap-3">
-                <h2 className="font-medium break-words">{task.title}</h2>
+                <h2
+                  className={`pt-0.5 text-[1.0625rem] leading-snug font-semibold break-words ${shownStatus(task) === 'done' ? 'text-ink-muted' : ''}`}
+                >
+                  {task.title}
+                </h2>
                 {/* A select's own text sits low in some fonts (Segoe UI) and its arrow hugs the
                     edge, so the pill shows a cap-height label, centered in any font, and its own
                     arrow; the real select lies invisible on top (DECISIONS D-36). */}
-                <span
-                  className={`relative inline-flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-3 text-xs font-medium has-aria-disabled:opacity-60 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-zinc-900 dark:has-focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
-                >
+                <span className="border-line bg-surface has-focus-visible:outline-accent relative inline-flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-2.5 text-xs font-semibold text-(--status-ink) has-aria-disabled:opacity-60 has-focus-visible:outline-2 has-focus-visible:outline-offset-2">
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full bg-(--status)"
+                  />
                   <span
                     aria-hidden
                     className="block [text-box:trim-both_cap_alphabetic]"
@@ -216,32 +222,37 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
                 </span>
               </div>
               {task.description === null ? null : (
-                <p className="mt-1 text-sm break-words whitespace-pre-line text-zinc-600 dark:text-zinc-300">
+                <p className="text-ink-muted mt-1 pr-2 text-sm break-words whitespace-pre-line">
                   {task.description}
                 </p>
               )}
-              <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <TaskDate iso={task.createdAt} />
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Link
-                  href={`/tasks/${task.id}/edit`}
-                  aria-label={`Edit ${task.title}`}
-                  className="button button-secondary"
-                >
-                  Edit
-                </Link>
-                <button
-                  type="button"
-                  className="button button-danger"
-                  aria-label={`Delete ${task.title}`}
-                  disabled={deleteTask.isPending}
-                  onClick={() => {
-                    deleteTask.mutate({ id: task.id });
-                  }}
-                >
-                  Delete
-                </button>
+              <div className="mt-1.5 -mb-2 flex items-center justify-between gap-3">
+                <span className="text-ink-muted inline-flex items-center gap-1.5 text-xs">
+                  <CalendarIcon className="size-3.5" />
+                  <TaskDate iso={task.createdAt} />
+                </span>
+                <div className="flex gap-0.5">
+                  <Link
+                    href={`/tasks/${task.id}/edit`}
+                    aria-label={`Edit ${task.title}`}
+                    title="Edit"
+                    className="icon-button"
+                  >
+                    <PencilIcon />
+                  </Link>
+                  <button
+                    type="button"
+                    className="icon-button hover:bg-danger/10 hover:text-danger"
+                    aria-label={`Delete ${task.title}`}
+                    title="Delete"
+                    disabled={deleteTask.isPending}
+                    onClick={() => {
+                      deleteTask.mutate({ id: task.id });
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
             </li>
           ))}

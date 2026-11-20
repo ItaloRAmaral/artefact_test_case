@@ -220,9 +220,7 @@ test('creates a task in a chosen status', async ({ page, request }) => {
   await page.getByRole('link', { name: 'New task' }).click();
   const dialog = page.getByRole('dialog', { name: 'New task' });
   await dialog.getByLabel('Title', { exact: true }).fill(title);
-  await dialog
-    .getByRole('combobox', { name: 'Status', exact: true })
-    .selectOption({ label: 'Doing' });
+  await dialog.getByRole('radio', { name: 'Doing', exact: true }).check();
 
   await dialog.getByRole('button', { name: 'Save' }).click();
 

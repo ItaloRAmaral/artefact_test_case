@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { FilteredTaskList } from './_components/filtered-task-list';
+import { PlusIcon } from '@/client/shared/icons';
 import {
   getNextTaskListCursor,
   readTaskListFilter,
@@ -29,9 +30,10 @@ export default function HomePage({ searchParams }: PageProps<'/'>) {
 
 function TaskListHeader() {
   return (
-    <div className="flex items-center justify-between gap-4 py-4">
+    <div className="flex items-center justify-between gap-4 pt-4 pb-5">
       <h1 className="page-title">Tasks</h1>
       <Link href="/tasks/new" className="button button-primary">
+        <PlusIcon />
         New task
       </Link>
     </div>

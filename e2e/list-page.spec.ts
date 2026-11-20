@@ -255,9 +255,7 @@ test('filters tasks by status', async ({ page, request }) => {
   });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(stamp)}`);
 
-  await page
-    .getByRole('combobox', { name: 'Status', exact: true })
-    .selectOption({ label: 'Done' });
+  await page.getByRole('radio', { name: 'Done', exact: true }).check();
 
   await expect(
     page.getByRole('heading', { name: `Status open ${stamp}` }),

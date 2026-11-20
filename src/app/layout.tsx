@@ -1,9 +1,19 @@
 import type { Metadata } from 'next';
+import { Bricolage_Grotesque } from 'next/font/google';
 
 import { ToastProvider } from '@/client/shared/toast';
 import { TrpcReactProvider } from '@/client/trpc/provider';
 
 import './globals.css';
+
+// Next downloads the font at build time and serves it from the app, so the browser asks
+// Google for nothing; the optical-size axis lets one family serve headings and small text
+// (DECISIONS D-37).
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  axes: ['opsz'],
+  variable: '--font-bricolage',
+});
 
 export const metadata: Metadata = {
   title: 'Tasks',
@@ -12,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children, modal }: LayoutProps<'/'>) {
   return (
-    <html lang="en">
+    <html lang="en" className={bricolage.variable}>
       <body>
         <TrpcReactProvider>
           <ToastProvider>

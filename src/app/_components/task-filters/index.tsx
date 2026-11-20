@@ -4,9 +4,9 @@ import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 
 import { TASK_TITLE_MAX_LENGTH } from '@/shared/tasks/task-limits';
 import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
-import { TASK_STATUSES } from '@/shared/tasks/task-statuses';
 
-import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
+import { SearchIcon } from '@/client/shared/icons';
+import { StatusPicker } from '@/client/shared/status-picker';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -46,7 +46,6 @@ export function TaskFilters({
   const searchId = useId();
   const fromId = useId();
   const toId = useId();
-  const statusId = useId();
   const [search, setSearch] = useState(filter.titleContains ?? '');
   // The server does not know the browser's zone, so the days show only after hydration and
   // the server HTML matches the first client render (the D-14 pattern, as in TaskDate).
@@ -81,95 +80,91 @@ export function TaskFilters({
   }, [search, filter, onChange]);
 
   return (
-    // The search gets a row of its own, so it stays wide; on a phone the dates pair up and
-    // stay readable, on a wider screen the dates, the status and Clear share one row.
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div className="col-span-2 sm:col-span-4">
-        <label htmlFor={searchId} className="mb-1 block text-sm font-medium">
-          Search by title
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          className="field h-10"
-          maxLength={TASK_TITLE_MAX_LENGTH}
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-          }}
-        />
-      </div>
-      <div>
-        <label htmlFor={fromId} className="mb-1 block text-sm font-medium">
-          Created from
-        </label>
-        <input
-          id={fromId}
-          type="date"
-          className="field h-10"
-          value={fromDay}
-          max={toDay === '' ? undefined : toDay}
-          onChange={(event) => {
-            const day = event.target.value;
-
-            onChange({
-              ...filter,
-              createdFrom: day === '' ? undefined : startOfLocalDay(day, 0),
-            });
-          }}
-        />
-      </div>
-      <div>
-        <label htmlFor={toId} className="mb-1 block text-sm font-medium">
-          Created to
-        </label>
-        <input
-          id={toId}
-          type="date"
-          className="field h-10"
-          value={toDay}
-          min={fromDay === '' ? undefined : fromDay}
-          onChange={(event) => {
-            const day = event.target.value;
-
-            onChange({
-              ...filter,
-              createdBefore: day === '' ? undefined : startOfLocalDay(day, 1),
-            });
-          }}
-        />
-      </div>
-      <div>
-        <label htmlFor={statusId} className="mb-1 block text-sm font-medium">
-          Status
-        </label>
-        <select
-          id={statusId}
-          className="field h-10"
-          value={filter.status ?? ''}
-          onChange={(event) => {
-            onChange({ ...filter, status: toTaskStatus(event.target.value) });
+    // The search and Clear share the first row; the status and the days share the second,
+    // and wrap on a phone (DECISIONS D-37).
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <label htmlFor={searchId} className="sr-only">
+            Search by title
+          </label>
+          <SearchIcon className="text-ink-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <input
+            id={searchId}
+            type="search"
+            className="field h-10 pl-9"
+            placeholder="Search tasks…"
+            maxLength={TASK_TITLE_MAX_LENGTH}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          className="button text-ink-muted hover:text-ink h-10 px-2"
+          disabled={!hasFilter}
+          onClick={() => {
+            setSearch('');
+            onChange({});
           }}
         >
-          <option value="">All</option>
-          {TASK_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {TASK_STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
+          Clear filters
+        </button>
       </div>
-      <button
-        type="button"
-        className="button button-secondary h-10 self-end"
-        disabled={!hasFilter}
-        onClick={() => {
-          setSearch('');
-          onChange({});
-        }}
-      >
-        Clear filters
-      </button>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <StatusPicker
+          value={filter.status}
+          allLabel="All"
+          onChange={(status) => {
+            onChange({ ...filter, status });
+          }}
+        />
+        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
+          <div>
+            <label htmlFor={fromId} className="mb-1 block text-sm font-medium">
+              Created from
+            </label>
+            <input
+              id={fromId}
+              type="date"
+              className="field h-10 sm:w-38"
+              value={fromDay}
+              max={toDay === '' ? undefined : toDay}
+              onChange={(event) => {
+                const day = event.target.value;
+
+                onChange({
+                  ...filter,
+                  createdFrom: day === '' ? undefined : startOfLocalDay(day, 0),
+                });
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor={toId} className="mb-1 block text-sm font-medium">
+              Created to
+            </label>
+            <input
+              id={toId}
+              type="date"
+              className="field h-10 sm:w-38"
+              value={toDay}
+              min={fromDay === '' ? undefined : fromDay}
+              onChange={(event) => {
+                const day = event.target.value;
+
+                onChange({
+                  ...filter,
+                  createdBefore:
+                    day === '' ? undefined : startOfLocalDay(day, 1),
+                });
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
