@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   TaskCursorInvalidError,
   TaskDescriptionTooLongError,
+  TaskStatusInvalidError,
   TaskNotFoundError,
   TaskStorageFullError,
   TaskTitleRequiredError,
@@ -25,6 +26,7 @@ describe('tRPC base', () => {
     { error: new TaskTitleRequiredError(), code: 'BAD_REQUEST' },
     { error: new TaskTitleTooLongError(), code: 'BAD_REQUEST' },
     { error: new TaskDescriptionTooLongError(), code: 'BAD_REQUEST' },
+    { error: new TaskStatusInvalidError(), code: 'BAD_REQUEST' },
     { error: new TaskCursorInvalidError(), code: 'BAD_REQUEST' },
     { error: new TaskStorageFullError(), code: 'CONFLICT' },
   ])('maps $error.code to $code', async ({ error, code }) => {

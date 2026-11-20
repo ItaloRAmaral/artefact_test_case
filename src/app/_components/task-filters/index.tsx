@@ -4,6 +4,9 @@ import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 
 import { TASK_TITLE_MAX_LENGTH } from '@/shared/tasks/task-limits';
 import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
+import { TASK_STATUSES } from '@/shared/tasks/task-statuses';
+
+import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -43,6 +46,7 @@ export function TaskFilters({
   const searchId = useId();
   const fromId = useId();
   const toId = useId();
+  const statusId = useId();
   const [search, setSearch] = useState(filter.titleContains ?? '');
   // The server does not know the browser's zone, so the days show only after hydration and
   // the server HTML matches the first client render (the D-14 pattern, as in TaskDate).
@@ -77,8 +81,8 @@ export function TaskFilters({
   }, [search, filter, onChange]);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
-      <div className="col-span-2 sm:col-span-1">
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto]">
+      <div className="col-span-3 sm:col-span-1">
         <label htmlFor={searchId} className="mb-1 block text-sm font-medium">
           Search by title
         </label>
@@ -133,9 +137,29 @@ export function TaskFilters({
           }}
         />
       </div>
+      <div>
+        <label htmlFor={statusId} className="mb-1 block text-sm font-medium">
+          Status
+        </label>
+        <select
+          id={statusId}
+          className="field"
+          value={filter.status ?? ''}
+          onChange={(event) => {
+            onChange({ ...filter, status: toTaskStatus(event.target.value) });
+          }}
+        >
+          <option value="">All</option>
+          {TASK_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {TASK_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </select>
+      </div>
       <button
         type="button"
-        className="button button-secondary col-span-2 self-end sm:col-span-1"
+        className="button button-secondary col-span-3 self-end sm:col-span-1"
         disabled={!hasFilter}
         onClick={() => {
           setSearch('');

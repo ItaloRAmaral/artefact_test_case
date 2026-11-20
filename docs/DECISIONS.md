@@ -37,6 +37,9 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-31](#d-31-infinite-scroll-on-the-list)                                                       | Infinite scroll on the list                                                              | 2026-11-19 |
 | [D-32](#d-32-front-end-folders-page-components-next-to-the-page-shared-ones-in-srcclientshared) | Front-end folders: page components next to the page, shared ones in `src/client/shared/` | 2026-11-20 |
 | [D-33](#d-33-styling-with-tailwind-css-only)                                                    | Styling with Tailwind CSS only                                                           | 2026-11-20 |
+| [D-34](#d-34-title-search-and-creation-date-filter-on-the-list)                                 | Title search and creation-date filter on the list                                        | 2026-11-20 |
+| [D-35](#d-35-create-and-edit-in-a-modal-over-the-list)                                          | Create and edit in a modal over the list                                                 | 2026-11-20 |
+| [D-36](#d-36-task-status-to-do-doing-done)                                                      | Task status (to do, doing, done)                                                         | 2026-11-20 |
 
 ---
 
@@ -186,7 +189,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the spec lists four operations and the task fields; the pages need a few details it leaves open.
 - **Decision** (full table in the [roadmap](plans/2026-11-19-roadmap.md#interfaces-between-sub-plans)):
   - Five procedures: `task.list` (cursor page, D-10), `task.getById`, `task.create`, `task.update`, `task.delete`. `getById` is the one added to the spec's four, because the edit page must load a task opened directly by URL or after a refresh.
-  - `TaskDto = { id, title, description: string | null, createdAt: string }`.
+  - `TaskDto = { id, title, description: string | null, createdAt: string }`. _Superseded in part by [D-36](#d-36-task-status-to-do-doing-done): `TaskDto` gains `status`, `task.update` requires it, and a sixth procedure, `task.changeStatus`, changes it alone._
   - The schemas trim text. A whitespace-only title is a field error. A blank or omitted `description` becomes `null`, also on update, which replaces `title` and `description` together.
   - `task.delete` returns `{ id }`.
   - Errors carry the tRPC code, plus `data.domainCode` for domain errors and `data.fieldErrors` for validation. _Detailed in [D-25](#d-25-error-responses-and-transport), which also adds an ignored `direction` to `task.list`._
@@ -334,7 +337,7 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** the spec asks for a create/update page with a form built from functional components and hooks, validation (no empty title), messages for front-end and back-end errors, and loading, success and failure states. With `cacheComponents`, Next.js 16 hides a page it leaves with React `<Activity>` and keeps its state (`node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`).
 - **Decision:**
-  - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/shared/task-form/`, D-32) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one.
+  - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/shared/task-form/`, D-32) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one. _Superseded in part by [D-36](#d-36-task-status-to-do-doing-done): the form also edits the status and validates with `updateTaskInputSchema.omit({ id: true })`._
   - Save is disabled from the click until the navigation (`Saving…` while pending). A failed save shows the code-mapped text (D-07) in the toast. _Superseded in part by [D-35](#d-35-create-and-edit-in-a-modal-over-the-list): a failed save shows in the form, and inside the modal the form closes by going back, with the toast after the dialog closes._ On success the form awaits the cache refresh (the list with `refetchType: 'all'` in the filter, since it is off screen; on update also `task.getById` for that id), shows `Task created.` or `Task saved.` and returns to `/` (user decision). The toast lives in a `ToastProvider` in the root layout, which stays mounted across navigations.
   - `TaskForm` is keyed by `useRouter().bfcacheId`, so each visit through a link starts a fresh form while the browser's back button restores a draft (`use-router.md`).
   - The edit page reads `params` inside `<Suspense>` and loads the task in the browser only (user decision), with `retry: false`, so a missing task shows `This task no longer exists.` at once on the page (user decision); an id over 36 characters shows `Some fields are invalid.`.
@@ -379,7 +382,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `card`, `field`, `page-title`, `text-muted`, `text-error`), so a change to a button or a field happens once.
-  - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
+  - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards with their status as a colored pill (D-36), a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
 
@@ -442,6 +445,42 @@ The main decisions behind this project, each with its context, the choice and wh
   - The URL can be shared and survives a refresh.
   - Back closes the modal.
 - **Alternative rejected:** a `<dialog>` held in the list's state with no route. It is smaller, but it has no link and no refresh, and the spec's page would be gone.
+
+## D-36: Task status (to do, doing, done)
+
+- **Context:** the user asked, beyond the spec, to know whether a task is to do, in progress or done (2026-11-20). The spec's task model lists "at least" four fields, so a fifth is allowed.
+- **Decision (user decisions: changed on the card and in the form, a badge on the existing list, a status filter):**
+  - **Values:**
+    - A task has a `status`: `'todo' | 'doing' | 'done'`.
+    - The values and the default (`todo`) are defined once in `src/shared/tasks/task-statuses.ts`, used by the entity, the Zod schemas and the UI (the D-13 pattern).
+    - Any status can move to any other.
+  - **Entity:**
+    - `Task.create` takes an optional status (`todo` when absent). `task.changeStatus(status)` changes it.
+    - Both reject a value outside the set with `TASK_STATUS_INVALID`, translated to `BAD_REQUEST`, even though `z.enum` rejects it first at the edge (D-06: the entity guards its invariants whatever the caller).
+    - `edit()` still takes only title and description.
+  - **Contract:**
+    - `TaskDto` gains `status`.
+    - `task.create` takes `status?`.
+    - `task.update` requires `status`: the form always sends it, so an update replaces the whole content. An optional `status` would mean "keep it", while an omitted `description` means "clear it".
+    - `task.list` takes `status?` as a filter, applied by the repository like the others (D-34).
+  - **`task.changeStatus({ id, status })`:** a procedure and use case (`ChangeTaskStatus`) for the card. A status change must not send, or overwrite, a title or description. The form saves the whole task, so an open form overwrites a status changed meanwhile on a card (last write wins, as for the title).
+  - **Old dev data:** tasks stored before this change, in a dev server already running, have no status; restart `pnpm dev` once (production always starts empty, D-05).
+  - **In the browser** (labels, texts and colors proposed in the plan and accepted by the user):
+    - The labels are `To do`, `Doing` and `Done`, defined once in `src/client/shared/task-status/`. A select's string becomes a status through the shared schema (`toTaskStatus`), never with a cast.
+    - **Card:** the badge is the control, a `<select>` pill (zinc, amber or emerald by status), named `Status of <title>`.
+      - Choosing a value saves at once with `task.changeStatus`, and the toast shows `Status updated.` or the code-mapped error.
+      - While the change is saved, the pill shows the chosen value (the mutation's variables), and every status pill stays disabled until the list has refetched, as delete does (D-28).
+      - On success the saved task is written to its `task.getById` cache entry. An inactive query is not refetched by an invalidation, so the edit form would open with the old status and saving would bring it back (found by a test while implementing).
+    - **Form:** a `Status` select, `To do` for a new task (`TASK_STATUS_DEFAULT`). The form validates with `updateTaskInputSchema.omit({ id: true })`, so its data fits both `create` and `update`, and the rules still come from one schema.
+    - **Filter bar:** a `Status` select (`All` and the three labels), applied on change, kept in the URL (`status`) and reset by `Clear filters`.
+- **Why:**
+  - Three states are what the user named.
+  - One shared set of values keeps the entity, the schema and the UI in step.
+  - A dedicated procedure keeps a one-click change from carrying the rest of the task.
+- **Alternatives rejected:**
+  - A boolean `done`: two states, and the user asked for three.
+  - A kanban board: the user chose the list.
+  - A status change through `task.update` from the card: it would overwrite a concurrent edit of the title.
 
 ---
 

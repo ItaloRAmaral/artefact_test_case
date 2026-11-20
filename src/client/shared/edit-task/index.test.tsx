@@ -246,6 +246,65 @@ describe('EditTask', () => {
     );
   });
 
+  it("prefills the task's status", async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask({ status: 'doing' }));
+    renderWithTrpc(<EditTask id="task-1" />, { repository });
+
+    const status = await screen.findByRole('combobox', { name: 'Status' });
+
+    expect(status).toHaveDisplayValue('Doing');
+  });
+
+  it('saves a changed status', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<EditTask id="task-1" />, { repository });
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Status' }),
+      'Done',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Task saved.');
+    });
+    expect((await repository.findExistingById('task-1')).status).toBe('done');
+  });
+
+  it('shows the new status when the task is edited after a change on its card', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user, rerender } = renderWithTrpc(
+      <>
+        <TaskList filter={{}} />
+        <EditTask id="task-1" />
+      </>,
+      { repository },
+    );
+    await screen.findByRole('combobox', { name: 'Status' });
+    rerender(<TaskList filter={{}} />);
+    const cardStatus = screen.getByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+    await user.selectOptions(cardStatus, 'Done');
+    await waitFor(() => {
+      expect(cardStatus).toBeEnabled();
+    });
+
+    rerender(
+      <>
+        <TaskList filter={{}} />
+        <EditTask key="reopened" id="task-1" />
+      </>,
+    );
+
+    expect(
+      await screen.findByRole('combobox', { name: 'Status' }),
+    ).toHaveDisplayValue('Done');
+  });
+
   it('loads the task again on retry', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());

@@ -12,6 +12,7 @@ export function readTaskListFilter(
     titleContains: shape.titleContains.safeParse(params.titleContains).data,
     createdFrom: shape.createdFrom.safeParse(params.createdFrom).data,
     createdBefore: shape.createdBefore.safeParse(params.createdBefore).data,
+    status: shape.status.safeParse(params.status).data,
   };
 }
 

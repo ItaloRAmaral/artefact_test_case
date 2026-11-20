@@ -1,4 +1,5 @@
 import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
+import type { TaskStatus } from '@/shared/tasks/task-statuses';
 
 export interface TaskPosition {
   readonly createdAt: Date;
@@ -9,6 +10,7 @@ export interface TaskListFilter {
   readonly titleContains: string | null;
   readonly createdFrom: Date | null;
   readonly createdBefore: Date | null;
+  readonly status: TaskStatus | null;
 }
 
 export interface InMemoryTaskRepositoryOptions {

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createTrpcRouter, publicProcedure } from '@/server/adapters/trpc/init';
 import {
+  changeTaskStatusInputSchema,
   createTaskInputSchema,
   listTasksInputSchema,
   taskIdInputSchema,
@@ -24,6 +25,7 @@ export const taskRouter = createTrpcRouter({
           input.createdBefore === undefined
             ? null
             : new Date(input.createdBefore),
+        status: input.status ?? null,
       });
 
       return {
@@ -52,6 +54,14 @@ export const taskRouter = createTrpcRouter({
     .input(updateTaskInputSchema)
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.tasks.updateTask.execute(input);
+
+      return toTaskDto(task);
+    }),
+
+  changeStatus: publicProcedure
+    .input(changeTaskStatusInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const task = await ctx.tasks.changeTaskStatus.execute(input);
 
       return toTaskDto(task);
     }),

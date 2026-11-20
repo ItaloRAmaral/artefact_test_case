@@ -8,6 +8,7 @@ describe('readTaskListFilter', () => {
       titleContains: ' readme ',
       createdFrom: '2026-11-20T03:00:00.000Z',
       createdBefore: '2026-11-21T03:00:00.000Z',
+      status: 'doing',
     };
 
     const filter = readTaskListFilter(params);
@@ -16,6 +17,7 @@ describe('readTaskListFilter', () => {
       titleContains: 'readme',
       createdFrom: '2026-11-20T03:00:00.000Z',
       createdBefore: '2026-11-21T03:00:00.000Z',
+      status: 'doing',
     });
   });
 
@@ -32,6 +34,8 @@ describe('readTaskListFilter', () => {
     { invalid: 'an invalid date', params: { createdFrom: 'yesterday' } },
     { invalid: 'a repeated key', params: { titleContains: ['a', 'b'] } },
     { invalid: 'an unknown key', params: { page: '2' } },
+    { invalid: 'an unknown status', params: { status: 'archived' } },
+    { invalid: 'a repeated status', params: { status: ['todo', 'done'] } },
   ])('drops $invalid', ({ params }) => {
     const filter = readTaskListFilter(params);
 

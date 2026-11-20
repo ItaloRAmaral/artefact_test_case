@@ -26,6 +26,11 @@ describe('getErrorMessage', () => {
     },
     {
       code: 'BAD_REQUEST',
+      domainCode: 'TASK_STATUS_INVALID',
+      message: 'Choose a valid status.',
+    },
+    {
+      code: 'BAD_REQUEST',
       domainCode: 'TASK_CURSOR_INVALID',
       message: 'The list could not be loaded. Reload the page.',
     },

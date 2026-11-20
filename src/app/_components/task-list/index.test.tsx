@@ -11,6 +11,7 @@ import {
   failingAfterFirstCallLink,
   failingLink,
   failingProcedureLink,
+  pendingProcedureLink,
   pendingRefreshLink,
   routerLink,
   scriptedProcedureLink,
@@ -569,6 +570,177 @@ describe('TaskList', () => {
     });
     expect(
       screen.getByRole('heading', { name: 'Review the README' }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows each task's status", async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask({ status: 'doing' }));
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
+
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    expect(status).toHaveDisplayValue('Doing');
+  });
+
+  it("changes a task's status from its card", async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Status updated.');
+    });
+    await waitFor(() => {
+      expect(status).toBeEnabled();
+    });
+    expect(status).toHaveDisplayValue('Done');
+    expect((await repository.findExistingById('task-1')).status).toBe('done');
+  });
+
+  it('shows the chosen status while the change is saved', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingProcedureLink(repository, 'task.changeStatus'),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    expect(status).toHaveDisplayValue('Done');
+  });
+
+  it('disables the status controls while a change is saved', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask(SECOND_TASK));
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingProcedureLink(repository, 'task.changeStatus'),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    expect(status).toBeDisabled();
+    expect(
+      screen.getByRole('combobox', { name: 'Status of Review the plan' }),
+    ).toBeDisabled();
+  });
+
+  it('keeps the status controls disabled until the list has refetched', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingRefreshLink(repository),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Status updated.');
+    });
+    expect(status).toBeDisabled();
+  });
+
+  it('keeps the delete buttons enabled while a status change is saved', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingProcedureLink(repository, 'task.changeStatus'),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    expect(
+      screen.getByRole('button', { name: 'Delete Write the README' }),
+    ).toBeEnabled();
+  });
+
+  it('shows the error when a status change fails', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: failingProcedureLink(repository, 'task.changeStatus'),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Something went wrong. Check your connection and try again.',
+      );
+    });
+    await waitFor(() => {
+      expect(status).toBeEnabled();
+    });
+    expect(status).toHaveDisplayValue('To do');
+  });
+
+  it('shows the not-found message when the task is gone', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask(SECOND_TASK));
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+    await repository.delete('task-1');
+
+    await user.selectOptions(status, 'Done');
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'This task no longer exists.',
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Write the README' }),
+      ).toBeNull();
+    });
+  });
+
+  it('removes a task from a status-filtered list when its status changes', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask(SECOND_TASK));
+    const { user } = renderWithTrpc(<TaskList filter={{ status: 'todo' }} />, {
+      repository,
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Write the README' }),
+      ).toBeNull();
+    });
+    expect(
+      screen.getByRole('heading', { name: 'Review the plan' }),
     ).toBeInTheDocument();
   });
 });

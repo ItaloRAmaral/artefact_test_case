@@ -17,6 +17,7 @@ src/
   shared/
     tasks/
       task-limits.ts         limits as plain constants, no imports (title and description max length, page size)
+      task-statuses.ts       the task statuses and the default one, as plain constants (D-36)
       task-schemas.ts        strict Zod input schemas of the tRPC contract; imported by the controller AND the form (output types come from the router, D-26)
       task-list-query.ts     readTaskListFilter (the URL's filter, read once by the page, D-34) and the next-cursor getter shared by the page's server fetch and TaskList (same cache key, D-27)
     trpc/
@@ -37,6 +38,7 @@ src/
           list-tasks/        index.ts, dto.ts, task-cursor.ts, index.test.ts
           get-task/          index.ts, dto.ts, index.test.ts
           update-task/       index.ts, dto.ts, index.test.ts
+          change-task-status/ index.ts, dto.ts, index.test.ts
           delete-task/       index.ts, dto.ts, index.test.ts
     adapters/                the outer ring: knows the framework, imports server-only
       trpc/
@@ -51,7 +53,8 @@ src/
       middlewares/           only when one is needed
     tasks-module.ts          composition root: createTasksModule(repository), and tasksModule over the snapshots Map kept on globalThis
   test/
-    factories/               make-task.ts (fixed data with overrides), make-caller.ts, seed-tasks.ts
+    factories/               make-task.ts (fixed data with overrides, STATUS_OUTSIDE_THE_SET), make-caller.ts, seed-tasks.ts, make-task-list-filter.ts
+    untyped.ts               lets a router test send an input the contract's types forbid
 ```
 
 Folders are created when their first file arrives (git keeps no empty folder). File and folder names are a starting point for the plan; the dependency rule below is not.
@@ -60,7 +63,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 
 `adapters/` and `tasks-module.ts` → `domains/`. Nothing in `domains/` points outward. ESLint enforces it (`no-restricted-imports`, D-17), test files excepted.
 
-- **`domains/<name>/` imports nothing external:** no `zod`, no `@trpc/*`, no Node built-ins (`node:crypto`), no Next, no `server-only`. Its one import from outside `src/server/` is `src/shared/tasks/task-limits.ts`, which is plain constants.
+- **`domains/<name>/` imports nothing external:** no `zod`, no `@trpc/*`, no Node built-ins (`node:crypto`), no Next, no `server-only`. Its only imports from outside `src/server/` are `src/shared/tasks/task-limits.ts` and `task-statuses.ts`, which are plain constants.
 - **Inside a domain:** `entities/` holds the rules and knows no use case or repository; repositories know the entity; use cases know both.
 - **An implementation that needs nothing external lives beside its contract** (`InMemoryTaskRepository` next to `TaskRepository`). An implementation that needs a library or a Node built-in would go to `adapters/`.
 - **`adapters/`** is the only place that knows a framework or a library (tRPC, Zod at the edge).
@@ -76,7 +79,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 ## Use cases and repositories
 
 - **Use case:** plain class, `execute(input)`, contracts through the constructor; no framework decorators. Thin script: load → call the entity → save → return the entity. A business `if` here means the rule belongs in the entity.
-- **One use case per operation** (`CreateTask`, `ListTasks`, `UpdateTask`, `DeleteTask`): single responsibility, each tested alone.
+- **One use case per operation** (`CreateTask`, `ListTasks`, `UpdateTask`, `ChangeTaskStatus`, `DeleteTask`): single responsibility, each tested alone.
 - **A contract (abstract class) exists only where it pays off:** `TaskRepository`, because storage is the part that would change (memory today, a database later). Time and IDs are direct calls in `CreateTask` (`new Date()`, the global `crypto.randomUUID()`): tests freeze time with Vitest fake timers and assert the id by its shape, so a `Clock` or `IdGenerator` contract would only wrap one line (user decision, D-24).
 - **Repository:** collection-like methods that receive and return entities, never DTOs. A method exists only when a use case calls it (`findExistingById`, `save`, `delete`, `listAfter(position, count, filter)`). No `update(dto)`, no generic `findAll()`.
 - **Not found is part of the repository contract** (user decision, 2026-11-19): the contract declares `findExistingById(id): Promise<Task>`, and every implementation rejects with the domain error `TaskNotFoundError` when the task does not exist. Use cases never check for `null`. Like the storage cap (D-22), this is the only domain error an implementation raises, and it is part of the contract; implementations still hold no business rule.

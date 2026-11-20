@@ -29,8 +29,20 @@ describe('CreateTask', () => {
       id: task.id,
       title: 'Write the README',
       description: 'Explain how to run it',
+      status: 'todo',
       createdAt: NOW,
     });
+  });
+
+  it('creates a task with the given status', async () => {
+    const createTask = new CreateTask(new InMemoryTaskRepository());
+
+    const task = await createTask.execute({
+      title: 'Write the README',
+      status: 'doing',
+    });
+
+    expect(task.status).toBe('doing');
   });
 
   it('sets createdAt to the current time', async () => {

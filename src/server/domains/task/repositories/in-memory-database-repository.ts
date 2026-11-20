@@ -88,7 +88,8 @@ export class InMemoryTaskRepository extends TaskRepository {
       (filter.createdFrom === null ||
         snapshot.createdAt.getTime() >= filter.createdFrom.getTime()) &&
       (filter.createdBefore === null ||
-        snapshot.createdAt.getTime() < filter.createdBefore.getTime())
+        snapshot.createdAt.getTime() < filter.createdBefore.getTime()) &&
+      (filter.status === null || snapshot.status === filter.status)
     );
   }
 

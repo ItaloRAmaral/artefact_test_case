@@ -13,16 +13,26 @@ import { useEffect, useRef } from 'react';
 import { useTRPC } from '@/client/trpc/provider';
 import { getNextTaskListCursor } from '@/shared/tasks/task-list-query';
 import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
+import type { TaskStatus } from '@/shared/tasks/task-statuses';
+import { TASK_STATUSES } from '@/shared/tasks/task-statuses';
 
 import {
   getErrorMessage,
   isTemporaryError,
 } from '@/client/shared/error-message';
 import { TaskDate } from '../task-date';
+import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 import { useShowToast } from '@/client/shared/toast';
 
 // Start loading the next page a little before the user reaches the end.
 const LOAD_AHEAD_MARGIN = '200px';
+
+const STATUS_PILL_COLORS: Record<TaskStatus, string> = {
+  todo: 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200',
+  doing:
+    'border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  done: 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+};
 
 export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const trpc = useTRPC();
@@ -50,6 +60,25 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
         queryClient.invalidateQueries(trpc.task.list.pathFilter()),
     }),
   );
+  const changeStatus = useMutation(
+    trpc.task.changeStatus.mutationOptions({
+      // The edit form starts from the cached task: without the saved one there, reopening
+      // Edit would show the old status and saving would bring it back (DECISIONS D-36).
+      onSuccess: (task) => {
+        queryClient.setQueryData(
+          trpc.task.getById.queryKey({ id: task.id }),
+          task,
+        );
+        showToast('success', 'Status updated.');
+      },
+      onError: (error) => {
+        showToast('error', getErrorMessage(error));
+      },
+      // As with delete, the controls stay disabled until the list has refetched.
+      onSettled: () =>
+        queryClient.invalidateQueries(trpc.task.list.pathFilter()),
+    }),
+  );
   const tasks = list.data?.pages.flatMap((page) => page.items) ?? [];
   const isFiltered = Object.values<string | undefined>(filter).some(
     (value) => value !== undefined,
@@ -69,6 +98,14 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const canLoadNextPage = hasNextPage && !isFetching && !isFetchNextPageError;
   const sentinelRef = useRef<HTMLDivElement>(null);
   let content: ReactNode;
+
+  // While a change is saved, the pill shows the chosen status, not the stored one it would
+  // otherwise snap back to until the refetch (the mutation's own state, not a copy).
+  function shownStatus(task: { id: string; status: TaskStatus }): TaskStatus {
+    return changeStatus.isPending && changeStatus.variables.id === task.id
+      ? changeStatus.variables.status
+      : task.status;
+  }
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -128,7 +165,28 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
         >
           {tasks.map((task) => (
             <li key={task.id} className="card p-4">
-              <h2 className="font-medium break-words">{task.title}</h2>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="font-medium break-words">{task.title}</h2>
+                <select
+                  aria-label={`Status of ${task.title}`}
+                  className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
+                  value={shownStatus(task)}
+                  disabled={changeStatus.isPending}
+                  onChange={(event) => {
+                    const status = toTaskStatus(event.target.value);
+
+                    if (status !== undefined) {
+                      changeStatus.mutate({ id: task.id, status });
+                    }
+                  }}
+                >
+                  {TASK_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {TASK_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {task.description === null ? null : (
                 <p className="mt-1 text-sm break-words whitespace-pre-line text-zinc-600 dark:text-zinc-300">
                   {task.description}

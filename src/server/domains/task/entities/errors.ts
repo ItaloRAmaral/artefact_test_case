@@ -41,6 +41,14 @@ export class TaskDescriptionTooLongError extends DomainError {
   }
 }
 
+export class TaskStatusInvalidError extends DomainError {
+  override readonly code = 'TASK_STATUS_INVALID';
+
+  constructor() {
+    super('Task status is invalid');
+  }
+}
+
 export class TaskCursorInvalidError extends DomainError {
   override readonly code = 'TASK_CURSOR_INVALID';
 

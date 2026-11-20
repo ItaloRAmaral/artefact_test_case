@@ -229,3 +229,41 @@ test('keeps the header and the filters on screen while scrolling', async ({
   ).toBeInViewport();
   await expect(page.getByRole('link', { name: 'New task' })).toBeInViewport();
 });
+
+test("changes a task's status from the list", async ({ page, request }) => {
+  const title = `Status task ${String(Date.now())}`;
+  await createTask(request, title);
+  await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
+  const status = page.getByRole('combobox', { name: `Status of ${title}` });
+
+  await status.selectOption({ label: 'Doing' });
+
+  await expect(page.getByRole('status')).toHaveText('Status updated.');
+  await page.reload();
+  await expect(status).toHaveValue('doing');
+});
+
+test('filters tasks by status', async ({ page, request }) => {
+  const stamp = String(Date.now());
+  await createTask(request, `Status open ${stamp}`);
+  const created = await request.post('/api/trpc/task.create', {
+    data: { title: `Status done ${stamp}` },
+  });
+  const done = (await created.json()) as { result: { data: { id: string } } };
+  await request.post('/api/trpc/task.changeStatus', {
+    data: { id: done.result.data.id, status: 'done' },
+  });
+  await gotoHydrated(page, `/?titleContains=${encodeURIComponent(stamp)}`);
+
+  await page
+    .getByRole('combobox', { name: 'Status', exact: true })
+    .selectOption({ label: 'Done' });
+
+  await expect(
+    page.getByRole('heading', { name: `Status open ${stamp}` }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: `Status done ${stamp}` }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/status=done/);
+});

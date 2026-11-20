@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { makeTask, makeTaskSnapshot } from '@/test/factories/make-task';
+import {
+  makeTask,
+  makeTaskSnapshot,
+  STATUS_OUTSIDE_THE_SET,
+} from '@/test/factories/make-task';
 import { catchError } from '@/test/catch-error';
 
 import { Task } from './entity';
@@ -18,7 +22,41 @@ describe('Task.create', () => {
 
     const task = Task.create(props);
 
-    expect(task.toSnapshot()).toEqual(props);
+    expect(task.toSnapshot()).toEqual({ ...props, status: 'todo' });
+  });
+
+  it('creates a task in the todo status', () => {
+    const task = Task.create({
+      id: 'task-1',
+      title: 'Write the README',
+      createdAt: CREATED_AT,
+    });
+
+    expect(task.status).toBe('todo');
+  });
+
+  it('creates a task with the given status', () => {
+    const task = Task.create({
+      id: 'task-1',
+      title: 'Write the README',
+      status: 'doing',
+      createdAt: CREATED_AT,
+    });
+
+    expect(task.status).toBe('doing');
+  });
+
+  it('rejects a status outside the set', () => {
+    const error = catchError(() =>
+      Task.create({
+        id: 'task-1',
+        title: 'Write the README',
+        status: STATUS_OUTSIDE_THE_SET,
+        createdAt: CREATED_AT,
+      }),
+    );
+
+    expect(error).toMatchObject({ code: 'TASK_STATUS_INVALID' });
   });
 
   it.each([
@@ -189,6 +227,46 @@ describe('Task.edit', () => {
     expect(task.toSnapshot()).toMatchObject({
       id: 'task-7',
       createdAt: CREATED_AT,
+    });
+  });
+});
+
+describe('Task.changeStatus', () => {
+  it('changes the status', () => {
+    const task = makeTask();
+
+    task.changeStatus('done');
+
+    expect(task.status).toBe('done');
+  });
+
+  it('keeps a task in the same status when it is chosen again', () => {
+    const task = makeTask({ status: 'doing' });
+
+    task.changeStatus('doing');
+
+    expect(task.status).toBe('doing');
+  });
+
+  it('rejects a status outside the set', () => {
+    const task = makeTask();
+
+    const error = catchError(() => {
+      task.changeStatus(STATUS_OUTSIDE_THE_SET);
+    });
+
+    expect(error).toMatchObject({ code: 'TASK_STATUS_INVALID' });
+    expect(task.status).toBe('todo');
+  });
+
+  it('keeps the content when the status changes', () => {
+    const task = makeTask({ description: 'Explain how to run it' });
+
+    task.changeStatus('done');
+
+    expect(task.toSnapshot()).toMatchObject({
+      title: 'Write the README',
+      description: 'Explain how to run it',
     });
   });
 });

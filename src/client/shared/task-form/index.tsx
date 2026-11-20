@@ -9,11 +9,21 @@ import { z } from 'zod';
 
 import { useTRPC } from '@/client/trpc/provider';
 import type { TaskDto } from '@/server/adapters/controllers/task/dto';
-import { createTaskInputSchema } from '@/shared/tasks/task-schemas';
+import { updateTaskInputSchema } from '@/shared/tasks/task-schemas';
+import type { TaskStatus } from '@/shared/tasks/task-statuses';
+import {
+  TASK_STATUS_DEFAULT,
+  TASK_STATUSES,
+} from '@/shared/tasks/task-statuses';
 
 import { getErrorMessage } from '@/client/shared/error-message';
 import { useCloseModal } from '@/client/shared/modal';
+import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 import { useShowToast } from '@/client/shared/toast';
+
+// The form edits everything but the id, with the update rules, so the data it validates
+// fits both create and update; the rules still come from one schema (DECISIONS D-36).
+const TASK_FORM_SCHEMA = updateTaskInputSchema.omit({ id: true });
 
 export function TaskForm({ task }: { task?: TaskDto }) {
   const { bfcacheId } = useRouter();
@@ -32,10 +42,14 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   const closeModal = useCloseModal();
   const titleId = useId();
   const descriptionId = useId();
+  const statusId = useId();
   const titleRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
+  const [status, setStatus] = useState<TaskStatus>(
+    task?.status ?? TASK_STATUS_DEFAULT,
+  );
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
     description?: string;
@@ -89,7 +103,7 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const result = createTaskInputSchema.safeParse({ title, description });
+    const result = TASK_FORM_SCHEMA.safeParse({ title, description, status });
 
     if (!result.success) {
       const errors = z.flattenError(result.error).fieldErrors;
@@ -109,8 +123,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
 
     setFieldErrors({});
 
-    // Title and description follow the same rules on create and update; the server checks
-    // the update input with its own strict schema.
     if (task === undefined) {
       create.mutate(result.data);
     } else {
@@ -172,6 +184,25 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
             {fieldErrors.description}
           </p>
         )}
+      </div>
+      <div>
+        <label htmlFor={statusId} className="mb-1 block text-sm font-medium">
+          Status
+        </label>
+        <select
+          id={statusId}
+          className="field w-auto"
+          value={status}
+          onChange={(event) => {
+            setStatus(toTaskStatus(event.target.value) ?? status);
+          }}
+        >
+          {TASK_STATUSES.map((option) => (
+            <option key={option} value={option}>
+              {TASK_STATUS_LABELS[option]}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="flex items-center gap-3">
         <button

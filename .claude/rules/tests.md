@@ -9,7 +9,7 @@ paths:
 
 Source of truth for how to write and verify tests: the `writing-tests` skill.
 
-- Files: unit and component tests sit next to the code as `*.test.ts(x)` (Vitest), each use case's test in its folder; end-to-end tests live in `e2e/*.spec.ts` (Playwright). Test-only helpers live in `src/test/` (`factories/make-*.ts`, `catchError`, `render-with-trpc.tsx`, `trpc-links.ts`, `setup-dom.ts`, `intersection-observer.ts`, `dialog.ts`).
+- Files: unit and component tests sit next to the code as `*.test.ts(x)` (Vitest), each use case's test in its folder; end-to-end tests live in `e2e/*.spec.ts` (Playwright). Test-only helpers live in `src/test/` (`factories/make-*.ts`, `catchError`, `render-with-trpc.tsx`, `trpc-links.ts`, `setup-dom.ts`, `intersection-observer.ts`, `dialog.ts`, `untyped.ts`). A router test that sends an input the contract's types forbid (a value outside a union, a missing field) wraps it in `untyped(...)`, so no test needs an `as`..
 - Arrange, Act, Assert separated by blank lines, with no comments; one Act per test; no `if` or loops deciding what to assert.
 - `it.each` only when every row has the same behavior and assertion shape, the table holds only literals, the body has no `if`, and the name shows the varying value (`%s`). Success and error cases go in separate tables.
 - Expected errors: assert the `code`, never the message. Async: the Act is the call (`const promise = caller.task.update(input);`) and the Assert is `await expect(promise).rejects.toMatchObject({ code: 'NOT_FOUND' })`. Sync: `const error = catchError(() => ...)`, then assert its `code`. Never `expect(() => ...).toThrow()`.

@@ -253,6 +253,21 @@ describe('InMemoryTaskRepository', () => {
     expect(tasks.map((task) => task.id)).toEqual(['task-1']);
   });
 
+  it('lists only tasks in the given status', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask({ id: 'task-1', status: 'todo' }));
+    await repository.save(makeTask({ id: 'task-2', status: 'doing' }));
+    await repository.save(makeTask({ id: 'task-3', status: 'done' }));
+
+    const tasks = await repository.listAfter(
+      null,
+      10,
+      makeTaskListFilter({ status: 'doing' }),
+    );
+
+    expect(tasks.map((task) => task.id)).toEqual(['task-2']);
+  });
+
   it('includes a task created exactly at createdFrom', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(

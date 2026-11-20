@@ -14,6 +14,7 @@ export class ListTasks {
       titleContains: input.titleContains,
       createdFrom: input.createdFrom,
       createdBefore: input.createdBefore,
+      status: input.status,
     });
     const hasNextPage = tasks.length > input.limit;
     const lastTaskOfPage = hasNextPage ? tasks[input.limit - 1] : undefined;

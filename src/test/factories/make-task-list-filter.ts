@@ -7,6 +7,7 @@ export function makeTaskListFilter(
     titleContains: null,
     createdFrom: null,
     createdBefore: null,
+    status: null,
     ...overrides,
   };
 }

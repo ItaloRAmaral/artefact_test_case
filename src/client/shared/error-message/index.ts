@@ -10,6 +10,7 @@ const MESSAGE_BY_DOMAIN_CODE: Record<TaskErrorCode, string> = {
   TASK_TITLE_REQUIRED: 'Title is required.',
   TASK_TITLE_TOO_LONG: `Title must be at most ${String(TASK_TITLE_MAX_LENGTH)} characters.`,
   TASK_DESCRIPTION_TOO_LONG: `Description must be at most ${String(TASK_DESCRIPTION_MAX_LENGTH)} characters.`,
+  TASK_STATUS_INVALID: 'Choose a valid status.',
   TASK_CURSOR_INVALID: 'The list could not be loaded. Reload the page.',
   TASK_STORAGE_FULL: 'The task list is full. Delete a task to add a new one.',
 };

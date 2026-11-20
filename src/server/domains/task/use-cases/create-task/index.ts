@@ -11,6 +11,7 @@ export class CreateTask {
       id: crypto.randomUUID(),
       title: input.title,
       description: input.description,
+      status: input.status,
       createdAt: new Date(),
     });
 

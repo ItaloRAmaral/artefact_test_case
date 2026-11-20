@@ -9,6 +9,7 @@ export function toTaskDto(task: Task): TaskDto {
     id: task.id,
     title: task.title,
     description: task.description,
+    status: task.status,
     createdAt: task.createdAt.toISOString(),
   };
 }

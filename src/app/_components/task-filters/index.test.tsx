@@ -242,4 +242,71 @@ describe('TaskFilters', () => {
 
     expect(clear).toBeDisabled();
   });
+
+  it('applies a status', () => {
+    const onChange = vi.fn();
+    render(<TaskFilters filter={{}} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText('Status'), {
+      target: { value: 'doing' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ status: 'doing' });
+  });
+
+  it('removes the status when All is chosen', () => {
+    const onChange = vi.fn();
+    render(<TaskFilters filter={{ status: 'doing' }} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText('Status'), {
+      target: { value: '' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ status: undefined });
+  });
+
+  it('shows the status of the filter', () => {
+    render(<TaskFilters filter={{ status: 'done' }} onChange={vi.fn()} />);
+
+    const status = screen.getByLabelText('Status');
+
+    expect(status).toHaveDisplayValue('Done');
+  });
+
+  it('offers every status and All', () => {
+    render(<TaskFilters filter={{}} onChange={vi.fn()} />);
+
+    const options = screen.getAllByRole('option');
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      'All',
+      'To do',
+      'Doing',
+      'Done',
+    ]);
+  });
+
+  it('enables Clear when only a status is set', () => {
+    render(<TaskFilters filter={{ status: 'todo' }} onChange={vi.fn()} />);
+
+    const clear = screen.getByRole('button', { name: 'Clear filters' });
+
+    expect(clear).toBeEnabled();
+  });
+
+  it('keeps the other filters when the status changes', () => {
+    const onChange = vi.fn();
+    render(
+      <TaskFilters filter={{ titleContains: 'readme' }} onChange={onChange} />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Status'), {
+      target: { value: 'done' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({
+      titleContains: 'readme',
+      status: 'done',
+    });
+  });
 });

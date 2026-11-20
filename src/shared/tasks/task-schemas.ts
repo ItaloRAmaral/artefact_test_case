@@ -8,6 +8,7 @@ import {
   TASK_PAGE_SIZE_MAX,
   TASK_TITLE_MAX_LENGTH,
 } from './task-limits';
+import { TASK_STATUSES } from './task-statuses';
 
 const id = z.string().min(1).max(TASK_ID_MAX_LENGTH);
 
@@ -27,9 +28,23 @@ const description = z
   })
   .optional();
 
-export const createTaskInputSchema = z.strictObject({ title, description });
+const status = z.enum(TASK_STATUSES);
 
-export const updateTaskInputSchema = z.strictObject({ id, title, description });
+export const createTaskInputSchema = z.strictObject({
+  title,
+  description,
+  status: status.optional(),
+});
+
+// The form always sends the status, so an update replaces the whole content (DECISIONS D-36).
+export const updateTaskInputSchema = z.strictObject({
+  id,
+  title,
+  description,
+  status,
+});
+
+export const changeTaskStatusInputSchema = z.strictObject({ id, status });
 
 export const taskIdInputSchema = z.strictObject({ id });
 
@@ -37,6 +52,7 @@ export const taskListFilterSchema = z.strictObject({
   titleContains: z.string().trim().min(1).max(TASK_TITLE_MAX_LENGTH).optional(),
   createdFrom: z.iso.datetime({ precision: 3 }).optional(),
   createdBefore: z.iso.datetime({ precision: 3 }).optional(),
+  status: status.optional(),
 });
 
 export type TaskListFilterInput = z.infer<typeof taskListFilterSchema>;

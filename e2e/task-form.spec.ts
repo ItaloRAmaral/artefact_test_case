@@ -212,3 +212,22 @@ test('keeps the list still behind the modal', async ({ page, request }) => {
   );
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+test('creates a task in a chosen status', async ({ page, request }) => {
+  const title = `Doing task ${String(Date.now())}`;
+  await createListedTask(request);
+  await gotoHydrated(page, '/');
+  await page.getByRole('link', { name: 'New task' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New task' });
+  await dialog.getByLabel('Title', { exact: true }).fill(title);
+  await dialog
+    .getByRole('combobox', { name: 'Status', exact: true })
+    .selectOption({ label: 'Doing' });
+
+  await dialog.getByRole('button', { name: 'Save' }).click();
+
+  await expect(page.getByRole('status')).toHaveText('Task created.');
+  await expect(
+    page.getByRole('combobox', { name: `Status of ${title}` }),
+  ).toHaveValue('doing');
+});

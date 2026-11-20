@@ -314,4 +314,31 @@ describe('TaskForm', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Task created.');
   });
+
+  it('starts a new task in To do', () => {
+    renderWithTrpc(<TaskForm />);
+
+    const status = screen.getByRole('combobox', { name: 'Status' });
+
+    expect(status).toHaveDisplayValue('To do');
+  });
+
+  it('saves the chosen status', async () => {
+    const repository = new InMemoryTaskRepository();
+    const { user } = renderWithTrpc(<TaskForm />, { repository });
+    await user.type(screen.getByLabelText('Title'), 'Write the README');
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Status' }),
+      'Doing',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith('/');
+    });
+    expect(await makeCaller(repository).task.list({})).toMatchObject({
+      items: [{ title: 'Write the README', status: 'doing' }],
+    });
+  });
 });

@@ -47,11 +47,25 @@ describe('createTasksModule', () => {
     await repository.save(makeTask({ id: 'task-1' }));
     const tasks = createTasksModule(repository);
 
-    await tasks.updateTask.execute({ id: 'task-1', title: 'Review the plan' });
+    await tasks.updateTask.execute({
+      id: 'task-1',
+      title: 'Review the plan',
+      status: 'todo',
+    });
 
     expect((await repository.findExistingById('task-1')).title).toBe(
       'Review the plan',
     );
+  });
+
+  it('changes task statuses in the given repository', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask({ id: 'task-1' }));
+    const tasks = createTasksModule(repository);
+
+    await tasks.changeTaskStatus.execute({ id: 'task-1', status: 'done' });
+
+    expect((await repository.findExistingById('task-1')).status).toBe('done');
   });
 
   it('deletes tasks from the given repository', async () => {

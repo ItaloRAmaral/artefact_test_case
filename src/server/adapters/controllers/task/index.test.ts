@@ -4,6 +4,7 @@ import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-me
 import { makeCaller } from '@/test/factories/make-caller';
 import { makeTask } from '@/test/factories/make-task';
 import { seedTasks } from '@/test/factories/seed-tasks';
+import { untyped } from '@/test/untyped';
 
 const NOW = new Date('2026-11-19T12:00:00.000Z');
 const UUID_V4 =
@@ -25,6 +26,7 @@ describe('task router', () => {
       id: 'task-1',
       title: 'Write the README',
       description: null,
+      status: 'todo',
       createdAt: '2026-11-19T12:00:00.000Z',
     });
   });
@@ -40,9 +42,21 @@ describe('task router', () => {
       id: task.id,
       title: 'Write the README',
       description: null,
+      status: 'todo',
       createdAt: '2026-11-19T12:00:00.000Z',
     });
     expect(task.id).toMatch(UUID_V4);
+  });
+
+  it('creates a task with the given status', async () => {
+    const caller = makeCaller();
+
+    const task = await caller.task.create({
+      title: 'Write the README',
+      status: 'doing',
+    });
+
+    expect(task.status).toBe('doing');
   });
 
   it('returns the updated task', async () => {
@@ -54,12 +68,14 @@ describe('task router', () => {
       id: 'task-1',
       title: 'Review the plan',
       description: 'Check the edge cases',
+      status: 'doing',
     });
 
     expect(task).toEqual({
       id: 'task-1',
       title: 'Review the plan',
       description: 'Check the edge cases',
+      status: 'doing',
       createdAt: '2026-11-19T12:00:00.000Z',
     });
   });
@@ -72,6 +88,7 @@ describe('task router', () => {
     const task = await caller.task.update({
       id: 'task-1',
       title: 'Write the README',
+      status: 'todo',
     });
 
     expect(task).toMatchObject({
@@ -100,12 +117,14 @@ describe('task router', () => {
           id: 'task-2',
           title: 'Review the plan',
           description: null,
+          status: 'todo',
           createdAt: '2026-11-19T12:01:00.000Z',
         },
         {
           id: 'task-1',
           title: 'Write the README',
           description: null,
+          status: 'todo',
           createdAt: '2026-11-19T12:00:00.000Z',
         },
       ],
@@ -210,6 +229,110 @@ describe('task router', () => {
     });
   });
 
+  it('lists only tasks in the given status', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask({ id: 'task-1', status: 'todo' }));
+    await repository.save(
+      makeTask({
+        id: 'task-2',
+        status: 'done',
+        createdAt: new Date('2026-11-19T12:01:00.000Z'),
+      }),
+    );
+    const caller = makeCaller(repository);
+
+    const page = await caller.task.list({ status: 'done' });
+
+    expect(page.items.map((task) => task.id)).toEqual(['task-2']);
+  });
+
+  it('returns the task with its new status', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const caller = makeCaller(repository);
+
+    const task = await caller.task.changeStatus({
+      id: 'task-1',
+      status: 'done',
+    });
+
+    expect(task).toEqual({
+      id: 'task-1',
+      title: 'Write the README',
+      description: null,
+      status: 'done',
+      createdAt: '2026-11-19T12:00:00.000Z',
+    });
+  });
+
+  it('fails with NOT_FOUND for a missing task on changeStatus', async () => {
+    const caller = makeCaller();
+
+    const promise = caller.task.changeStatus({ id: 'missing', status: 'done' });
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      cause: { code: 'TASK_NOT_FOUND' },
+    });
+  });
+
+  it('rejects an unknown key on changeStatus', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const caller = makeCaller(repository);
+    const input = { id: 'task-1', status: 'done', title: 'Changed' };
+
+    const promise = caller.task.changeStatus(untyped(input));
+
+    await expect(promise).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(
+      (await repository.findExistingById('task-1')).toSnapshot(),
+    ).toMatchObject({
+      title: 'Write the README',
+      status: 'todo',
+    });
+  });
+
+  it.each([
+    { invalid: 'an unknown status', status: 'archived' },
+    { invalid: 'an empty status', status: '' },
+  ])('rejects $invalid on changeStatus', async ({ status }) => {
+    const caller = makeCaller();
+
+    const promise = caller.task.changeStatus(untyped({ id: 'task-1', status }));
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      cause: { issues: [{ path: ['status'] }] },
+    });
+  });
+
+  it('rejects an update without a status', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const caller = makeCaller(repository);
+    const input = { id: 'task-1', title: 'Review the plan' };
+
+    const promise = caller.task.update(untyped(input));
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      cause: { issues: [{ path: ['status'] }] },
+    });
+  });
+
+  it('rejects an unknown status on list', async () => {
+    const caller = makeCaller();
+    const input = { status: 'archived' };
+
+    const promise = caller.task.list(untyped(input));
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      cause: { issues: [{ path: ['status'] }] },
+    });
+  });
+
   it('returns the id of the deleted task', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
@@ -256,10 +379,11 @@ describe('task router', () => {
     const input = {
       id: 'task-1',
       title: 'Review the plan',
+      status: 'todo',
       createdAt: '2020-01-01T00:00:00.000Z',
     };
 
-    const promise = caller.task.update(input);
+    const promise = caller.task.update(untyped(input));
 
     await expect(promise).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect((await repository.findExistingById('task-1')).title).toBe(
@@ -424,6 +548,7 @@ describe('task router', () => {
     const promise = caller.task.update({
       id: 'missing',
       title: 'Write the README',
+      status: 'todo',
     });
 
     await expect(promise).rejects.toMatchObject({

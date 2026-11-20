@@ -2,10 +2,16 @@ import {
   TASK_DESCRIPTION_MAX_LENGTH,
   TASK_TITLE_MAX_LENGTH,
 } from '@/shared/tasks/task-limits';
+import type { TaskStatus } from '@/shared/tasks/task-statuses';
+import {
+  TASK_STATUS_DEFAULT,
+  TASK_STATUSES,
+} from '@/shared/tasks/task-statuses';
 
 import type { TaskContent, TaskSnapshot } from './dto';
 import {
   TaskDescriptionTooLongError,
+  TaskStatusInvalidError,
   TaskTitleRequiredError,
   TaskTitleTooLongError,
 } from './errors';
@@ -18,11 +24,21 @@ export class Task {
   }
 
   static create(
-    props: TaskContent & Pick<TaskSnapshot, 'id' | 'createdAt'>,
+    props: TaskContent &
+      Partial<Pick<TaskSnapshot, 'status'>> &
+      Pick<TaskSnapshot, 'id' | 'createdAt'>,
   ): Task {
     const content = Task.normalizeContent(props.title, props.description);
+    const status = props.status ?? TASK_STATUS_DEFAULT;
 
-    return new Task({ id: props.id, createdAt: props.createdAt, ...content });
+    Task.ensureStatus(status);
+
+    return new Task({
+      id: props.id,
+      createdAt: props.createdAt,
+      status,
+      ...content,
+    });
   }
 
   static restore(snapshot: TaskSnapshot): Task {
@@ -33,6 +49,12 @@ export class Task {
     const content = Task.normalizeContent(changes.title, changes.description);
 
     this.state = { ...this.state, ...content };
+  }
+
+  changeStatus(status: TaskStatus): void {
+    Task.ensureStatus(status);
+
+    this.state = { ...this.state, status };
   }
 
   get id(): string {
@@ -47,12 +69,24 @@ export class Task {
     return this.state.description;
   }
 
+  get status(): TaskStatus {
+    return this.state.status;
+  }
+
   get createdAt(): Date {
     return new Date(this.state.createdAt);
   }
 
   toSnapshot(): TaskSnapshot {
     return { ...this.state, createdAt: new Date(this.state.createdAt) };
+  }
+
+  // The schema already limits the status at the edge; the entity checks again so no task
+  // holds another value, whatever the caller (DECISIONS D-06, D-36).
+  private static ensureStatus(status: TaskStatus): void {
+    if (!TASK_STATUSES.includes(status)) {
+      throw new TaskStatusInvalidError();
+    }
   }
 
   private static normalizeContent(

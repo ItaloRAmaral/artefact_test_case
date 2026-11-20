@@ -10,6 +10,7 @@ export class UpdateTask {
     const task = await this.repository.findExistingById(input.id);
 
     task.edit({ title: input.title, description: input.description });
+    task.changeStatus(input.status);
 
     await this.repository.save(task);
 
