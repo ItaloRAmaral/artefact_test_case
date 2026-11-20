@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                                                                                                                                                                                                                                                       |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status  | Proposed                                                                                                                                                                                                                                                                                                                    |
+| Status  | Approved                                                                                                                                                                                                                                                                                                                    |
 | Date    | 2026-11-20                                                                                                                                                                                                                                                                                                                  |
 | Request | "não tem CSS NENHUM né? Fora a arquitetura de pastas do front que está uma bagunça. Se é componente compartilhado [...] renomeie para Shared e dentro dela uma pasta para cada componente. Se o componente é só de uma página específica, crie uma pasta componente dentro da página [...]. Para o CSS vamos usar tailwind" |
 | Context | `docs/SPEC.md` §3 ("layout simples, não é necessário um design elaborado"); `docs/DECISIONS.md` D-19, D-26, D-28; Next.js 16.4.6 docs `01-getting-started/02-project-structure.md` (private folders) and `11-css.md` (Tailwind CSS)                                                                                         |
@@ -86,9 +86,17 @@ None.
 - Consumes: the current files.
 - Produces: the same exports at the new paths (`TaskList` from `@/app/_components/task-list`, `TaskDate` from `@/app/_components/task-date`, `EditTask` from `@/app/tasks/[id]/edit/_components/edit-task`, `TaskForm` from `@/client/shared/task-form`, `ToastProvider`, `useShowToast` and the types from `@/client/shared/toast`, `getErrorMessage`, `isTemporaryError` from `@/client/shared/error-message`).
 
-- [ ] **Step 1:** move the files, fix the imports, extend the ESLint block. Run every test: all pass unchanged (190 unit and component, 14 e2e). `pnpm lint`, `pnpm typecheck`, `pnpm format:check` green; `pnpm build` lists the same routes as before.
-- [ ] **Step 2:** ESLint API check (scratchpad script, an existing file path as in sub-plan 4): a value import from `@/server/tasks-module` in `src/app/_components/task-list/index.tsx` is reported; an `import type` from `@/server/adapters/trpc/app-router` is not.
-- [ ] **Step 3:** docs as listed in "Files".
+- [x] **Step 1:** move the files, fix the imports, extend the ESLint block. Run every test: all pass unchanged (190 unit and component, 14 e2e). `pnpm lint`, `pnpm typecheck`, `pnpm format:check` green; `pnpm build` lists the same routes as before.
+- [x] **Step 2:** ESLint API check (scratchpad script, an existing file path as in sub-plan 4): a value import from `@/server/tasks-module` in `src/app/_components/task-list/index.tsx` is reported; an `import type` from `@/server/adapters/trpc/app-router` is not.
+- [x] **Step 3:** docs as listed in "Files".
+
+**Execution notes (2026-11-20):**
+
+- 13 files moved with `git mv` (history kept); `src/client/tasks/` is gone. Imports: same folder `.`, a sibling folder `../task-date`, everything else through `@/` (`@/client/shared/toast`, `@/app/_components/task-list`); the edit page imports its own component as `./_components/edit-task`. The shared form's test and the edit test still render `TaskList` from `@/app/_components/task-list` to prove the cache invalidations.
+- The D-26 ESLint block covers `src/client/**` and `src/app/**/_components/**`; its two messages now say "Client components (src/client, app _components)". ESLint API check on `src/app/_components/task-list/index.tsx`: a value import from `@/server/tasks-module` and `import 'server-only'` are blocked, `import type` from `@/server/adapters/trpc/app-router` is allowed. The script lives outside the project, so it loads ESLint with `createRequire` from the project's `package.json`.
+- Result: 190 unit and component tests and 14 e2e tests pass unchanged; coverage on `src/server/**` 100%; `pnpm lint`, `pnpm typecheck`, `pnpm format:check` exit 0; `pnpm build` lists the same routes as before (no `_components` route).
+- Review (user approved): both pages import their own components as `./_components/<name>` (`page.tsx` used the alias); D-28's mention of `isTemporaryError` points to `src/client/shared/error-message/`.
+- Docs: D-32 and its index row (32 headings, 32 rows); D-28 superseded in part; D-29's path to `TaskForm`; `CLAUDE.md` "Where things live"; README "Where the code lives"; `code-style.md` "Next.js and React".
 
 **Suggested commit:** `refactor(web): move components next to their pages and into client/shared` · files: the list above
 

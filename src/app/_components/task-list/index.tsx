@@ -15,9 +15,12 @@ import {
   TASK_LIST_INPUT,
 } from '@/shared/tasks/task-list-query';
 
-import { getErrorMessage, isTemporaryError } from './error-message';
-import { TaskDate } from './task-date';
-import { useShowToast } from './toast';
+import {
+  getErrorMessage,
+  isTemporaryError,
+} from '@/client/shared/error-message';
+import { TaskDate } from '../task-date';
+import { useShowToast } from '@/client/shared/toast';
 
 // Start loading the next page a little before the user reaches the end.
 const LOAD_AHEAD_MARGIN = '200px';

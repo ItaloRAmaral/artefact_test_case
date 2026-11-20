@@ -5,7 +5,7 @@ import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement, ReactNode } from 'react';
 
-import { ToastProvider } from '@/client/tasks/toast';
+import { ToastProvider } from '@/client/shared/toast';
 import { TRPCProvider } from '@/client/trpc/provider';
 import type { AppRouter } from '@/server/adapters/trpc/app-router';
 import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { ToastProvider } from '@/client/tasks/toast';
+import { ToastProvider } from '@/client/shared/toast';
 import { TrpcReactProvider } from '@/client/trpc/provider';
 
 export const metadata: Metadata = {

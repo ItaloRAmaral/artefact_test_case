@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { EditTask } from '@/client/tasks/edit-task';
+import { EditTask } from './_components/edit-task';
 
 export default function EditTaskPage({
   params,

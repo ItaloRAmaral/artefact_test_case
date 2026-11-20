@@ -23,14 +23,14 @@ The controller validates the input shape with the shared Zod schema, calls one u
 
 **Where the code lives.**
 
-| Path          | What                                                                                                       |
-| ------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/app/`    | Next.js routes: the pages and the `/api/trpc` handler                                                      |
-| `src/server/` | the back end: `domains/task/` (entity, repository, use cases), `adapters/` (tRPC), composition             |
-| `src/shared/` | what both sides use: limits, Zod schemas, the list query options, the query client factory                 |
-| `src/client/` | client components (list, form, edit loader, toast), the code-to-message module and the tRPC React provider |
-| `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup               |
-| `e2e/`        | Playwright tests                                                                                           |
+| Path          | What                                                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`    | Next.js routes: the pages, the `/api/trpc` handler, and each page's own components in its `_components/<name>/` (the list, the date, the edit loader) |
+| `src/server/` | the back end: `domains/task/` (entity, repository, use cases), `adapters/` (tRPC), composition                                                        |
+| `src/shared/` | what both sides use: limits, Zod schemas, the list query options, the query client factory                                                            |
+| `src/client/` | `shared/<name>/`: what more than one page uses (the form, the toast, the code-to-message module); `trpc/`: the tRPC React provider                    |
+| `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup                                                          |
+| `e2e/`        | Playwright tests                                                                                                                                      |
 
 The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md); short comments in the code point to them.
 

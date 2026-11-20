@@ -16,7 +16,7 @@ import {
   scriptedProcedureLink,
 } from '@/test/trpc-links';
 
-import { TaskList } from './task-list';
+import { TaskList } from '.';
 
 const SECOND_TASK = {
   id: 'task-2',

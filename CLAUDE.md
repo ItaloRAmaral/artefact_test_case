@@ -12,19 +12,19 @@ A small task manager for a technical test: a Next.js app whose back end keeps ta
 
 ## Where things live
 
-| Path                                        | What                                                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `docs/SPEC.md`                              | The test statement (source of truth for scope)                                                                      |
-| `src/server/`, `src/client/`, `src/shared/` | Back end; client components and the tRPC React provider (type-only imports from `src/server/`); code both sides use |
-| `docs/plans/`                               | Implementation plans, written with the `planning-code-changes` skill                                                |
-| `README.md`                                 | How the system works and how to run it (a deliverable of the test)                                                  |
-| `docs/DECISIONS.md`                         | Main decisions (D-NN), each with context, the choice and why, plus the open ones                                    |
-| `.claude/rules/code-style.md`               | Code style guide (source of truth for style), always loaded                                                         |
-| `.claude/rules/backend.md`                  | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**` |
-| `.claude/rules/tests.md`                    | Test conventions, loaded on test files                                                                              |
-| `.claude/skills/`                           | `planning-code-changes`, `writing-tests`                                                                            |
-| `.claude/agents/plan-reviewer.md`           | Read-only reviewer of plans                                                                                         |
-| `.claude/settings.json`, `.claude/hooks/`   | Permissions and the hook that blocks git commands that create commits or publish                                    |
+| Path                                        | What                                                                                                                                                                                                                               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/SPEC.md`                              | The test statement (source of truth for scope)                                                                                                                                                                                     |
+| `src/server/`, `src/client/`, `src/shared/` | Back end; shared client components (`src/client/shared/<name>/`) and the tRPC React provider (type-only imports from `src/server/`); code both sides use. A page's own components live in its route's `_components/<name>/` (D-32) |
+| `docs/plans/`                               | Implementation plans, written with the `planning-code-changes` skill                                                                                                                                                               |
+| `README.md`                                 | How the system works and how to run it (a deliverable of the test)                                                                                                                                                                 |
+| `docs/DECISIONS.md`                         | Main decisions (D-NN), each with context, the choice and why, plus the open ones                                                                                                                                                   |
+| `.claude/rules/code-style.md`               | Code style guide (source of truth for style), always loaded                                                                                                                                                                        |
+| `.claude/rules/backend.md`                  | Back-end architecture: hexagonal layers, repository, dependency rule; loaded on `src/server/**` and `src/shared/**`                                                                                                                |
+| `.claude/rules/tests.md`                    | Test conventions, loaded on test files                                                                                                                                                                                             |
+| `.claude/skills/`                           | `planning-code-changes`, `writing-tests`                                                                                                                                                                                           |
+| `.claude/agents/plan-reviewer.md`           | Read-only reviewer of plans                                                                                                                                                                                                        |
+| `.claude/settings.json`, `.claude/hooks/`   | Permissions and the hook that blocks git commands that create commits or publish                                                                                                                                                   |
 
 ## Stack
 

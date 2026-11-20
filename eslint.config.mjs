@@ -125,7 +125,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/client/**'],
+    files: ['src/client/**', 'src/app/**/_components/**'],
     ignores: ['**/*.test.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
@@ -135,7 +135,7 @@ export default defineConfig([
             {
               name: 'server-only',
               message:
-                'src/client runs in the browser: it never imports server-only modules (DECISIONS D-26).',
+                'Client components (src/client, app _components) run in the browser: they never import server-only modules (DECISIONS D-26).',
             },
           ],
           patterns: [
@@ -143,7 +143,7 @@ export default defineConfig([
               group: ['@/server/*'],
               allowTypeImports: true,
               message:
-                'src/client imports only types from src/server (import type), never values (DECISIONS D-26).',
+                'Client components (src/client, app _components) import only types from src/server (import type), never values (DECISIONS D-26).',
             },
           ],
         },

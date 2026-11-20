@@ -2,39 +2,40 @@
 
 The main decisions behind this project, each with its context, the choice and why. The test statement is in [`SPEC.md`](SPEC.md). New decisions are added in the same change that makes them; a decision that changes is not edited away: the entry gets a "Superseded by D-NN" note and a new entry explains the change.
 
-| #                                                                                 | Decision                                                             | Date       |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
-| [D-01](#d-01-latest-nextjs-1646-instead-of-v15)                                   | Latest Next.js (16.4.6) instead of v15                               | 2026-11-19 |
-| [D-02](#d-02-newest-compatible-versions-for-the-rest-of-the-stack)                | Newest compatible versions for the rest of the stack                 | 2026-11-19 |
-| [D-03](#d-03-english-everywhere-including-the-task-fields)                        | English everywhere, including the task fields                        | 2026-11-19 |
-| [D-04](#d-04-hexagonal-architecture-with-a-repository-on-the-back-end)            | Hexagonal architecture with a repository on the back end             | 2026-11-19 |
-| [D-05](#d-05-in-memory-repository-kept-on-globalthis)                             | In-memory repository kept on `globalThis`                            | 2026-11-19 |
-| [D-06](#d-06-one-zod-contract-shared-by-server-and-form-invariants-in-the-entity) | One Zod contract shared by server and form; invariants in the entity | 2026-11-19 |
-| [D-07](#d-07-errors-as-domain-codes-translated-in-one-place)                      | Errors as domain codes, translated in one place                      | 2026-11-19 |
-| [D-08](#d-08-lean-test-strategy)                                                  | Lean test strategy                                                   | 2026-11-19 |
-| [D-09](#d-09-no-authentication-no-database)                                       | No authentication, no database                                       | 2026-11-19 |
-| [D-10](#d-10-infinite-scroll-with-cursor-pagination-from-the-start)               | Infinite scroll, with cursor pagination from the start               | 2026-11-19 |
-| [D-11](#d-11-createdat-travels-as-an-iso-8601-string)                             | `createdAt` travels as an ISO 8601 string                            | 2026-11-19 |
-| [D-12](#d-12-newest-tasks-first)                                                  | Newest tasks first                                                   | 2026-11-19 |
-| [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring)          | Limits live in `src/shared`; `server-only` only on server wiring     | 2026-11-19 |
-| [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration)      | Dates rendered in UTC on the server, local time after hydration      | 2026-11-19 |
-| [D-15](#d-15-the-trpc-contract)                                                   | The tRPC contract                                                    | 2026-11-19 |
-| [D-16](#d-16-eslint-10)                                                           | ESLint 10                                                            | 2026-11-19 |
-| [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports)                      | Layer rule enforced with `no-restricted-imports`                     | 2026-11-19 |
-| [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only)                       | e2e tests on a production build, Chromium only                       | 2026-11-19 |
-| [D-19](#d-19-newest-version-at-least-7-days-old)                                  | Newest version at least 7 days old                                   | 2026-11-19 |
-| [D-20](#d-20-limits-title-120-description-1000-page-10-to-50)                     | Limits: title 120, description 1000, page 10 (max 50)                | 2026-11-19 |
-| [D-21](#d-21-position-cursor)                                                     | Position cursor                                                      | 2026-11-19 |
-| [D-22](#d-22-storage-capped-at-1000-tasks)                                        | Storage capped at 1000 tasks                                         | 2026-11-19 |
-| [D-23](#d-23-back-end-folders-by-domain-and-adapters)                             | Back-end folders: `domains/<name>/` and `adapters/`                  | 2026-11-19 |
-| [D-24](#d-24-time-and-ids-without-ports)                                          | Time and IDs without ports                                           | 2026-11-19 |
-| [D-25](#d-25-error-responses-and-transport)                                       | Error responses and transport                                        | 2026-11-19 |
-| [D-26](#d-26-client-code-imports-only-types-from-srcserver)                       | Client code imports only types from `src/server/`                    | 2026-11-19 |
-| [D-27](#d-27-list-page-rendering)                                                 | List page rendering                                                  | 2026-11-19 |
-| [D-28](#d-28-front-end-structure-and-delete-ux)                                   | Front-end structure and delete UX                                    | 2026-11-19 |
-| [D-29](#d-29-create-and-edit-form)                                                | Create and edit form                                                 | 2026-11-19 |
-| [D-30](#d-30-only-plain-data-is-shared-on-globalthis)                             | Only plain data is shared on `globalThis`                            | 2026-11-19 |
-| [D-31](#d-31-infinite-scroll-on-the-list)                                         | Infinite scroll on the list                                          | 2026-11-19 |
+| #                                                                                               | Decision                                                                                 | Date       |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------- |
+| [D-01](#d-01-latest-nextjs-1646-instead-of-v15)                                                 | Latest Next.js (16.4.6) instead of v15                                                   | 2026-11-19 |
+| [D-02](#d-02-newest-compatible-versions-for-the-rest-of-the-stack)                              | Newest compatible versions for the rest of the stack                                     | 2026-11-19 |
+| [D-03](#d-03-english-everywhere-including-the-task-fields)                                      | English everywhere, including the task fields                                            | 2026-11-19 |
+| [D-04](#d-04-hexagonal-architecture-with-a-repository-on-the-back-end)                          | Hexagonal architecture with a repository on the back end                                 | 2026-11-19 |
+| [D-05](#d-05-in-memory-repository-kept-on-globalthis)                                           | In-memory repository kept on `globalThis`                                                | 2026-11-19 |
+| [D-06](#d-06-one-zod-contract-shared-by-server-and-form-invariants-in-the-entity)               | One Zod contract shared by server and form; invariants in the entity                     | 2026-11-19 |
+| [D-07](#d-07-errors-as-domain-codes-translated-in-one-place)                                    | Errors as domain codes, translated in one place                                          | 2026-11-19 |
+| [D-08](#d-08-lean-test-strategy)                                                                | Lean test strategy                                                                       | 2026-11-19 |
+| [D-09](#d-09-no-authentication-no-database)                                                     | No authentication, no database                                                           | 2026-11-19 |
+| [D-10](#d-10-infinite-scroll-with-cursor-pagination-from-the-start)                             | Infinite scroll, with cursor pagination from the start                                   | 2026-11-19 |
+| [D-11](#d-11-createdat-travels-as-an-iso-8601-string)                                           | `createdAt` travels as an ISO 8601 string                                                | 2026-11-19 |
+| [D-12](#d-12-newest-tasks-first)                                                                | Newest tasks first                                                                       | 2026-11-19 |
+| [D-13](#d-13-limits-live-in-srcshared-server-only-only-on-server-wiring)                        | Limits live in `src/shared`; `server-only` only on server wiring                         | 2026-11-19 |
+| [D-14](#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration)                    | Dates rendered in UTC on the server, local time after hydration                          | 2026-11-19 |
+| [D-15](#d-15-the-trpc-contract)                                                                 | The tRPC contract                                                                        | 2026-11-19 |
+| [D-16](#d-16-eslint-10)                                                                         | ESLint 10                                                                                | 2026-11-19 |
+| [D-17](#d-17-layer-rule-enforced-with-no-restricted-imports)                                    | Layer rule enforced with `no-restricted-imports`                                         | 2026-11-19 |
+| [D-18](#d-18-e2e-tests-on-a-production-build-chromium-only)                                     | e2e tests on a production build, Chromium only                                           | 2026-11-19 |
+| [D-19](#d-19-newest-version-at-least-7-days-old)                                                | Newest version at least 7 days old                                                       | 2026-11-19 |
+| [D-20](#d-20-limits-title-120-description-1000-page-10-to-50)                                   | Limits: title 120, description 1000, page 10 (max 50)                                    | 2026-11-19 |
+| [D-21](#d-21-position-cursor)                                                                   | Position cursor                                                                          | 2026-11-19 |
+| [D-22](#d-22-storage-capped-at-1000-tasks)                                                      | Storage capped at 1000 tasks                                                             | 2026-11-19 |
+| [D-23](#d-23-back-end-folders-by-domain-and-adapters)                                           | Back-end folders: `domains/<name>/` and `adapters/`                                      | 2026-11-19 |
+| [D-24](#d-24-time-and-ids-without-ports)                                                        | Time and IDs without ports                                                               | 2026-11-19 |
+| [D-25](#d-25-error-responses-and-transport)                                                     | Error responses and transport                                                            | 2026-11-19 |
+| [D-26](#d-26-client-code-imports-only-types-from-srcserver)                                     | Client code imports only types from `src/server/`                                        | 2026-11-19 |
+| [D-27](#d-27-list-page-rendering)                                                               | List page rendering                                                                      | 2026-11-19 |
+| [D-28](#d-28-front-end-structure-and-delete-ux)                                                 | Front-end structure and delete UX                                                        | 2026-11-19 |
+| [D-29](#d-29-create-and-edit-form)                                                              | Create and edit form                                                                     | 2026-11-19 |
+| [D-30](#d-30-only-plain-data-is-shared-on-globalthis)                                           | Only plain data is shared on `globalThis`                                                | 2026-11-19 |
+| [D-31](#d-31-infinite-scroll-on-the-list)                                                       | Infinite scroll on the list                                                              | 2026-11-19 |
+| [D-32](#d-32-front-end-folders-page-components-next-to-the-page-shared-ones-in-srcclientshared) | Front-end folders: page components next to the page, shared ones in `src/client/shared/` | 2026-11-20 |
 
 ---
 
@@ -321,9 +322,9 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** sub-plan 4 adds the first client code: where it lives, how it is tested and how delete gives feedback (the spec asks for feedback and loading, success and failure states).
 - **Decision:**
-  - Client code lives in `src/client/` (user decision), mirroring `src/server/`; ESLint keeps it to `import type` from `@/server/*` and never `server-only` (D-26). The query client factory is in `src/shared/trpc/`, used by both sides.
+  - Client code lives in `src/client/` (user decision), mirroring `src/server/`. _Superseded in part by [D-32](#d-32-front-end-folders-page-components-next-to-the-page-shared-ones-in-srcclientshared): page components live next to their page, shared ones in `src/client/shared/`._ ESLint keeps it to `import type` from `@/server/*` and never `server-only` (D-26). The query client factory is in `src/shared/trpc/`, used by both sides.
   - Components are tested in jsdom inside the real providers, with tRPC's `localLink` to `appRouter` over a fresh `InMemoryTaskRepository`, so the error formatter applies as over HTTP; the network is simulated with links in `src/test/trpc-links.ts`. TanStack Query notifies React as a microtask in these tests (`setup-dom.ts`), so updates land inside `act`.
-  - The list shows the full-page error only when the first load fails (`isLoadingError`): a failed refresh keeps the tasks on screen. A failed first load, on the list or the edit page, offers `Retry` when the failure may pass (no tRPC code, as with the network down, or `INTERNAL_SERVER_ERROR`; `isTemporaryError` in `error-message.ts`); a missing task or an invalid id shows only its message (project review, 2026-11-19).
+  - The list shows the full-page error only when the first load fails (`isLoadingError`): a failed refresh keeps the tasks on screen. A failed first load, on the list or the edit page, offers `Retry` when the failure may pass (no tRPC code, as with the network down, or `INTERNAL_SERVER_ERROR`; `isTemporaryError` in `src/client/shared/error-message/`); a missing task or an invalid id shows only its message (project review, 2026-11-19).
   - Delete: no confirmation (user decision: the spec asks only for feedback). Each button is named after its task (`Delete <title>`). Every delete button stays disabled until the list has refetched (`onSettled` returns the invalidation promise), so the deleted row cannot be clicked again. _Superseded in part by [D-29](#d-29-create-and-edit-form): the toast state lives in a `ToastProvider` in the root layout._ A toast shows `Task deleted.` (`role="status"`) or the error text mapped from its code (`role="alert"`) and hides after 4 seconds (user decision: a toast that disappears); it is keyed per result, so a new delete restarts the timer. Both live regions stay on the page, empty until a result, because screen readers announce a change inside an existing region but often miss a region inserted with its text.
 - **Why:** each piece is the smallest that meets the spec's feedback states; testing against the real router avoids mocks of our own code.
 - **Alternative rejected:** a confirmation dialog (not asked by the spec), a toast library (one small component is enough).
@@ -332,7 +333,7 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** the spec asks for a create/update page with a form built from functional components and hooks, validation (no empty title), messages for front-end and back-end errors, and loading, success and failure states. With `cacheComponents`, Next.js 16 hides a page it leaves with React `<Activity>` and keeps its state (`node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`).
 - **Decision:**
-  - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/tasks/task-form.tsx`) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one.
+  - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/shared/task-form/`, D-32) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one.
   - Save is disabled from the click until the navigation (`Saving…` while pending). A failed save shows the code-mapped text (D-07) in the toast. On success the form awaits the cache refresh (the list with `refetchType: 'all'` in the filter, since it is off screen; on update also `task.getById` for that id), shows `Task created.` or `Task saved.` and returns to `/` (user decision). The toast lives in a `ToastProvider` in the root layout, which stays mounted across navigations.
   - `TaskForm` is keyed by `useRouter().bfcacheId`, so each visit through a link starts a fresh form while the browser's back button restores a draft (`use-router.md`).
   - The edit page reads `params` inside `<Suspense>` and loads the task in the browser only (user decision), with `retry: false`, so a missing task shows `This task no longer exists.` at once on the page (user decision); an id over 36 characters shows `Some fields are invalid.`.
@@ -358,6 +359,17 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tests: component tests fake `IntersectionObserver` (absent from jsdom) and fire it on demand (`src/test/intersection-observer.ts`); e2e tests run on one worker, and the list tests use a 400 px tall viewport, so the first page fills it.
 - **Why:** the smallest trigger that loads as the user scrolls, with every state the spec asks for; the guards come from measured library behavior, each proved by a test that fails without it.
 - **Alternative rejected:** a `Load more` button (the spec asks for scrolling), a library for the observer (one effect is enough), parallel e2e workers (tests on one in-memory server would push each other's tasks off the first page).
+
+## D-32: Front-end folders: page components next to the page, shared ones in `src/client/shared/`
+
+- **Context:** all client components lived in one `src/client/tasks/` folder, whatever page used them (D-28). The user asked for a layout that shows who uses each one.
+- **Decision (user decision):**
+  - A component used by one page lives in that route's `_components/<name>/` folder: `src/app/_components/task-list/`, `src/app/_components/task-date/`, `src/app/tasks/[id]/edit/_components/edit-task/`. `_components` is a Next.js private folder: an underscore keeps it out of routing (`node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`).
+  - A component or client module used by more than one page lives in `src/client/shared/<name>/`: `task-form/` (the new and edit pages), `toast/` (the layout, the list, the form), `error-message/` (the list, the form, the edit page). `src/client/trpc/provider.tsx` stays.
+  - Each folder holds `index.tsx` or `index.ts`, its tests and its `dto.ts` when it has one, like the use-case folders on the server.
+  - The D-26 ESLint block covers `src/client/**` and `src/app/**/_components/**`, so a page component cannot import a server value either.
+- **Why:** where a file lives says who uses it; moving a component to `shared/` is the signal that a second page needs it.
+- **Alternative rejected:** one folder per feature (`src/client/tasks/`), the previous layout: it hid which page owns each component.
 
 ---
 

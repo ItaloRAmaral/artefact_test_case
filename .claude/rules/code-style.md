@@ -69,6 +69,7 @@ Priority follows Kent Beck's four rules of simple design: **passes the tests, re
 
 ## Next.js and React
 
+- **Where a client component lives** (D-32): used by one page, in that route's `_components/<name>/`; used by more than one, in `src/client/shared/<name>/`. Each folder holds `index.tsx` (or `index.ts`), its tests and its `dto.ts`.
 - **Server Components by default.** `'use client'` only on components that need state, effects, event handlers or browser APIs, and as low in the tree as possible.
 - **SSR of the list:** the page prefetches on the server through the tRPC server caller and hands the data to the client cache (hydration); the client never refetches what the server just rendered on first paint.
 - **Server-only modules** (the ones that wire or expose the server, listed in `backend.md`) import `server-only`, so a client import fails the build; no client code imports anything from `src/server/`.

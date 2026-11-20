@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { TaskForm } from '@/client/tasks/task-form';
+import { TaskForm } from '@/client/shared/task-form';
 
 export default function NewTaskPage() {
   return (

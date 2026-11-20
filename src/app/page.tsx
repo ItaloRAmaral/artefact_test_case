@@ -3,7 +3,7 @@ import { io } from 'next/cache';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { TaskList } from '@/client/tasks/task-list';
+import { TaskList } from './_components/task-list';
 import {
   getNextTaskListCursor,
   TASK_LIST_INPUT,

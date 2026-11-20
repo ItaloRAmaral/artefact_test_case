@@ -10,8 +10,8 @@ import {
   scriptedProcedureLink,
 } from '@/test/trpc-links';
 
-import { EditTask } from './edit-task';
-import { TaskList } from './task-list';
+import { EditTask } from '.';
+import { TaskList } from '@/app/_components/task-list';
 
 const { push } = vi.hoisted(() => ({ push: vi.fn<(href: string) => void>() }));
 

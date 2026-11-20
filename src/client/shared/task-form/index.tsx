@@ -11,8 +11,8 @@ import { useTRPC } from '@/client/trpc/provider';
 import type { TaskDto } from '@/server/adapters/controllers/task/dto';
 import { createTaskInputSchema } from '@/shared/tasks/task-schemas';
 
-import { getErrorMessage } from './error-message';
-import { useShowToast } from './toast';
+import { getErrorMessage } from '@/client/shared/error-message';
+import { useShowToast } from '@/client/shared/toast';
 
 export function TaskForm({ task }: { task?: TaskDto }) {
   const { bfcacheId } = useRouter();

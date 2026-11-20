@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getErrorMessage, isTemporaryError } from './error-message';
+import { getErrorMessage, isTemporaryError } from '.';
 
 describe('getErrorMessage', () => {
   it.each([

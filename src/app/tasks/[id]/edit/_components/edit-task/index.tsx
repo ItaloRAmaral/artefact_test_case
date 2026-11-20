@@ -4,8 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useTRPC } from '@/client/trpc/provider';
 
-import { getErrorMessage, isTemporaryError } from './error-message';
-import { TaskForm } from './task-form';
+import {
+  getErrorMessage,
+  isTemporaryError,
+} from '@/client/shared/error-message';
+import { TaskForm } from '@/client/shared/task-form';
 
 export function EditTask({ id }: { id: string }) {
   const trpc = useTRPC();

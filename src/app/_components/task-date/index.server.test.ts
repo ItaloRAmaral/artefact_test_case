@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { expect, it } from 'vitest';
 
-import { TaskDate } from './task-date';
+import { TaskDate } from '.';
 
 it('renders the date in UTC on the server', () => {
   const html = renderToString(

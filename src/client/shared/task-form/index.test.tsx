@@ -7,8 +7,8 @@ import { makeTask } from '@/test/factories/make-task';
 import { renderWithTrpc } from '@/test/render-with-trpc';
 import { failingProcedureLink, pendingProcedureLink } from '@/test/trpc-links';
 
-import { TaskForm } from './task-form';
-import { TaskList } from './task-list';
+import { TaskForm } from '.';
+import { TaskList } from '@/app/_components/task-list';
 
 const { push } = vi.hoisted(() => ({ push: vi.fn<(href: string) => void>() }));
 
