@@ -171,7 +171,7 @@ describe('EditTask', () => {
 
     expect(
       screen.getByRole('textbox', { name: 'Title' }),
-    ).toHaveAccessibleDescription('Title is required');
+    ).toHaveAccessibleDescription(expect.stringContaining('Title is required'));
     expect(
       (await repository.findExistingById('task-1')).toSnapshot().title,
     ).toBe('Write the README');

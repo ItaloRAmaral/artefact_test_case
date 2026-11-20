@@ -9,6 +9,10 @@ import { z } from 'zod';
 
 import { useTRPC } from '@/client/trpc/provider';
 import type { TaskDto } from '@/server/adapters/controllers/task/dto';
+import {
+  TASK_DESCRIPTION_MAX_LENGTH,
+  TASK_TITLE_MAX_LENGTH,
+} from '@/shared/tasks/task-limits';
 import { updateTaskInputSchema } from '@/shared/tasks/task-schemas';
 import type { TaskStatus } from '@/shared/tasks/task-statuses';
 import { TASK_STATUS_DEFAULT } from '@/shared/tasks/task-statuses';
@@ -21,6 +25,43 @@ import { useShowToast } from '@/client/shared/toast';
 // The form edits everything but the id, with the update rules, so the data it validates
 // fits both create and update; the rules still come from one schema (DECISIONS D-36).
 const TASK_FORM_SCHEMA = updateTaskInputSchema.omit({ id: true });
+
+// Below a field: its error, if any, and its count of characters, counted after trimming as
+// the limit is (DECISIONS D-20). Both describe the field, so a screen reader reads them on
+// focus without announcing every key.
+function FieldNotes({
+  id,
+  error,
+  value,
+  maxLength,
+}: {
+  id: string;
+  error: string | undefined;
+  value: string;
+  maxLength: number;
+}) {
+  const length = value.trim().length;
+
+  return (
+    <div className="mt-1 flex items-start justify-between gap-3">
+      {error === undefined ? null : (
+        <p id={`${id}-error`} className="text-error">
+          {error}
+        </p>
+      )}
+      <p
+        id={`${id}-count`}
+        className={`ml-auto text-xs tabular-nums ${length > maxLength ? 'text-danger' : 'text-ink-muted'}`}
+      >
+        {`${String(length)}/${String(maxLength)} characters`}
+      </p>
+    </div>
+  );
+}
+
+function describedBy(id: string, error: string | undefined): string {
+  return error === undefined ? `${id}-count` : `${id}-error ${id}-count`;
+}
 
 export function TaskForm({ task }: { task?: TaskDto }) {
   const { bfcacheId } = useRouter();
@@ -70,6 +111,22 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     }),
   );
   const save = task === undefined ? create : update;
+
+  // A field is checked again as it is typed (user request, DECISIONS D-29): a message
+  // already shown follows the text, and a length error shows at once. A required error
+  // waits for Save, so clearing a field to retype it is not flagged.
+  function checkField(field: 'title' | 'description', value: string) {
+    const issue =
+      TASK_FORM_SCHEMA.shape[field].safeParse(value).error?.issues[0];
+
+    setFieldErrors((current) => ({
+      ...current,
+      [field]:
+        current[field] !== undefined || issue?.code === 'too_big'
+          ? issue?.message
+          : undefined,
+    }));
+  }
 
   // The list may be off screen (the full page) or behind the modal, so only refetchType
   // 'all' surely refreshes it before the form closes; the mutation stays pending until
@@ -140,18 +197,18 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           value={title}
           aria-required
           aria-invalid={fieldErrors.title !== undefined}
-          aria-describedby={
-            fieldErrors.title === undefined ? undefined : `${titleId}-error`
-          }
+          aria-describedby={describedBy(titleId, fieldErrors.title)}
           onChange={(event) => {
             setTitle(event.target.value);
+            checkField('title', event.target.value);
           }}
         />
-        {fieldErrors.title === undefined ? null : (
-          <p id={`${titleId}-error`} className="text-error mt-1">
-            {fieldErrors.title}
-          </p>
-        )}
+        <FieldNotes
+          id={titleId}
+          error={fieldErrors.title}
+          value={title}
+          maxLength={TASK_TITLE_MAX_LENGTH}
+        />
       </div>
       <div>
         <label
@@ -166,20 +223,18 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           id={descriptionId}
           value={description}
           aria-invalid={fieldErrors.description !== undefined}
-          aria-describedby={
-            fieldErrors.description === undefined
-              ? undefined
-              : `${descriptionId}-error`
-          }
+          aria-describedby={describedBy(descriptionId, fieldErrors.description)}
           onChange={(event) => {
             setDescription(event.target.value);
+            checkField('description', event.target.value);
           }}
         />
-        {fieldErrors.description === undefined ? null : (
-          <p id={`${descriptionId}-error`} className="text-error mt-1">
-            {fieldErrors.description}
-          </p>
-        )}
+        <FieldNotes
+          id={descriptionId}
+          error={fieldErrors.description}
+          value={description}
+          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
+        />
       </div>
       <StatusPicker
         value={status}

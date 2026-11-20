@@ -129,7 +129,7 @@ export function TaskFilters({
             <input
               id={fromId}
               type="date"
-              className="field h-10 sm:w-38"
+              className="field h-10 px-2 sm:w-38 sm:px-3"
               value={fromDay}
               max={toDay === '' ? undefined : toDay}
               onChange={(event) => {
@@ -149,7 +149,7 @@ export function TaskFilters({
             <input
               id={toId}
               type="date"
-              className="field h-10 sm:w-38"
+              className="field h-10 px-2 sm:w-38 sm:px-3"
               value={toDay}
               min={fromDay === '' ? undefined : fromDay}
               onChange={(event) => {

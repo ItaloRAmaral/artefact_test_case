@@ -53,7 +53,9 @@ describe('TaskForm', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     const titleBox = screen.getByRole('textbox', { name: 'Title' });
-    expect(titleBox).toHaveAccessibleDescription('Title is required');
+    expect(titleBox).toHaveAccessibleDescription(
+      expect.stringContaining('Title is required'),
+    );
     expect(titleBox).toHaveAttribute('aria-invalid', 'true');
     expect((await makeCaller(repository).task.list({})).items).toEqual([]);
     expect(push).not.toHaveBeenCalled();
@@ -68,7 +70,7 @@ describe('TaskForm', () => {
 
     expect(
       screen.getByRole('textbox', { name: 'Title' }),
-    ).toHaveAccessibleDescription('Title is required');
+    ).toHaveAccessibleDescription(expect.stringContaining('Title is required'));
     expect((await makeCaller(repository).task.list({})).items).toEqual([]);
     expect(push).not.toHaveBeenCalled();
   });
@@ -101,7 +103,9 @@ describe('TaskForm', () => {
 
     expect(
       screen.getByRole('textbox', { name: 'Title' }),
-    ).toHaveAccessibleDescription('Title must be at most 120 characters');
+    ).toHaveAccessibleDescription(
+      expect.stringContaining('Title must be at most 120 characters'),
+    );
   });
 
   it('shows the description limit message', async () => {
@@ -115,8 +119,88 @@ describe('TaskForm', () => {
     expect(
       screen.getByRole('textbox', { name: 'Description' }),
     ).toHaveAccessibleDescription(
-      'Description must be at most 1000 characters',
+      expect.stringContaining('Description must be at most 1000 characters'),
     );
+  });
+
+  it('shows the title limit message while typing, before saving', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+    await user.click(screen.getByLabelText('Title'));
+
+    await user.paste('a'.repeat(121));
+
+    const titleBox = screen.getByRole('textbox', { name: 'Title' });
+    expect(titleBox).toHaveAccessibleDescription(
+      expect.stringContaining('Title must be at most 120 characters'),
+    );
+    expect(titleBox).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows the description limit message while typing, before saving', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+    await user.click(screen.getByLabelText('Description'));
+
+    await user.paste('a'.repeat(1001));
+
+    expect(
+      screen.getByRole('textbox', { name: 'Description' }),
+    ).toHaveAccessibleDescription(
+      expect.stringContaining('Description must be at most 1000 characters'),
+    );
+  });
+
+  it('clears the limit message once the title is short enough', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+    await user.click(screen.getByLabelText('Title'));
+    await user.paste('a'.repeat(121));
+
+    await user.keyboard('{Backspace}');
+
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveAttribute(
+      'aria-invalid',
+      'false',
+    );
+    expect(
+      screen.queryByText('Title must be at most 120 characters'),
+    ).toBeNull();
+  });
+
+  it('clears the required message once a title is typed', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await user.type(screen.getByLabelText('Title'), 'W');
+
+    expect(screen.queryByText('Title is required')).toBeNull();
+  });
+
+  it('does not show the required message while the title is retyped', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+    await user.type(screen.getByLabelText('Title'), 'Write');
+
+    await user.clear(screen.getByLabelText('Title'));
+
+    expect(screen.queryByText('Title is required')).toBeNull();
+  });
+
+  it('counts the title characters after trimming', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+
+    await user.type(screen.getByLabelText('Title'), '  Write  ');
+
+    expect(
+      screen.getByRole('textbox', { name: 'Title' }),
+    ).toHaveAccessibleDescription('5/120 characters');
+  });
+
+  it('counts the description characters', async () => {
+    const { user } = renderWithTrpc(<TaskForm />);
+
+    await user.type(screen.getByLabelText('Description'), 'How to run');
+
+    expect(
+      screen.getByRole('textbox', { name: 'Description' }),
+    ).toHaveAccessibleDescription('10/1000 characters');
   });
 
   it('saves the task with trimmed text', async () => {

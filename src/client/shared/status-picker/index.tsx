@@ -31,12 +31,12 @@ export function StatusPicker({
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-medium">Status</legend>
-      <div className="border-line bg-surface inline-flex h-10 max-w-full gap-1 rounded-lg border p-1">
+      <div className="border-line bg-surface inline-flex h-10 max-w-full gap-0.5 rounded-lg border p-1 sm:gap-1">
         {options.map((option) => (
           <label
             key={option.value}
             data-status={option.value === '' ? undefined : option.value}
-            className="text-ink-muted hover:text-ink has-focus-visible:outline-accent relative inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors has-checked:bg-[var(--status-tint,var(--color-canvas))] has-checked:text-[var(--status-ink,var(--color-ink))] has-focus-visible:outline-2 has-focus-visible:outline-offset-1"
+            className="text-ink-muted hover:text-ink has-focus-visible:outline-accent relative inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm font-medium whitespace-nowrap transition-colors has-checked:bg-[var(--status-tint,var(--color-canvas))] has-checked:text-[var(--status-ink,var(--color-ink))] has-focus-visible:outline-2 has-focus-visible:outline-offset-1 sm:px-3"
           >
             {option.value === '' ? null : (
               <span aria-hidden className="size-2 rounded-full bg-(--status)" />
