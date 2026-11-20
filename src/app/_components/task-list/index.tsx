@@ -167,28 +167,53 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
             <li key={task.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <h2 className="font-medium break-words">{task.title}</h2>
-                <select
-                  aria-label={`Status of ${task.title}`}
-                  className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 dark:focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
-                  value={shownStatus(task)}
-                  // Not `disabled`: a focused control that becomes disabled drops the focus,
-                  // and the arrow keys change a select at once, so a keyboard user would land
-                  // back at the top of the page after each change (DECISIONS D-36).
-                  aria-disabled={changeStatus.isPending}
-                  onChange={(event) => {
-                    const status = toTaskStatus(event.target.value);
-
-                    if (!changeStatus.isPending && status !== undefined) {
-                      changeStatus.mutate({ id: task.id, status });
-                    }
-                  }}
+                {/* A select's own text sits low in some fonts (Segoe UI) and its arrow hugs the
+                    edge, so the pill shows a cap-height label, centered in any font, and its own
+                    arrow; the real select lies invisible on top (DECISIONS D-36). */}
+                <span
+                  className={`relative inline-flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-3 text-xs font-medium has-aria-disabled:opacity-60 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-zinc-900 dark:has-focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
                 >
-                  {TASK_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {TASK_STATUS_LABELS[status]}
-                    </option>
-                  ))}
-                </select>
+                  <span
+                    aria-hidden
+                    className="block [text-box:trim-both_cap_alphabetic]"
+                  >
+                    {TASK_STATUS_LABELS[shownStatus(task)]}
+                  </span>
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 12 12"
+                    className="size-3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 4.5 6 7.5 9 4.5" />
+                  </svg>
+                  <select
+                    aria-label={`Status of ${task.title}`}
+                    className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0 aria-disabled:cursor-not-allowed"
+                    value={shownStatus(task)}
+                    // Not `disabled`: a focused control that becomes disabled drops the focus,
+                    // and the arrow keys change a select at once, so a keyboard user would land
+                    // back at the top of the page after each change (DECISIONS D-36).
+                    aria-disabled={changeStatus.isPending}
+                    onChange={(event) => {
+                      const status = toTaskStatus(event.target.value);
+
+                      if (!changeStatus.isPending && status !== undefined) {
+                        changeStatus.mutate({ id: task.id, status });
+                      }
+                    }}
+                  >
+                    {TASK_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {TASK_STATUS_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
+                </span>
               </div>
               {task.description === null ? null : (
                 <p className="mt-1 text-sm break-words whitespace-pre-line text-zinc-600 dark:text-zinc-300">

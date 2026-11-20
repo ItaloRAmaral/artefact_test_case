@@ -583,6 +583,7 @@ describe('TaskList', () => {
     });
 
     expect(status).toHaveDisplayValue('Doing');
+    expect(screen.getByText('Doing', { selector: 'span' })).toBeVisible();
   });
 
   it("changes a task's status from its card", async () => {
@@ -618,6 +619,7 @@ describe('TaskList', () => {
     await user.selectOptions(status, 'Done');
 
     expect(status).toHaveDisplayValue('Done');
+    expect(screen.getByText('Done', { selector: 'span' })).toBeVisible();
   });
 
   it('disables the status controls while a change is saved', async () => {
@@ -732,6 +734,7 @@ describe('TaskList', () => {
       expect(status).toHaveAttribute('aria-disabled', 'false');
     });
     expect(status).toHaveDisplayValue('To do');
+    expect(screen.getByText('To do', { selector: 'span' })).toBeVisible();
   });
 
   it('shows the not-found message when the task is gone', async () => {

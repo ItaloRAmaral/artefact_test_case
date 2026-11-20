@@ -44,6 +44,13 @@
     @apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:outline-none aria-[invalid=true]:border-red-500 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/20 dark:aria-[invalid=true]:border-red-500;
   }
 
+  /* A select's native arrow hugs the right edge; this one sits as far in as the text
+     does on the left (DECISIONS D-33). */
+  select.field {
+    @apply appearance-none bg-size-[0.75rem] bg-position-[right_0.75rem_center] bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+  }
+
   .page-title {
     @apply text-2xl font-semibold tracking-tight;
   }
