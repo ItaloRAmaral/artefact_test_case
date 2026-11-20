@@ -4,6 +4,13 @@
   /* Native controls (scrollbars, the textarea's resize handle, autofill) follow the theme. */
   :root {
     color-scheme: light dark;
+    /* The scrollbar keeps its place, so the page does not shift when a modal locks it. */
+    scrollbar-gutter: stable;
+  }
+
+  /* The list behind an open modal stays still (DECISIONS D-35). */
+  :root:has(dialog:modal) {
+    overflow: hidden;
   }
 
   body {
@@ -27,6 +34,10 @@
 
   .button-danger {
     @apply border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950;
+  }
+
+  .card {
+    @apply rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900;
   }
 
   .field {

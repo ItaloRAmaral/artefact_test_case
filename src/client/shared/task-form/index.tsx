@@ -12,6 +12,7 @@ import type { TaskDto } from '@/server/adapters/controllers/task/dto';
 import { createTaskInputSchema } from '@/shared/tasks/task-schemas';
 
 import { getErrorMessage } from '@/client/shared/error-message';
+import { useCloseModal } from '@/client/shared/modal';
 import { useShowToast } from '@/client/shared/toast';
 
 export function TaskForm({ task }: { task?: TaskDto }) {
@@ -28,6 +29,7 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const showToast = useShowToast();
+  const closeModal = useCloseModal();
   const titleId = useId();
   const descriptionId = useId();
   const titleRef = useRef<HTMLInputElement>(null);
@@ -42,9 +44,8 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     trpc.task.create.mutationOptions({
       onSuccess: async () => {
         await refreshList();
-        goBackToList('Task created.');
+        leaveForm('Task created.');
       },
-      onError: showError,
     }),
   );
   const update = useMutation(
@@ -54,15 +55,15 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           refreshList(),
           queryClient.invalidateQueries(trpc.task.getById.queryFilter({ id })),
         ]);
-        goBackToList('Task saved.');
+        leaveForm('Task saved.');
       },
-      onError: showError,
     }),
   );
   const save = task === undefined ? create : update;
 
-  // The list is not on screen here, so only refetchType 'all' refreshes it before the
-  // navigation; the mutation stays pending until it is done.
+  // The list may be off screen (the full page) or behind the modal, so only refetchType
+  // 'all' surely refreshes it before the form closes; the mutation stays pending until
+  // it is done.
   function refreshList() {
     return queryClient.invalidateQueries({
       ...trpc.task.list.pathFilter(),
@@ -70,13 +71,19 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     });
   }
 
-  function goBackToList(text: string) {
-    showToast('success', text);
-    router.push('/');
-  }
+  // In a modal, the form closes by going back, so the list keeps its filters; the toast
+  // waits for the dialog to close, since the page behind it is inert (DECISIONS D-35).
+  function leaveForm(text: string) {
+    if (closeModal === null) {
+      showToast('success', text);
+      router.push('/');
 
-  function showError(error: Parameters<typeof getErrorMessage>[0]) {
-    showToast('error', getErrorMessage(error));
+      return;
+    }
+
+    closeModal(() => {
+      showToast('success', text);
+    });
   }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -112,11 +119,7 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   }
 
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit}
-      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-    >
+    <form noValidate onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor={titleId} className="mb-1 block text-sm font-medium">
           Title
@@ -125,6 +128,7 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           ref={titleRef}
           className="field"
           id={titleId}
+          autoFocus
           value={title}
           aria-required
           aria-invalid={fieldErrors.title !== undefined}
@@ -169,13 +173,20 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
           </p>
         )}
       </div>
-      <button
-        type="submit"
-        className="button button-primary"
-        disabled={save.isPending || save.isSuccess}
-      >
-        {save.isPending ? 'Saving…' : 'Save'}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          className="button button-primary"
+          disabled={save.isPending || save.isSuccess}
+        >
+          {save.isPending ? 'Saving…' : 'Save'}
+        </button>
+        {/* The save error sits in the form, where it stays visible inside a modal too
+            (D-35). The region stays on the page, empty, so a screen reader announces it. */}
+        <p role="alert" className="text-error">
+          {save.isError ? getErrorMessage(save.error) : null}
+        </p>
+      </div>
     </form>
   );
 }

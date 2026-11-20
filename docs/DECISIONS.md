@@ -335,7 +335,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the spec asks for a create/update page with a form built from functional components and hooks, validation (no empty title), messages for front-end and back-end errors, and loading, success and failure states. With `cacheComponents`, Next.js 16 hides a page it leaves with React `<Activity>` and keeps its state (`node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`).
 - **Decision:**
   - `/tasks/new` and `/tasks/[id]/edit` share one `TaskForm` (`src/client/shared/task-form/`, D-32) with `useState`. It validates title and description on submit with the shared schema (`createTaskInputSchema`: the field rules are the same for create and update; the server checks the update input with its own strict schema), shows the schema's message under each invalid field and moves the focus to the first one.
-  - Save is disabled from the click until the navigation (`Saving…` while pending). A failed save shows the code-mapped text (D-07) in the toast. On success the form awaits the cache refresh (the list with `refetchType: 'all'` in the filter, since it is off screen; on update also `task.getById` for that id), shows `Task created.` or `Task saved.` and returns to `/` (user decision). The toast lives in a `ToastProvider` in the root layout, which stays mounted across navigations.
+  - Save is disabled from the click until the navigation (`Saving…` while pending). A failed save shows the code-mapped text (D-07) in the toast. _Superseded in part by [D-35](#d-35-create-and-edit-in-a-modal-over-the-list): a failed save shows in the form, and inside the modal the form closes by going back, with the toast after the dialog closes._ On success the form awaits the cache refresh (the list with `refetchType: 'all'` in the filter, since it is off screen; on update also `task.getById` for that id), shows `Task created.` or `Task saved.` and returns to `/` (user decision). The toast lives in a `ToastProvider` in the root layout, which stays mounted across navigations.
   - `TaskForm` is keyed by `useRouter().bfcacheId`, so each visit through a link starts a fresh form while the browser's back button restores a draft (`use-router.md`).
   - The edit page reads `params` inside `<Suspense>` and loads the task in the browser only (user decision), with `retry: false`, so a missing task shows `This task no longer exists.` at once on the page (user decision); an id over 36 characters shows `Some fields are invalid.`.
   - Component tests mock `next/navigation`, because `useRouter` throws outside a mounted App Router; it is the only module mocked.
@@ -365,7 +365,7 @@ The main decisions behind this project, each with its context, the choice and wh
 
 - **Context:** all client components lived in one `src/client/tasks/` folder, whatever page used them (D-28). The user asked for a layout that shows who uses each one.
 - **Decision (user decision):**
-  - A component used by one page lives in that route's `_components/<name>/` folder: `src/app/_components/task-list/`, `src/app/_components/task-date/`, `src/app/tasks/[id]/edit/_components/edit-task/`. `_components` is a Next.js private folder: an underscore keeps it out of routing (`node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`).
+  - A component used by one page lives in that route's `_components/<name>/` folder: `src/app/_components/task-list/`, `src/app/_components/task-date/`, `src/app/tasks/[id]/edit/_components/edit-task/` _(moved to `src/client/shared/edit-task/` by [D-35](#d-35-create-and-edit-in-a-modal-over-the-list), when the modal route started using it too)_. `_components` is a Next.js private folder: an underscore keeps it out of routing (`node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`).
   - A component or client module used by more than one page lives in `src/client/shared/<name>/`: `task-form/` (the new and edit pages), `toast/` (the layout, the list, the form), `error-message/` (the list, the form, the edit page). `src/client/trpc/provider.tsx` stays.
   - Each folder holds `index.tsx` or `index.ts`, its tests and its `dto.ts` when it has one, like the use-case folders on the server.
   - The D-26 ESLint block covers `src/client/**` and `src/app/**/_components/**`, so a page component cannot import a server value either.
@@ -378,7 +378,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Decision (user decision):**
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
-  - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `field`, `text-muted`, `text-error`), so a change to a button or a field happens once.
+  - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `card`, `field`, `page-title`, `text-muted`, `text-error`), so a change to a button or a field happens once.
   - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
@@ -412,6 +412,36 @@ The main decisions behind this project, each with its context, the choice and wh
   - A separate search procedure: a second contract for the same list.
   - `router.replace` for each change: a server round trip per keystroke.
   - Reading the URL with `useSearchParams`: wrong under the modal routes.
+
+## D-35: Create and edit in a modal over the list
+
+- **Context:** the user asked that `New task` and `Edit` open the form in a modal instead of another page (2026-11-20). The spec asks for a create/update **page**. Next.js 16.4.6 documents modals as parallel + intercepting routes (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/parallel-routes.md` § Modals, `intercepting-routes.md`).
+- **Decision (user decision: a modal with a URL):**
+  - **Routes:**
+    - The root layout renders a `@modal` slot after `children`.
+    - `src/app/@modal/(.)tasks/new/page.tsx` and `src/app/@modal/(.)tasks/[id]/edit/page.tsx` render the same `TaskForm` and `EditTask` inside `Modal`.
+    - `@modal/default.tsx` renders nothing.
+    - A click on `New task` or `Edit` opens the modal over the list, and the URL becomes `/tasks/new` or `/tasks/<id>/edit`. A direct load or a refresh of those URLs renders the full pages, which stay.
+    - `EditTask` moved to `src/client/shared/edit-task/`, since two routes use it (D-32).
+  - **`Modal`** (`src/client/shared/modal/`): a native `<dialog>` opened with `showModal()`, which gives the top layer, the inert page behind it, focus containment and Escape.
+    - Closing is going back in history (`router.back()`), so the list's URL and its filters (D-34) come back. The ways to close are the `Close` button, Escape, a click on the backdrop and the browser's Back.
+    - Escape is caught in `cancel`, prevented, and then the modal goes back. There is no `close` handler, so the dialog closing on unmount, or when hidden, never navigates a second time.
+    - The dialog has no padding of its own, so a click on its padded content never counts as a backdrop click.
+    - It goes back once per opening. A double click on `Close`, or `Close` then Escape, would otherwise go back twice and leave the list (found in code review, 2026-11-20). The guard resets when the dialog opens again; Cache Components can show the same instance again (`<Activity>`).
+    - A save can finish after the user has closed the modal: a `useMutation` option callback still runs after unmount (`query-core` `mutation.js`). Then `closeModal` shows the toast at once and does not go back again.
+    - It opens with the focus on the form's first field. `showModal()` would focus `Close`, and React's `autoFocus` only calls `focus()` while the dialog is still closed, without writing the attribute (`react-dom-client`). The Title keeps `autoFocus` for the edit form, which appears after the task loads, and for the full pages.
+    - The page behind an open modal does not scroll (`:root:has(dialog:modal) { overflow: hidden }`), and `scrollbar-gutter: stable` keeps the layout from shifting when the scrollbar goes away.
+  - **Feedback** (updates D-29):
+    - The page behind a modal dialog is inert and under the top layer, so a toast there is hidden and not announced.
+    - A failed save shows its code-mapped text in the form (`role="alert"`, in both modes), next to `Save`, and it clears on the next save. The region stays on the page while empty, never `display: none`, so a screen reader announces it (the D-28 rule).
+    - Inside a modal, the form closes through `useCloseModal()`, and the success toast is shown in the dialog's cleanup, once it has closed. On the full page, it still shows the toast and goes to `/`.
+  - **Styles:** a `card` component class (border, background, shadow) is shared by the list items, the full form pages and the dialog, so the form is not a card inside a card.
+  - **Tests:** jsdom 31 has no `showModal`/`close`. `src/test/dialog.ts` fakes them by toggling `open`, and e2e covers the real dialog: opening over the list, Escape, editing with a search kept, and the full page on a direct load. A click on `New task` before React has hydrated the list is a plain page load and opens the full page (measured: 1 in 3 clicks sent at page commit). For a user that is the working fallback; for e2e it was a race, so tests that interact right after loading the list wait for hydration with `gotoHydrated` (`e2e/hydration.ts`).
+- **Why:**
+  - It keeps the spec's pages and adds the modal the user asked for.
+  - The URL can be shared and survives a refresh.
+  - Back closes the modal.
+- **Alternative rejected:** a `<dialog>` held in the list's state with no route. It is smaller, but it has no link and no refresh, and the spec's page would be gone.
 
 ---
 

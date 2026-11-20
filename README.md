@@ -4,7 +4,7 @@ A small task manager built for a technical test: a Next.js app whose back end ke
 
 ## How it works
 
-**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. The list can be searched by title and filtered by creation date. `/tasks/new` and `/tasks/<id>/edit` share one form. Each action shows its loading, success and failure states.
+**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. The list can be searched by title and filtered by creation date. `/tasks/new` and `/tasks/<id>/edit` share one form; from the list, they open in a modal over it. Each action shows its loading, success and failure states.
 
 **Request path.** The pages talk to the back end only through tRPC, with TanStack Query caching the results in the browser:
 
@@ -76,7 +76,7 @@ The heading, `New task` and the filters stay at the top while the page scrolls.
 
 ## Create and edit
 
-`New task` on the list opens `/tasks/new`; `Edit` on a task opens `/tasks/<id>/edit`, which loads the task in the browser. Both use one form: the title is required and both fields have length limits, checked with the same schema the server uses before anything is sent; an invalid field shows its message and gets the focus. While saving, the button shows `Saving…` and is disabled. A failed save shows a message (for example, when the task was deleted meanwhile, or the list is full); a successful one returns to the list, which shows `Task created.` or `Task saved.`. A task that does not exist shows `This task no longer exists.` on the edit page; if the task cannot be loaded for another reason (for example, the network), a `Retry` button tries again. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-29).
+`New task` on the list opens `/tasks/new` and `Edit` opens `/tasks/<id>/edit` in a modal over the list. The list behind it keeps its filters. `Close`, Escape, a click outside or the browser's Back closes it. Loading either URL directly, or refreshing it, shows the full page instead. The edit form loads the task in the browser. Both use one form: the title is required and both fields have length limits, checked with the same schema the server uses before anything is sent; an invalid field shows its message and gets the focus. While saving, the button shows `Saving…` and is disabled. A failed save shows a message in the form (for example, when the task was deleted meanwhile, or the list is full). A successful one closes the modal, or returns to the list from the full page, and the list shows `Task created.` or `Task saved.`. A task that does not exist shows `This task no longer exists.` on the edit page; if the task cannot be loaded for another reason (for example, the network), a `Retry` button tries again. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-29, D-35).
 
 ## Requirements
 

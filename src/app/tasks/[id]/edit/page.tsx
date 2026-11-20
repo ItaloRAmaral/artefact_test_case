@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { EditTask } from './_components/edit-task';
+import { EditTask } from '@/client/shared/edit-task';
 
 export default function EditTaskPage({
   params,
@@ -14,11 +14,13 @@ export default function EditTaskPage({
         ← Back to tasks
       </Link>
       <h1 className="page-title mt-2 mb-6">Edit task</h1>
-      <Suspense fallback={<p className="text-muted">Loading task…</p>}>
-        {params.then(({ id }) => (
-          <EditTask id={id} />
-        ))}
-      </Suspense>
+      <div className="card p-6">
+        <Suspense fallback={<p className="text-muted">Loading task…</p>}>
+          {params.then(({ id }) => (
+            <EditTask id={id} />
+          ))}
+        </Suspense>
+      </div>
     </main>
   );
 }

@@ -127,10 +127,7 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
           className={`space-y-3 ${list.isPlaceholderData ? 'opacity-60' : ''}`}
         >
           {tasks.map((task) => (
-            <li
-              key={task.id}
-              className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-            >
+            <li key={task.id} className="card p-4">
               <h2 className="font-medium break-words">{task.title}</h2>
               {task.description === null ? null : (
                 <p className="mt-1 text-sm break-words whitespace-pre-line text-zinc-600 dark:text-zinc-300">

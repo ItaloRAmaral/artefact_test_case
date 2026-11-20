@@ -1,6 +1,8 @@
 import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import { gotoHydrated } from './hydration';
+
 // Ten tasks are taller than 400 px plus the list's 200 px load-ahead margin, so
 // the first page fills the screen: the first load requests no other page, and loading
 // more takes a scroll (DECISIONS D-31).
@@ -66,7 +68,7 @@ test('deletes a task from the list with feedback', async ({
 }) => {
   const title = `Delete task ${String(Date.now())}`;
   await createTask(request, title);
-  await page.goto('/');
+  await gotoHydrated(page, '/');
 
   await page.getByRole('button', { name: `Delete ${title}` }).click();
 
@@ -80,7 +82,7 @@ test('loads more tasks when scrolling to the end', async ({
 }) => {
   const prefix = `Scroll task ${String(Date.now())}`;
   await createTasks(request, prefix, 11);
-  await page.goto('/');
+  await gotoHydrated(page, '/');
   await page.getByRole('heading', { name: `${prefix} 11` }).waitFor();
 
   await page.keyboard.press('End');
@@ -151,7 +153,7 @@ test('searches tasks by title', async ({ page, request }) => {
   const stamp = String(Date.now());
   await createTask(request, `Search match ${stamp}`);
   await createTask(request, `Search other ${stamp}`);
-  await page.goto('/');
+  await gotoHydrated(page, '/');
 
   await page
     .getByRole('searchbox', { name: 'Search by title' })
@@ -176,7 +178,7 @@ test('searches tasks by title', async ({ page, request }) => {
 test('filters tasks by creation date', async ({ page, request }) => {
   const title = `Date filter ${String(Date.now())}`;
   await createTask(request, title);
-  await page.goto(`/?titleContains=${encodeURIComponent(title)}`);
+  await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
 
   await page.getByLabel('Created from').fill('2999-01-01');
@@ -189,7 +191,8 @@ test('clears the filters', async ({ page, request }) => {
   const stamp = String(Date.now());
   await createTask(request, `Clear match ${stamp}`);
   await createTask(request, `Clear other ${stamp}`);
-  await page.goto(
+  await gotoHydrated(
+    page,
     `/?titleContains=${encodeURIComponent(`Clear match ${stamp}`)}`,
   );
   await expect(
@@ -213,7 +216,7 @@ test('keeps the header and the filters on screen while scrolling', async ({
 }) => {
   const prefix = `Sticky task ${String(Date.now())}`;
   await createTasks(request, prefix, 10);
-  await page.goto('/');
+  await gotoHydrated(page, '/');
   await page.getByRole('heading', { name: `${prefix} 10` }).waitFor();
 
   await page.keyboard.press('End');

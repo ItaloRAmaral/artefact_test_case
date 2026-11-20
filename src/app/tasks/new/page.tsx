@@ -9,7 +9,9 @@ export default function NewTaskPage() {
         ← Back to tasks
       </Link>
       <h1 className="page-title mt-2 mb-6">New task</h1>
-      <TaskForm />
+      <div className="card p-6">
+        <TaskForm />
+      </div>
     </main>
   );
 }

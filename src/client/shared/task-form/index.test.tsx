@@ -5,20 +5,37 @@ import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-me
 import { makeCaller } from '@/test/factories/make-caller';
 import { makeTask } from '@/test/factories/make-task';
 import { renderWithTrpc } from '@/test/render-with-trpc';
-import { failingProcedureLink, pendingProcedureLink } from '@/test/trpc-links';
+import {
+  failingProcedureLink,
+  pendingProcedureLink,
+  scriptedProcedureLink,
+} from '@/test/trpc-links';
 
 import { TaskForm } from '.';
 import { TaskList } from '@/app/_components/task-list';
+import { Modal } from '@/client/shared/modal';
 
-const { push } = vi.hoisted(() => ({ push: vi.fn<(href: string) => void>() }));
+const { push, back } = vi.hoisted(() => ({
+  push: vi.fn<(href: string) => void>(),
+  back: vi.fn<() => void>(),
+}));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, bfcacheId: 'test' }),
+  useRouter: () => ({ push, back, bfcacheId: 'test' }),
 }));
 
 describe('TaskForm', () => {
   afterEach(() => {
     push.mockReset();
+    back.mockReset();
+  });
+
+  it('starts with the focus on the title', () => {
+    renderWithTrpc(<TaskForm />);
+
+    const titleBox = screen.getByRole('textbox', { name: 'Title' });
+
+    expect(titleBox).toHaveFocus();
   });
 
   it('marks the title as required', () => {
@@ -167,11 +184,10 @@ describe('TaskForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'The task list is full. Delete a task to add a new one.',
-      );
-    });
+    const message = await screen.findByText(
+      'The task list is full. Delete a task to add a new one.',
+    );
+    expect(message).toHaveAttribute('role', 'alert');
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -184,11 +200,9 @@ describe('TaskForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Something went wrong. Check your connection and try again.',
-      );
-    });
+    await screen.findByText(
+      'Something went wrong. Check your connection and try again.',
+    );
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue(
       'Write the README',
     );
@@ -227,5 +241,77 @@ describe('TaskForm', () => {
     expect(
       screen.getByRole('heading', { name: 'Review the plan' }),
     ).toBeInTheDocument();
+  });
+
+  it('shows a failed save in the form, not in a toast', async () => {
+    const repository = new InMemoryTaskRepository();
+    const { user } = renderWithTrpc(<TaskForm />, {
+      link: failingProcedureLink(repository, 'task.create'),
+    });
+    await user.type(screen.getByLabelText('Title'), 'Write the README');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    const message = await screen.findByText(
+      'Something went wrong. Check your connection and try again.',
+    );
+    expect(
+      screen.getByRole('button', { name: 'Save' }).closest('form'),
+    ).toContainElement(message);
+  });
+
+  it('clears the failed-save message on the next save', async () => {
+    const repository = new InMemoryTaskRepository();
+    const { user } = renderWithTrpc(<TaskForm />, {
+      link: scriptedProcedureLink(repository, 'task.create', ['fail', 'hang']),
+    });
+    await user.type(screen.getByLabelText('Title'), 'Write the README');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText(
+      'Something went wrong. Check your connection and try again.',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await screen.findByRole('button', { name: 'Saving…' });
+    expect(
+      screen.queryByText(
+        'Something went wrong. Check your connection and try again.',
+      ),
+    ).toBeNull();
+  });
+
+  it('closes the modal instead of going to the list after saving', async () => {
+    const { user } = renderWithTrpc(
+      <Modal title="New task">
+        <TaskForm />
+      </Modal>,
+    );
+    await user.type(screen.getByLabelText('Title'), 'Write the README');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(back).toHaveBeenCalledOnce();
+    });
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('shows the success message once the modal has closed', async () => {
+    const { user, rerender } = renderWithTrpc(
+      <Modal title="New task">
+        <TaskForm />
+      </Modal>,
+    );
+    await user.type(screen.getByLabelText('Title'), 'Write the README');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(back).toHaveBeenCalledOnce();
+    });
+
+    rerender(<></>);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Task created.');
   });
 });

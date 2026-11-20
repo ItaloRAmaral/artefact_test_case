@@ -186,11 +186,8 @@ describe('EditTask', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'This task no longer exists.',
-      );
-    });
+    const message = await screen.findByText('This task no longer exists.');
+    expect(message).toHaveAttribute('role', 'alert');
     expect(push).not.toHaveBeenCalled();
   });
 

@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status  | Approved                                                                                                                                                                                                                                                                                                                                                                                               |
+| Status  | Done                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Date    | 2026-11-20                                                                                                                                                                                                                                                                                                                                                                                             |
 | Request | "agora vamos adicionar um filtro por data de criação e um search por titulo blz ? Gostaria também que ao clicar em new task ou edit não fosse redirecionado para outra pagina, e sim um modal de criação, acho mais moderno e mais ui/ux"                                                                                                                                                              |
 | Context | `docs/SPEC.md` §3 (list page with SSR, create/update **page** with a form, feedback states) and §4 (infinite scroll); DECISIONS D-10, D-12, D-14, D-21, D-25, D-27, D-29, D-31, D-32; Next.js 16.4.6 docs in `node_modules/next/dist/docs/`: `parallel-routes.md` § Modals, `intercepting-routes.md`, `01-getting-started/04-linking-and-navigating.md` § Native History API, `page.md` § searchParams |
@@ -340,6 +340,27 @@ None. The filters change the YAGNI line itself at the user's request; that is re
     - the jsdom fake;
     - the alternative rejected: a state-only `<dialog>` with no route.
 - [ ] **Step 4: run and watch them pass.** `pnpm test`, `pnpm test:e2e`, `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, `pnpm build`. Set this plan's status to "Done".
+
+**Done differently from the plan (execution, 2026-11-20):**
+
+- **A `card` component class** (`globals.css`) for the list items, the full form pages and the dialog. `TaskForm` lost its own card styles, which would have nested a card in the modal; the full pages wrap it in `card p-6`.
+- **The save error** is the mutation's error (`save.isError`), rendered in an always-present `role="alert"` paragraph, hidden when empty. It needs no state, and a new save clears it.
+- **Tests that read an error with `getByRole('alert')`** now find the text and check its role, since the form adds a second alert region.
+- **Modal tests:**
+  - The padding case is covered by "a click inside the content does not close"; the dialog itself has `p-0`.
+  - Added: `closes the dialog when it unmounts`, `gives no close step outside a modal`, `clears the failed-save message on the next save`.
+- **Code review fixes (2026-11-20).** Each was reproduced with a throwaway test first.
+  - **Two backs from one close.** A double click on `Close`, or `Close` then Escape, went back twice. Now one back per opening, with the guard reset on reopen.
+  - **A save finishing after close.** `onSuccess` ran after the unmount, went back again and lost the toast. Now the toast shows at once, without a back.
+  - **Error region.** It had `empty:hidden`, which kept it out of the accessibility tree; it now sits next to `Save` and stays on the page.
+  - **Focus and scroll (user request).** The modal opens on the first field, and the page behind it does not scroll.
+  - **Tests:**
+    - unit: `goes back once when Close is clicked twice`, `goes back once when Escape follows Close`, `runs the after-close step at once when the modal has already closed`, `goes back again when it is shown again after closing` (`<Activity>`), `moves the focus to the first field when it opens`, `starts with the focus on the title`;
+    - e2e: focus on New and on Edit, error region present, list still behind the modal. Each e2e was checked to fail under its sabotage.
+- **Hydration race in e2e.**
+  - Full e2e runs failed now and then: the modal did not open, or a date filter did not apply.
+  - A probe confirmed the cause: a click on `New task` sent at page commit opened the full page in 1 of 3 runs, because React had not hydrated yet.
+  - `e2e/hydration.ts` (`gotoHydrated`) waits until a task's date has switched from UTC to local time (D-14), which happens only after hydration. Tests that interact right after loading the list use it; those that only read the HTML or requests keep `page.goto`.
 
 **Suggested commit:** `feat(web): open the task form in a modal over the list` · files: the files above.
 
