@@ -249,6 +249,20 @@ None. The filters change the YAGNI line itself at the user's request; that is re
     - alternatives rejected: `router.replace` (a server round trip per keystroke), and reading the URL on the client (wrong under the modal).
 - [ ] **Step 4: run and watch them pass.** `pnpm test`, `pnpm test:e2e`, `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, `pnpm build` (`/` still `◐`).
 
+**Done differently from the plan (execution, 2026-11-20):**
+
+- **User requests during the task:**
+  - The heading, `New task` and the filters form one sticky block. `FilteredTaskList` renders it; the page passes the heading as `header` and also shows it in the `Suspense` fallback.
+  - A `Clear filters` button, always visible and disabled when there is nothing to clear.
+  - Tests: `clears every filter at once`, `clears a search that is still being typed`, `disables Clear when there is no filter`, `shows the header above the filters`; e2e `clears the filters` and `keeps the header and the filters on screen while scrolling` (checked to fail without `sticky`).
+- **`TaskFilters` tests type with `fireEvent.change`.** With pure fake timers, `user-event` hangs on Testing Library's `setTimeout(0)` wait; `shouldAdvanceTime` would make the "not before 300 ms" test depend on real time.
+- **Added tests:**
+  - `keeps the dates when the search changes` (a mutant dropped the other filters);
+  - e2e `does not request task.list on first load of a filtered URL`;
+  - e2e `loads a URL with a date range without console errors`, in `Asia/Tokyo`, for date hydration across zones.
+- **`readTaskListFilter`** returns the three keys with `undefined` for a dropped value, not a smaller object. The query key and the URL ignore `undefined`.
+- **`server.test.ts`** used the removed `TASK_LIST_INPUT`; it now prefetches with `{}`.
+
 **Suggested commit:** `feat(web): search tasks by title and filter by creation date` · files: the files above.
 
 ---

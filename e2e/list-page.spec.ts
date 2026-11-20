@@ -87,3 +87,142 @@ test('loads more tasks when scrolling to the end', async ({
 
   await expect(page.getByRole('heading', { name: prefix })).toHaveCount(11);
 });
+
+test('renders a filtered list in the server HTML', async ({ request }) => {
+  const stamp = String(Date.now());
+  await createTask(request, `Filtered match ${stamp}`);
+  await createTask(request, `Filtered other ${stamp}`);
+
+  const response = await request.get(
+    `/?titleContains=${encodeURIComponent(`Filtered match ${stamp}`)}`,
+  );
+
+  const html = await response.text();
+  expect(html).toContain(`Filtered match ${stamp}`);
+  expect(html).not.toContain(`Filtered other ${stamp}`);
+});
+
+test('does not request task.list on first load of a filtered URL', async ({
+  page,
+}) => {
+  const listRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/trpc/task.list')) {
+      listRequests.push(request.url());
+    }
+  });
+
+  await page.goto(
+    '/?titleContains=task&createdFrom=2000-01-01T00%3A00%3A00.000Z',
+  );
+  await page.waitForLoadState('networkidle');
+
+  expect(listRequests).toEqual([]);
+});
+
+test.describe('in a time zone far from the server', () => {
+  test.use({ timezoneId: 'Asia/Tokyo' });
+
+  test('loads a URL with a date range without console errors', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        errors.push(message.text());
+      }
+    });
+    page.on('pageerror', (error) => {
+      errors.push(error.message);
+    });
+
+    await page.goto(
+      '/?createdFrom=2026-11-19T15%3A00%3A00.000Z&createdBefore=2026-11-20T15%3A00%3A00.000Z',
+    );
+    await page.waitForLoadState('networkidle');
+
+    expect(errors).toEqual([]);
+    await expect(page.getByLabel('Created from')).toHaveValue('2026-11-20');
+    await expect(page.getByLabel('Created to')).toHaveValue('2026-11-20');
+  });
+});
+
+test('searches tasks by title', async ({ page, request }) => {
+  const stamp = String(Date.now());
+  await createTask(request, `Search match ${stamp}`);
+  await createTask(request, `Search other ${stamp}`);
+  await page.goto('/');
+
+  await page
+    .getByRole('searchbox', { name: 'Search by title' })
+    .fill(`match ${stamp}`);
+
+  await expect(
+    page.getByRole('heading', { name: `Search other ${stamp}` }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: `Search match ${stamp}` }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/titleContains=match/);
+  await page.reload();
+  await expect(
+    page.getByRole('searchbox', { name: 'Search by title' }),
+  ).toHaveValue(`match ${stamp}`);
+  await expect(
+    page.getByRole('heading', { name: `Search other ${stamp}` }),
+  ).toHaveCount(0);
+});
+
+test('filters tasks by creation date', async ({ page, request }) => {
+  const title = `Date filter ${String(Date.now())}`;
+  await createTask(request, title);
+  await page.goto(`/?titleContains=${encodeURIComponent(title)}`);
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+
+  await page.getByLabel('Created from').fill('2999-01-01');
+
+  await expect(page.getByText('No tasks match the filters.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: title })).toHaveCount(0);
+});
+
+test('clears the filters', async ({ page, request }) => {
+  const stamp = String(Date.now());
+  await createTask(request, `Clear match ${stamp}`);
+  await createTask(request, `Clear other ${stamp}`);
+  await page.goto(
+    `/?titleContains=${encodeURIComponent(`Clear match ${stamp}`)}`,
+  );
+  await expect(
+    page.getByRole('heading', { name: `Clear other ${stamp}` }),
+  ).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+
+  await expect(
+    page.getByRole('heading', { name: `Clear other ${stamp}` }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole('searchbox', { name: 'Search by title' }),
+  ).toHaveValue('');
+});
+
+test('keeps the header and the filters on screen while scrolling', async ({
+  page,
+  request,
+}) => {
+  const prefix = `Sticky task ${String(Date.now())}`;
+  await createTasks(request, prefix, 10);
+  await page.goto('/');
+  await page.getByRole('heading', { name: `${prefix} 10` }).waitFor();
+
+  await page.keyboard.press('End');
+
+  await expect(
+    page.getByRole('heading', { name: `${prefix} 1`, exact: true }),
+  ).toBeInViewport();
+  await expect(
+    page.getByRole('searchbox', { name: 'Search by title' }),
+  ).toBeInViewport();
+  await expect(page.getByRole('link', { name: 'New task' })).toBeInViewport();
+});

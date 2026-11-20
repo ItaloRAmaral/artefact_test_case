@@ -4,7 +4,7 @@ A small task manager built for a technical test: a Next.js app whose back end ke
 
 ## How it works
 
-**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. `/tasks/new` and `/tasks/<id>/edit` share one form. Each action shows its loading, success and failure states.
+**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. The list can be searched by title and filtered by creation date. `/tasks/new` and `/tasks/<id>/edit` share one form. Each action shows its loading, success and failure states.
 
 **Request path.** The pages talk to the back end only through tRPC, with TanStack Query caching the results in the browser:
 
@@ -66,6 +66,13 @@ Errors carry `data.code` (the tRPC code), `data.domainCode` (for example `TASK_N
 ## List page
 
 `/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. If the list cannot be loaded, a `Retry` button tries again. Scrolling near the end loads the next page (`Loading more tasks…`; on failure, the error and a `Retry` button; `No more tasks.` after the last page); on a screen taller than the first page, the second one loads right away. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28, D-31).
+
+The heading, `New task` and the filters stay at the top while the page scrolls.
+
+- **Search by title:** finds part of a title, ignoring case and accents ("acao" finds "Ação"). It applies a moment after you stop typing.
+- **Created from / Created to:** days in your time zone, both included.
+- **Clear filters:** empties all three fields at once.
+- **The URL:** the filters live in it (`/?titleContains=…&createdFrom=…&createdBefore=…`), so a reload or a shared link renders the same filtered list on the server. While new results load, the previous ones stay on screen, dimmed; with no match, the list shows `No tasks match the filters.` (D-34).
 
 ## Create and edit
 

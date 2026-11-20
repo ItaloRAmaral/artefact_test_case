@@ -30,7 +30,7 @@ describe('TaskList', () => {
   });
 
   it('shows the loading state while the list loads', () => {
-    renderWithTrpc(<TaskList />);
+    renderWithTrpc(<TaskList filter={{}} />);
 
     const loading = screen.getByText('Loading tasks…');
 
@@ -40,7 +40,7 @@ describe('TaskList', () => {
   it('keeps the feedback regions on the page before any delete', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
 
     await screen.findByRole('heading', { name: 'Write the README' });
 
@@ -51,7 +51,7 @@ describe('TaskList', () => {
   it('shows each task with its title, description and date', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask({ description: 'Explain how to run it' }));
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
 
     const heading = await screen.findByRole('heading', {
       name: 'Write the README',
@@ -68,7 +68,7 @@ describe('TaskList', () => {
   it('links each task to its edit page', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
 
     const link = await screen.findByRole('link', {
       name: 'Edit Write the README',
@@ -80,7 +80,7 @@ describe('TaskList', () => {
   it('shows no description for a task without one', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
 
     const item = await screen.findByRole('listitem');
 
@@ -88,7 +88,7 @@ describe('TaskList', () => {
   });
 
   it('shows the empty state when there are no tasks', async () => {
-    renderWithTrpc(<TaskList />);
+    renderWithTrpc(<TaskList filter={{}} />);
 
     const emptyState = await screen.findByText('No tasks yet.');
 
@@ -99,7 +99,9 @@ describe('TaskList', () => {
   it('shows task text as plain text', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask({ title: '<script>alert(1)</script>' }));
-    const { container } = renderWithTrpc(<TaskList />, { repository });
+    const { container } = renderWithTrpc(<TaskList filter={{}} />, {
+      repository,
+    });
 
     const heading = await screen.findByRole('heading', {
       name: '<script>alert(1)</script>',
@@ -110,7 +112,7 @@ describe('TaskList', () => {
   });
 
   it('shows an error when the list fails to load', async () => {
-    renderWithTrpc(<TaskList />, { link: failingLink });
+    renderWithTrpc(<TaskList filter={{}} />, { link: failingLink });
 
     const message = await screen.findByText(
       'Something went wrong. Check your connection and try again.',
@@ -122,7 +124,7 @@ describe('TaskList', () => {
   it('keeps the tasks when a refresh fails', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { queryClient } = renderWithTrpc(<TaskList />, {
+    const { queryClient } = renderWithTrpc(<TaskList filter={{}} />, {
       link: failingAfterFirstCallLink(repository),
     });
     await screen.findByRole('heading', { name: 'Write the README' });
@@ -142,7 +144,7 @@ describe('TaskList', () => {
   it('shows a success toast after deleting a task', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     const button = await screen.findByRole('button', {
       name: 'Delete Write the README',
     });
@@ -158,7 +160,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
     await repository.save(makeTask(SECOND_TASK));
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     const button = await screen.findByRole('button', {
       name: 'Delete Write the README',
     });
@@ -179,7 +181,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
     await repository.save(makeTask(SECOND_TASK));
-    const { user } = renderWithTrpc(<TaskList />, {
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
       link: pendingRefreshLink(repository),
     });
     const button = await screen.findByRole('button', {
@@ -200,7 +202,7 @@ describe('TaskList', () => {
   it('keeps the success toast when the last task is deleted', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     const button = await screen.findByRole('button', {
       name: 'Delete Write the README',
     });
@@ -214,7 +216,7 @@ describe('TaskList', () => {
   it('shows the not-found message when the task is already gone', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     const button = await screen.findByRole('button', {
       name: 'Delete Write the README',
     });
@@ -237,7 +239,7 @@ describe('TaskList', () => {
   it('shows the generic message when the delete fails', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, {
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
       link: failingProcedureLink(repository, 'task.delete'),
     });
     const button = await screen.findByRole('button', {
@@ -260,7 +262,7 @@ describe('TaskList', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     await user.click(
       await screen.findByRole('button', { name: 'Delete Write the README' }),
     );
@@ -278,7 +280,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
     await repository.save(makeTask(SECOND_TASK));
-    const { user } = renderWithTrpc(<TaskList />, { repository });
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, { repository });
     await user.click(
       await screen.findByRole('button', { name: 'Delete Write the README' }),
     );
@@ -301,7 +303,7 @@ describe('TaskList', () => {
   it('loads the next page when the end of the list is reached', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
     await screen.findAllByRole('listitem');
 
     FakeIntersectionObserver.revealAll();
@@ -314,7 +316,9 @@ describe('TaskList', () => {
   it('shows a loading indicator while the next page loads', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    renderWithTrpc(<TaskList />, { link: pendingRefreshLink(repository) });
+    renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingRefreshLink(repository),
+    });
     await screen.findAllByRole('listitem');
 
     FakeIntersectionObserver.revealAll();
@@ -326,7 +330,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const counting = countingLink(pendingRefreshLink(repository));
-    renderWithTrpc(<TaskList />, { link: counting.link });
+    renderWithTrpc(<TaskList filter={{}} />, { link: counting.link });
     await screen.findAllByRole('listitem');
     FakeIntersectionObserver.revealAll();
     await screen.findByText('Loading more tasks…');
@@ -340,7 +344,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const counting = countingLink(pendingRefreshLink(repository));
-    const { queryClient } = renderWithTrpc(<TaskList />, {
+    const { queryClient } = renderWithTrpc(<TaskList filter={{}} />, {
       link: counting.link,
     });
     await screen.findAllByRole('listitem');
@@ -358,7 +362,7 @@ describe('TaskList', () => {
   it('shows an error with a retry when the next page fails', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    renderWithTrpc(<TaskList />, {
+    renderWithTrpc(<TaskList filter={{}} />, {
       link: scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     });
     await screen.findAllByRole('listitem');
@@ -379,7 +383,7 @@ describe('TaskList', () => {
     const counting = countingLink(
       scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     );
-    renderWithTrpc(<TaskList />, { link: counting.link });
+    renderWithTrpc(<TaskList filter={{}} />, { link: counting.link });
     await screen.findAllByRole('listitem');
     FakeIntersectionObserver.revealAll();
     await screen.findByRole('button', { name: 'Retry' });
@@ -393,7 +397,7 @@ describe('TaskList', () => {
   it('loads the failed page again on retry', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    const { user } = renderWithTrpc(<TaskList />, {
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
       link: scriptedProcedureLink(repository, 'task.list', ['serve', 'fail']),
     });
     await screen.findAllByRole('listitem');
@@ -411,7 +415,7 @@ describe('TaskList', () => {
   it('hides the error while the page loads again', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    const { user } = renderWithTrpc(<TaskList />, {
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
       link: scriptedProcedureLink(repository, 'task.list', [
         'serve',
         'fail',
@@ -436,7 +440,7 @@ describe('TaskList', () => {
   it('shows the end of the list after the last page', async () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
-    renderWithTrpc(<TaskList />, { repository });
+    renderWithTrpc(<TaskList filter={{}} />, { repository });
     await screen.findAllByRole('listitem');
 
     FakeIntersectionObserver.revealAll();
@@ -448,7 +452,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 11);
     const counting = countingLink(routerLink(repository));
-    renderWithTrpc(<TaskList />, { link: counting.link });
+    renderWithTrpc(<TaskList filter={{}} />, { link: counting.link });
     await screen.findAllByRole('listitem');
     FakeIntersectionObserver.revealAll();
     await screen.findByText('No more tasks.');
@@ -462,7 +466,7 @@ describe('TaskList', () => {
     const repository = new InMemoryTaskRepository();
     await seedTasks(repository, 10);
     const counting = countingLink(routerLink(repository));
-    renderWithTrpc(<TaskList />, { link: counting.link });
+    renderWithTrpc(<TaskList filter={{}} />, { link: counting.link });
     await screen.findAllByRole('listitem');
 
     FakeIntersectionObserver.revealAll();
@@ -474,7 +478,7 @@ describe('TaskList', () => {
   it('loads the list again on retry', async () => {
     const repository = new InMemoryTaskRepository();
     await repository.save(makeTask());
-    const { user } = renderWithTrpc(<TaskList />, {
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
       link: scriptedProcedureLink(repository, 'task.list', ['fail']),
     });
     const retry = await screen.findByRole('button', { name: 'Retry' });
@@ -483,6 +487,88 @@ describe('TaskList', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Write the README' }),
+    ).toBeInTheDocument();
+  });
+
+  it('lists only the tasks that match the filter', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask(SECOND_TASK));
+    renderWithTrpc(<TaskList filter={{ titleContains: 'readme' }} />, {
+      repository,
+    });
+
+    const heading = await screen.findByRole('heading', {
+      name: 'Write the README',
+    });
+
+    expect(heading).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Review the plan' }),
+    ).toBeNull();
+  });
+
+  it('shows that no task matches the filters', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    renderWithTrpc(
+      <TaskList
+        filter={{
+          createdFrom: '2026-11-21T03:00:00.000Z',
+          createdBefore: '2026-11-20T03:00:00.000Z',
+        }}
+      />,
+      { repository },
+    );
+
+    const emptyState = await screen.findByText('No tasks match the filters.');
+
+    expect(emptyState).toBeInTheDocument();
+    expect(screen.queryByText('No tasks yet.')).toBeNull();
+  });
+
+  it('keeps the previous tasks while the filtered list loads', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { rerender } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: scriptedProcedureLink(repository, 'task.list', ['serve', 'hang']),
+    });
+    await screen.findByRole('heading', { name: 'Write the README' });
+
+    rerender(<TaskList filter={{ titleContains: 'plan' }} />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Write the README' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Tasks' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('refreshes the filtered list after a delete', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(
+      makeTask({ ...SECOND_TASK, title: 'Review the README' }),
+    );
+    const { user } = renderWithTrpc(
+      <TaskList filter={{ titleContains: 'readme' }} />,
+      { repository },
+    );
+    const button = await screen.findByRole('button', {
+      name: 'Delete Write the README',
+    });
+
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Write the README' }),
+      ).toBeNull();
+    });
+    expect(
+      screen.getByRole('heading', { name: 'Review the README' }),
     ).toBeInTheDocument();
   });
 });

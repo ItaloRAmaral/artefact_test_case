@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQueryClient,
@@ -10,10 +11,8 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 
 import { useTRPC } from '@/client/trpc/provider';
-import {
-  getNextTaskListCursor,
-  TASK_LIST_INPUT,
-} from '@/shared/tasks/task-list-query';
+import { getNextTaskListCursor } from '@/shared/tasks/task-list-query';
+import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
 
 import {
   getErrorMessage,
@@ -25,13 +24,16 @@ import { useShowToast } from '@/client/shared/toast';
 // Start loading the next page a little before the user reaches the end.
 const LOAD_AHEAD_MARGIN = '200px';
 
-export function TaskList() {
+export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const showToast = useShowToast();
   const list = useInfiniteQuery(
-    trpc.task.list.infiniteQueryOptions(TASK_LIST_INPUT, {
+    trpc.task.list.infiniteQueryOptions(filter, {
       getNextPageParam: getNextTaskListCursor,
+      // While a new filter loads, the previous results stay on screen, dimmed, instead of
+      // a "Loading tasks…" flash on every search (DECISIONS D-34).
+      placeholderData: keepPreviousData,
     }),
   );
   const deleteTask = useMutation(
@@ -49,6 +51,9 @@ export function TaskList() {
     }),
   );
   const tasks = list.data?.pages.flatMap((page) => page.items) ?? [];
+  const isFiltered = Object.values<string | undefined>(filter).some(
+    (value) => value !== undefined,
+  );
   const pageCount = list.data?.pages.length ?? 0;
   const {
     hasNextPage,
@@ -112,13 +117,15 @@ export function TaskList() {
   } else if (tasks.length === 0) {
     content = (
       <p className="text-muted rounded-lg border border-dashed border-zinc-300 py-10 text-center dark:border-zinc-700">
-        No tasks yet.
+        {isFiltered ? 'No tasks match the filters.' : 'No tasks yet.'}
       </p>
     );
   } else {
     content = (
       <>
-        <ul className="space-y-3">
+        <ul
+          className={`space-y-3 ${list.isPlaceholderData ? 'opacity-60' : ''}`}
+        >
           {tasks.map((task) => (
             <li
               key={task.id}
@@ -183,5 +190,9 @@ export function TaskList() {
     );
   }
 
-  return <section aria-label="Tasks">{content}</section>;
+  return (
+    <section aria-label="Tasks" aria-busy={list.isPlaceholderData}>
+      {content}
+    </section>
+  );
 }

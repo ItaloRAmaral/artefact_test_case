@@ -4,7 +4,7 @@ test('creates a task and sees it in the list', async ({ page }) => {
   const title = `Form task ${String(Date.now())}`;
   await page.goto('/');
   await page.getByRole('link', { name: 'New task' }).click();
-  await page.getByLabel('Title').fill(title);
+  await page.getByLabel('Title', { exact: true }).fill(title);
 
   await page.getByRole('button', { name: 'Save' }).click();
 
@@ -16,13 +16,15 @@ test('creates a task and sees it in the list', async ({ page }) => {
 test('opens a fresh form for a second task', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'New task' }).click();
-  await page.getByLabel('Title').fill(`Form task ${String(Date.now())}`);
+  await page
+    .getByLabel('Title', { exact: true })
+    .fill(`Form task ${String(Date.now())}`);
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page).toHaveURL(/\/$/);
 
   await page.getByRole('link', { name: 'New task' }).click();
 
-  await expect(page.getByLabel('Title')).toHaveValue('');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('');
   await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
 });
 

@@ -2,7 +2,7 @@
 
 ## What this is
 
-A small task manager for a technical test: a Next.js app whose back end keeps tasks in memory and exposes CRUD through tRPC, with an SSR list page (delete with feedback, infinite scroll as a bonus) and a create/edit form. **The spec is `docs/SPEC.md`; read it before any task.** Its guiding line: "less is more, simple but functional". No database, no authentication: do not add either.
+A small task manager for a technical test: a Next.js app whose back end keeps tasks in memory and exposes CRUD through tRPC, with an SSR list page (delete with feedback, infinite scroll as a bonus, a title search and a creation-date filter the user asked for, D-34) and a create/edit form. **The spec is `docs/SPEC.md`; read it before any task.** Its guiding line: "less is more, simple but functional". No database, no authentication: do not add either.
 
 ## Never infer, never assume
 

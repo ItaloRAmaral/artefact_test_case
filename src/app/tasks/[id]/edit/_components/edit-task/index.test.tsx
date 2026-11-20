@@ -212,7 +212,7 @@ describe('EditTask', () => {
     await repository.save(makeTask());
     const { user } = renderWithTrpc(
       <>
-        <TaskList />
+        <TaskList filter={{}} />
         <EditTask id="task-1" />
       </>,
       { repository },

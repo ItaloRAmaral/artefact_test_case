@@ -198,7 +198,7 @@ describe('TaskForm', () => {
   it('shows the created task in the list', async () => {
     const { user } = renderWithTrpc(
       <>
-        <TaskList />
+        <TaskList filter={{}} />
         <TaskForm />
       </>,
     );
@@ -213,7 +213,7 @@ describe('TaskForm', () => {
   });
 
   it('shows the created task as soon as the list is back', async () => {
-    const { user, rerender } = renderWithTrpc(<TaskList />);
+    const { user, rerender } = renderWithTrpc(<TaskList filter={{}} />);
     await screen.findByText('No tasks yet.');
     rerender(<TaskForm />);
     await user.type(screen.getByLabelText('Title'), 'Review the plan');
@@ -222,7 +222,7 @@ describe('TaskForm', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Task created.');
     });
 
-    rerender(<TaskList />);
+    rerender(<TaskList filter={{}} />);
 
     expect(
       screen.getByRole('heading', { name: 'Review the plan' }),

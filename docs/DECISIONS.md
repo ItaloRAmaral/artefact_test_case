@@ -379,7 +379,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `field`, `text-muted`, `text-error`), so a change to a button or a field happens once.
-  - A neutral look: a centered column, the list's heading and `New task` pinned to the top while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
+  - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`).
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
 
@@ -394,6 +394,15 @@ The main decisions behind this project, each with its context, the choice and wh
   - The repository applies the filter while it pages: `listAfter(position, count, filter)` filters before it slices, like a `WHERE` clause, so every page holds only matching tasks and the cursor of D-21 is unchanged. `ListTasks` passes the filter through.
   - The search is a substring match that ignores case and accents (user decision: "acao" finds "Ação"). Both sides are normalized to NFD, their diacritic marks dropped and lower-cased; the match uses `includes`, never a `RegExp` built from input.
   - A task created or edited while a filter is active may not match it, and then it leaves the list after the save (user decision: accepted).
+  - **In the browser** (user decisions: applied as you type, kept in the URL, a `Clear filters` button always visible):
+    - The URL keys are the input keys (`?titleContains=…&createdFrom=…&createdBefore=…`). The page reads `searchParams` once with `readTaskListFilter` (`src/shared/tasks/task-list-query.ts`), which keeps each valid single-string key and drops the rest, so a hand-edited URL still renders. It prefetches that filtered first page and passes the filter to `FilteredTaskList` as a prop.
+    - The browser never reads the filter back from the URL. Under the modal routes, `useSearchParams` returns the modal's URL (Next.js builds it from the global URL), and a repeated key would read differently on each side. `FilteredTaskList` keeps the filter in state and writes the URL with `window.history.replaceState` (Next.js integrates it with its router), only while the path is `/`. Replace, not push, so filters add no history entries.
+    - `TaskFilters`:
+      - The search applies 300 ms after the last keystroke.
+      - A day is applied when it is picked. From is the start of that day in the browser's zone; To is the start of the next day (`createdBefore`, exclusive), moved by calendar days, so a 23- or 25-hour day still counts as one.
+      - The date inputs show their days only after hydration, because the server does not know the browser's zone (the D-14 pattern).
+      - `Clear filters` empties the three fields at once and is disabled when there is nothing to clear.
+    - `TaskList` takes the filter as its query input with `placeholderData: keepPreviousData`, so the previous results stay, dimmed and `aria-busy`, while new ones load. With no match it shows `No tasks match the filters.`.
 - **Why:**
   - Filtering on the server is the only correct option with pagination: filtering the pages already loaded in the browser would miss matches on pages not loaded yet.
   - The cost is one extra pass over at most 1000 tasks (D-22).
@@ -401,6 +410,8 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Alternative rejected:**
   - Client-side filtering of loaded pages: wrong with infinite scroll.
   - A separate search procedure: a second contract for the same list.
+  - `router.replace` for each change: a server round trip per keystroke.
+  - Reading the URL with `useSearchParams`: wrong under the modal routes.
 
 ---
 

@@ -18,7 +18,7 @@ src/
     tasks/
       task-limits.ts         limits as plain constants, no imports (title and description max length, page size)
       task-schemas.ts        strict Zod input schemas of the tRPC contract; imported by the controller AND the form (output types come from the router, D-26)
-      task-list-query.ts     the list query's input and next-cursor getter, shared by the page's server fetch and TaskList (same cache key, D-27)
+      task-list-query.ts     readTaskListFilter (the URL's filter, read once by the page, D-34) and the next-cursor getter shared by the page's server fetch and TaskList (same cache key, D-27)
     trpc/
       query-client.ts        makeQueryClient: the TanStack Query defaults of the server fetch and the browser (D-27)
   server/
