@@ -1,14 +1,24 @@
 import { TaskCursorInvalidError } from '@/server/domains/task/entities/errors';
 import type { TaskPosition } from '@/server/domains/task/repositories/dto';
 
-// The cursor is the position of the last task of a page (createdAt and id), not
-// the id alone, so it still works after that task is deleted (DECISIONS D-21).
 const SEPARATOR = '|';
 
+/**
+ * Encodes a list position as a cursor.
+ *
+ * @param position - The createdAt and id of the last task of a page.
+ * @returns The cursor string.
+ */
 export function encodeTaskCursor(position: TaskPosition): string {
   return btoa(`${position.createdAt.toISOString()}${SEPARATOR}${position.id}`);
 }
 
+/**
+ * Decodes a cursor into a list position.
+ *
+ * @param cursor - The cursor string.
+ * @returns The position. Throws `TaskCursorInvalidError` when the cursor cannot be read.
+ */
 export function decodeTaskCursor(cursor: string): TaskPosition {
   const decoded = decodeBase64(cursor);
   const separatorIndex = decoded.indexOf(SEPARATOR);

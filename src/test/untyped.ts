@@ -1,6 +1,9 @@
-// Router tests send inputs the contract's types forbid (a value outside a union, a missing
-// field), as an untyped client could over HTTP; `never` fits any input type, so the input
-// reaches the Zod schema unchanged.
+/**
+ * Passes an input that the contract's types forbid.
+ *
+ * @param input - The input.
+ * @returns The same input, typed as `never`.
+ */
 export function untyped(input: unknown): never {
   return input as never;
 }

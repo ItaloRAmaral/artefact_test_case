@@ -81,8 +81,6 @@ export class Task {
     return { ...this.state, createdAt: new Date(this.state.createdAt) };
   }
 
-  // The schema already limits the status at the edge; the entity checks again so no task
-  // holds another value, whatever the caller (DECISIONS D-06, D-36).
   private static ensureStatus(status: TaskStatus): void {
     if (!TASK_STATUSES.includes(status)) {
       throw new TaskStatusInvalidError();

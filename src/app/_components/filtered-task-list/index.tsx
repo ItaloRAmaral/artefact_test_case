@@ -22,6 +22,13 @@ function toListUrl(filter: TaskListFilterInput): string {
   return query === '' ? '/' : `?${query}`;
 }
 
+/**
+ * Renders the sticky header with the filters, and the list for the current filter.
+ *
+ * @param props.header - The heading row shown above the filters.
+ * @param props.initialFilter - The filter read from the URL.
+ * @returns The header and the list.
+ */
 export function FilteredTaskList({
   header,
   initialFilter,
@@ -29,9 +36,6 @@ export function FilteredTaskList({
   header: ReactNode;
   initialFilter: TaskListFilterInput;
 }) {
-  // The server reads the filter from the URL once; from then on the browser only writes
-  // it. Reading it back would be wrong while a modal route shows its own URL over this
-  // page, and replaceState keeps filter changes out of the history (DECISIONS D-34).
   const [filter, setFilter] = useState(initialFilter);
   const changeFilter = useCallback((next: TaskListFilterInput) => {
     setFilter(next);
@@ -43,7 +47,6 @@ export function FilteredTaskList({
 
   return (
     <>
-      {/* The header and the filters stay on screen while the page scrolls (DECISIONS D-33). */}
       <div className="border-line bg-canvas sticky top-0 z-10 -mx-4 mb-5 border-b px-4 pb-4">
         {header}
         <TaskFilters filter={filter} onChange={changeFilter} />

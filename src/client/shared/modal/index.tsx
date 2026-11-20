@@ -16,14 +16,22 @@ import { CloseIcon } from '@/client/shared/icons';
 
 const CloseModalContext = createContext<CloseModal | null>(null);
 
+/**
+ * Gets the function that closes the modal around the caller.
+ *
+ * @returns The close function, or `null` outside a modal.
+ */
 export function useCloseModal(): CloseModal | null {
   return useContext(CloseModalContext);
 }
 
-// The modal is a route (DECISIONS D-35): closing it is going back in history, which
-// restores the list's URL and its filters. It goes back once per opening: a double click,
-// or Close then Escape, must not leave the list too. Escape is caught in `cancel`, and
-// there is no `close` handler, so the dialog closing on unmount never navigates.
+/**
+ * Renders its content in a modal dialog that closes by going back in history.
+ *
+ * @param props.title - The dialog title.
+ * @param props.children - The dialog content.
+ * @returns The dialog.
+ */
 export function Modal({
   title,
   children,
@@ -47,7 +55,6 @@ export function Modal({
   }, [router]);
   const closeModal = useCallback<CloseModal>(
     (afterClose) => {
-      // A save can finish after the user has closed the modal: the list is already back.
       if (!isOpenRef.current) {
         afterClose();
 
@@ -70,12 +77,8 @@ export function Modal({
     dialog.showModal();
     isOpenRef.current = true;
     isGoingBackRef.current = false;
-    // showModal focuses the first control (Close); the form's first field is where the
-    // user starts. React's autoFocus cannot do it: the dialog is still closed then.
     dialog.querySelector<HTMLElement>('input, textarea, select')?.focus();
 
-    // The page behind a modal dialog is inert, so feedback for it (a toast) waits until
-    // the dialog has closed.
     return () => {
       isOpenRef.current = false;
       dialog.close();
@@ -88,7 +91,6 @@ export function Modal({
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      // The backdrop is a fixed dark veil in both themes: ink turns light in dark mode.
       className="card m-auto w-[min(42rem,calc(100%-2rem))] p-0 text-inherit shadow-2xl backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm"
       onCancel={(event) => {
         event.preventDefault();

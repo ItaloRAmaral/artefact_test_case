@@ -4,7 +4,6 @@ import {
   TASK_TITLE_MAX_LENGTH,
 } from '@/shared/tasks/task-limits';
 
-// The one place where error codes become text: the UI never shows an error's message (DECISIONS D-07).
 const MESSAGE_BY_DOMAIN_CODE: Record<TaskErrorCode, string> = {
   TASK_NOT_FOUND: 'This task no longer exists.',
   TASK_TITLE_REQUIRED: 'Title is required.',
@@ -30,6 +29,12 @@ type ClientError =
   | null
   | undefined;
 
+/**
+ * Gets the text to show for a failed call.
+ *
+ * @param error - The tRPC client error.
+ * @returns The message for its error code.
+ */
 export function getErrorMessage(error: ClientError): string {
   const domainCode = error?.data?.domainCode;
 
@@ -44,8 +49,12 @@ export function getErrorMessage(error: ClientError): string {
   return GENERIC_MESSAGE;
 }
 
-// A failure with no tRPC code (the network) or a server error may pass on a new try; a
-// missing task or an invalid input will not, so the UI offers Retry only for the first.
+/**
+ * Tells whether a failed call may succeed on a new try.
+ *
+ * @param error - The tRPC client error.
+ * @returns `true` for a network failure or a server error.
+ */
 export function isTemporaryError(error: ClientError): boolean {
   const code = error?.data?.code;
 

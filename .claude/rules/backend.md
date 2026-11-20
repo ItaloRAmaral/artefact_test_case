@@ -88,7 +88,7 @@ Folders are created when their first file arrives (git keeps no empty folder). F
 ## Implementations
 
 - **`InMemoryTaskRepository`:** keeps snapshots in a `Map` and returns copies, so nothing outside can mutate stored state; reproduces only storage concerns (ordering, cursor), never business rules. It is the production implementation and the one tests use: no mocks of it.
-- **The stored tasks** live in one `Map` of snapshots on `globalThis` (`tasks-module.ts`), so dev hot reload does not wipe the list; each Next.js bundle builds its own `InMemoryTaskRepository` over it (`{ snapshots }`), because only plain data may cross bundles: a class instance from another bundle's copy fails `instanceof` (D-30). A short comment says why.
+- **The stored tasks** live in one `Map` of snapshots on `globalThis` (`tasks-module.ts`), so dev hot reload does not wipe the list; each Next.js bundle builds its own `InMemoryTaskRepository` over it (`{ snapshots }`), because only plain data may cross bundles: a class instance from another bundle's copy fails `instanceof` (D-30).
 
 ## Adapters (tRPC controllers)
 

@@ -2,10 +2,14 @@ import { Task } from '@/server/domains/task/entities/entity';
 import type { TaskSnapshot } from '@/server/domains/task/entities/dto';
 import type { TaskStatus } from '@/shared/tasks/task-statuses';
 
-// A value outside TASK_STATUSES, as a caller that bypassed the schema would send; the cast
-// is what lets a test reach the entity's own check.
 export const STATUS_OUTSIDE_THE_SET = 'archived' as TaskStatus;
 
+/**
+ * Creates a task snapshot with fixed data.
+ *
+ * @param overrides - The fields to change.
+ * @returns The snapshot.
+ */
 export function makeTaskSnapshot(
   overrides: Partial<TaskSnapshot> = {},
 ): TaskSnapshot {
@@ -19,6 +23,12 @@ export function makeTaskSnapshot(
   };
 }
 
+/**
+ * Creates a task entity with fixed data.
+ *
+ * @param overrides - The fields to change.
+ * @returns The task.
+ */
 export function makeTask(overrides: Partial<TaskSnapshot> = {}): Task {
   return Task.restore(makeTaskSnapshot(overrides));
 }

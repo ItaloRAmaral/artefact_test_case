@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-// Inline SVG icons: a handful of strokes, so no icon library (DECISIONS D-33, D-37). They
-// are decoration, hidden from screen readers: the control around each one carries the name.
 function StrokeIcon({
   className,
   children,
@@ -25,6 +23,12 @@ function StrokeIcon({
   );
 }
 
+/**
+ * Renders a plus icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function PlusIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>
@@ -33,6 +37,12 @@ export function PlusIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Renders a magnifier icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function SearchIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>
@@ -42,6 +52,12 @@ export function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Renders a pencil icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function PencilIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>
@@ -51,6 +67,12 @@ export function PencilIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Renders a trash can icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function TrashIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>
@@ -61,6 +83,12 @@ export function TrashIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Renders a cross icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function CloseIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>
@@ -69,6 +97,12 @@ export function CloseIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Renders a calendar icon.
+ *
+ * @param props.className - The size and color classes.
+ * @returns An SVG hidden from screen readers.
+ */
 export function CalendarIcon({ className }: { className?: string }) {
   return (
     <StrokeIcon className={className}>

@@ -25,9 +25,14 @@ import { TaskDate } from '../task-date';
 import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 import { useShowToast } from '@/client/shared/toast';
 
-// Start loading the next page a little before the user reaches the end.
 const LOAD_AHEAD_MARGIN = '200px';
 
+/**
+ * Renders the tasks that match a filter, loading more on scroll.
+ *
+ * @param props.filter - The list filter.
+ * @returns The list section.
+ */
 export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -35,8 +40,6 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
   const list = useInfiniteQuery(
     trpc.task.list.infiniteQueryOptions(filter, {
       getNextPageParam: getNextTaskListCursor,
-      // While a new filter loads, the previous results stay on screen, dimmed, instead of
-      // a "Loading tasks…" flash on every search (DECISIONS D-34).
       placeholderData: keepPreviousData,
     }),
   );
@@ -48,16 +51,12 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
       onError: (error) => {
         showToast('error', getErrorMessage(error));
       },
-      // Returning the promise keeps the mutation pending until the list has refetched, so
-      // the buttons stay disabled while the deleted row is still on screen.
       onSettled: () =>
         queryClient.invalidateQueries(trpc.task.list.pathFilter()),
     }),
   );
   const changeStatus = useMutation(
     trpc.task.changeStatus.mutationOptions({
-      // The edit form starts from the cached task: without the saved one there, reopening
-      // Edit would show the old status and saving would bring it back (DECISIONS D-36).
       onSuccess: (task) => {
         queryClient.setQueryData(
           trpc.task.getById.queryKey({ id: task.id }),
@@ -68,7 +67,6 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
       onError: (error) => {
         showToast('error', getErrorMessage(error));
       },
-      // As with delete, the controls stay disabled until the list has refetched.
       onSettled: () =>
         queryClient.invalidateQueries(trpc.task.list.pathFilter()),
     }),
@@ -86,15 +84,10 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
     fetchNextPage,
   } = list;
   const showsNextPageError = isFetchNextPageError && !isFetchingNextPage;
-  // Not while any fetch runs: fetchNextPage cancels a running fetch, and a refetch after a
-  // delete or a save would be lost, leaving a deleted task on screen. Not after a failed
-  // page either: only Retry loads it again (DECISIONS D-31).
   const canLoadNextPage = hasNextPage && !isFetching && !isFetchNextPageError;
   const sentinelRef = useRef<HTMLDivElement>(null);
   let content: ReactNode;
 
-  // While a change is saved, the pill shows the chosen status, not the stored one it would
-  // otherwise snap back to until the refetch (the mutation's own state, not a copy).
   function shownStatus(task: { id: string; status: TaskStatus }): TaskStatus {
     return changeStatus.isPending && changeStatus.variables.id === task.id
       ? changeStatus.variables.status
@@ -158,8 +151,6 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
           className={`space-y-3 ${list.isPlaceholderData ? 'opacity-60' : ''}`}
         >
           {tasks.map((task) => (
-            // The card takes its status's colors from data-status: the band, the tint
-            // and the pill's dot and text (DECISIONS D-37).
             <li
               key={task.id}
               data-status={shownStatus(task)}
@@ -171,9 +162,6 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
                 >
                   {task.title}
                 </h2>
-                {/* A select's own text sits low in some fonts (Segoe UI) and its arrow hugs the
-                    edge, so the pill shows a cap-height label, centered in any font, and its own
-                    arrow; the real select lies invisible on top (DECISIONS D-36). */}
                 <span className="border-line bg-surface has-focus-visible:outline-accent relative inline-flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-2.5 text-xs font-semibold text-(--status-ink) has-aria-disabled:opacity-60 has-focus-visible:outline-2 has-focus-visible:outline-offset-2">
                   <span
                     aria-hidden
@@ -201,9 +189,6 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
                     aria-label={`Status of ${task.title}`}
                     className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0 aria-disabled:cursor-not-allowed"
                     value={shownStatus(task)}
-                    // Not `disabled`: a focused control that becomes disabled drops the focus,
-                    // and the arrow keys change a select at once, so a keyboard user would land
-                    // back at the top of the page after each change (DECISIONS D-36).
                     aria-disabled={changeStatus.isPending}
                     onChange={(event) => {
                       const status = toTaskStatus(event.target.value);

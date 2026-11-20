@@ -36,7 +36,6 @@ export const createTaskInputSchema = z.strictObject({
   status: status.optional(),
 });
 
-// The form always sends the status, so an update replaces the whole content (DECISIONS D-36).
 export const updateTaskInputSchema = z.strictObject({
   id,
   title,
@@ -65,6 +64,5 @@ export const listTasksInputSchema = taskListFilterSchema.extend({
     .min(1)
     .max(TASK_PAGE_SIZE_MAX)
     .default(TASK_PAGE_SIZE_DEFAULT),
-  // tRPC's infinite query always sends it; the list only pages forward, so it is ignored (DECISIONS D-25).
   direction: z.enum(['forward', 'backward']).optional(),
 });

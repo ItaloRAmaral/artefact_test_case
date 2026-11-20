@@ -22,13 +22,8 @@ import { useCloseModal } from '@/client/shared/modal';
 import { StatusPicker } from '@/client/shared/status-picker';
 import { useShowToast } from '@/client/shared/toast';
 
-// The form edits everything but the id, with the update rules, so the data it validates
-// fits both create and update; the rules still come from one schema (DECISIONS D-36).
 const TASK_FORM_SCHEMA = updateTaskInputSchema.omit({ id: true });
 
-// Below a field: its error, if any, and its count of characters, counted after trimming as
-// the limit is (DECISIONS D-20). Both describe the field, so a screen reader reads them on
-// focus without announcing every key.
 function FieldNotes({
   id,
   error,
@@ -63,12 +58,15 @@ function describedBy(id: string, error: string | undefined): string {
   return error === undefined ? `${id}-count` : `${id}-error ${id}-count`;
 }
 
+/**
+ * Renders the form that creates a task, or edits the given one.
+ *
+ * @param props.task - The task to edit; a new task when absent.
+ * @returns The form.
+ */
 export function TaskForm({ task }: { task?: TaskDto }) {
   const { bfcacheId } = useRouter();
 
-  // Cache Components keep a page's state after leaving it (React <Activity>); the key
-  // changes on each visit through a link, so the form starts fresh, while the browser's
-  // back button still restores a draft (DECISIONS D-29).
   return <TaskFormFields key={bfcacheId} task={task} />;
 }
 
@@ -112,9 +110,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
   );
   const save = task === undefined ? create : update;
 
-  // A field is checked again as it is typed (user request, DECISIONS D-29): a message
-  // already shown follows the text, and a length error shows at once. A required error
-  // waits for Save, so clearing a field to retype it is not flagged.
   function checkField(field: 'title' | 'description', value: string) {
     const issue =
       TASK_FORM_SCHEMA.shape[field].safeParse(value).error?.issues[0];
@@ -128,9 +123,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     }));
   }
 
-  // The list may be off screen (the full page) or behind the modal, so only refetchType
-  // 'all' surely refreshes it before the form closes; the mutation stays pending until
-  // it is done.
   function refreshList() {
     return queryClient.invalidateQueries({
       ...trpc.task.list.pathFilter(),
@@ -138,8 +130,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     });
   }
 
-  // In a modal, the form closes by going back, so the list keeps its filters; the toast
-  // waits for the dialog to close, since the page behind it is inert (DECISIONS D-35).
   function leaveForm(text: string) {
     if (closeModal === null) {
       showToast('success', text);
@@ -161,8 +151,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
     if (!result.success) {
       const errors = z.flattenError(result.error).fieldErrors;
 
-      // The message must be on the page before the focus moves, so a screen reader reads
-      // the field with its error.
       flushSync(() => {
         setFieldErrors({
           title: errors.title?.[0],
@@ -250,8 +238,6 @@ function TaskFormFields({ task }: { task: TaskDto | undefined }) {
         >
           {save.isPending ? 'Saving…' : 'Save'}
         </button>
-        {/* The save error sits in the form, where it stays visible inside a modal too
-            (D-35). The region stays on the page, empty, so a screen reader announces it. */}
         <p role="alert" className="text-error">
           {save.isError ? getErrorMessage(save.error) : null}
         </p>

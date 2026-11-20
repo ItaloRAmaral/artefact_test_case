@@ -8,8 +8,6 @@ import { makeQueryClient } from '@/shared/trpc/query-client';
 
 import { appRouter } from './app-router';
 
-// One query client per server request: React's cache scopes it to the render, so
-// requests never share prefetched data.
 export const getQueryClient = cache(makeQueryClient);
 
 export const trpc = createTRPCOptionsProxy({

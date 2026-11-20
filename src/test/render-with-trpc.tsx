@@ -13,6 +13,14 @@ import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-me
 
 import { routerLink } from './trpc-links';
 
+/**
+ * Renders a UI inside the app providers, with tRPC over a repository.
+ *
+ * @param ui - The element to render.
+ * @param options.repository - Where the tasks are stored; a new in-memory one by default.
+ * @param options.link - The tRPC link to use instead of the router.
+ * @returns The render result, a user-event instance, the repository and the query client.
+ */
 export function renderWithTrpc(
   ui: ReactElement,
   options: { repository?: TaskRepository; link?: TRPCLink<AppRouter> } = {},

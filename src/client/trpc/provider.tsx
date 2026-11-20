@@ -24,10 +24,14 @@ function getQueryClient(): QueryClient {
   return browserQueryClient;
 }
 
+/**
+ * Provides the query client and the tRPC client to its children.
+ *
+ * @param props.children - The app.
+ * @returns The children inside the providers.
+ */
 export function TrpcReactProvider({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
-  // A relative URL is enough: the only query is prefetched on the server, and
-  // mutations run in the browser (DECISIONS D-27).
   const [trpcClient] = useState(() =>
     createTRPCClient<AppRouter>({ links: [httpLink({ url: '/api/trpc' })] }),
   );

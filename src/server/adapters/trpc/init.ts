@@ -8,7 +8,6 @@ import { DomainError } from '@/server/domains/task/entities/errors';
 
 import type { TrpcContext } from './dto';
 
-// Domain errors know no transport, so their tRPC code is chosen here, once (DECISIONS D-07, D-25).
 const TRPC_CODE_BY_DOMAIN_CODE: Record<TaskErrorCode, TRPCError['code']> = {
   TASK_NOT_FOUND: 'NOT_FOUND',
   TASK_TITLE_REQUIRED: 'BAD_REQUEST',

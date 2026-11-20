@@ -2,6 +2,11 @@ import Link from 'next/link';
 
 import { TaskForm } from '@/client/shared/task-form';
 
+/**
+ * Renders the create form as a full page.
+ *
+ * @returns The page with the form.
+ */
 export default function NewTaskPage() {
   return (
     <main>

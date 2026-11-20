@@ -48,7 +48,6 @@ export class FakeIntersectionObserver implements IntersectionObserver {
 
   private reveal(): void {
     const entries = [...this.targets].map(
-      // TaskList reads only these two fields of an entry.
       (target) =>
         ({ isIntersecting: true, target }) as IntersectionObserverEntry,
     );

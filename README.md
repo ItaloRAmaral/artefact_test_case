@@ -34,7 +34,7 @@ The controller validates the input shape with the shared Zod schema, calls one u
 
 **Look.** Styled with Tailwind CSS as a colored board: each task card is tinted and edged with its status color, in the Bricolage Grotesque typeface, with dark mode following the system ([D-33](docs/DECISIONS.md#d-33-styling-with-tailwind-css-only), [D-37](docs/DECISIONS.md#d-37-a-colored-board-look)).
 
-The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md); short comments in the code point to them.
+The main decisions, each with its reason, are in [`docs/DECISIONS.md`](docs/DECISIONS.md). The code has no explanatory comments: exported functions carry a JSDoc on what they do ([D-38](docs/DECISIONS.md#d-38-jsdoc-on-exported-functions-no-other-comments)).
 
 ## Task model
 

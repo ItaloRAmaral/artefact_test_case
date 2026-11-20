@@ -1,3 +1,9 @@
+/**
+ * Runs a function and catches what it throws.
+ *
+ * @param fn - The function to run.
+ * @returns What it threw, or `undefined`.
+ */
 export function catchError(fn: () => unknown): unknown {
   try {
     fn();

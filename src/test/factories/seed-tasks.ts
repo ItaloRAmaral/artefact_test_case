@@ -2,6 +2,12 @@ import type { TaskRepository } from '@/server/domains/task/repositories/database
 
 import { makeTask } from './make-task';
 
+/**
+ * Stores tasks `task-1` to `task-<count>`, one minute apart.
+ *
+ * @param repository - Where to store them.
+ * @param count - How many tasks.
+ */
 export async function seedTasks(
   repository: TaskRepository,
   count: number,

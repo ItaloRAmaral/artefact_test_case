@@ -7,9 +7,14 @@ import { TASK_STATUSES } from '@/shared/tasks/task-statuses';
 
 import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
 
-// A segmented control: every status in sight and one click away, in the filter bar (with
-// All) and in the form. Each radio lies invisible over its segment, so a click anywhere on
-// the segment picks it and the arrow keys move between them (DECISIONS D-37).
+/**
+ * Renders the task statuses as a segmented control.
+ *
+ * @param props.value - The checked status, or `undefined` for All.
+ * @param props.onChange - Called with the chosen status, or `undefined` for All.
+ * @param props.allLabel - The label of an All option, shown first; no All when absent.
+ * @returns The radio group.
+ */
 export function StatusPicker({
   value,
   onChange,

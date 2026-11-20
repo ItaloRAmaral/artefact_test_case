@@ -6,9 +6,6 @@ import { TrpcReactProvider } from '@/client/trpc/provider';
 
 import './globals.css';
 
-// Next downloads the font at build time and serves it from the app, so the browser asks
-// Google for nothing; the optical-size axis lets one family serve headings and small text
-// (DECISIONS D-37).
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
   axes: ['opsz'],
@@ -20,6 +17,13 @@ export const metadata: Metadata = {
   description: 'A simple task manager',
 };
 
+/**
+ * Renders the root layout with the tRPC and toast providers.
+ *
+ * @param props.children - The page.
+ * @param props.modal - The modal slot, shown over the page.
+ * @returns The HTML document.
+ */
 export default function RootLayout({ children, modal }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={bricolage.variable}>
@@ -27,7 +31,6 @@ export default function RootLayout({ children, modal }: LayoutProps<'/'>) {
         <TrpcReactProvider>
           <ToastProvider>
             <div className="mx-auto max-w-2xl px-4 py-10">{children}</div>
-            {/* Create and edit open here, over the list, when reached by a link (D-35). */}
             {modal}
           </ToastProvider>
         </TrpcReactProvider>

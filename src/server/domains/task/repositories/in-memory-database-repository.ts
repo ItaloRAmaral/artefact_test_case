@@ -61,9 +61,6 @@ export class InMemoryTaskRepository extends TaskRepository {
     count: number,
     filter: TaskListFilter,
   ): Promise<Task[]> {
-    // Filters by position, not by id, so a cursor still works after its task is deleted
-    // (DECISIONS D-21). The filter is applied before the slice, like a WHERE clause, so a
-    // page holds only matching tasks and paging continues with the same filter (D-34).
     const tasks = [...this.snapshots.values()]
       .sort((a, b) => InMemoryTaskRepository.compareNewestFirst(a, b))
       .filter(
@@ -93,8 +90,6 @@ export class InMemoryTaskRepository extends TaskRepository {
     );
   }
 
-  // Ignores case and accents, so "acao" finds "Ação" (user decision, D-34): NFD splits each
-  // accented letter into the letter and its mark, and the marks are dropped.
   private static toSearchable(text: string): string {
     return text
       .normalize('NFD')

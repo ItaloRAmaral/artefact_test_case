@@ -15,8 +15,12 @@ const TOAST_DURATION_MS = 4000;
 
 const ShowToastContext = createContext<ShowToast | null>(null);
 
-// Lives in the root layout, which stays mounted across navigations, so a page can show a
-// result on the page it navigates to (DECISIONS D-29).
+/**
+ * Provides the toast and renders it over its children.
+ *
+ * @param props.children - The app.
+ * @returns The children and the toast.
+ */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -31,6 +35,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Gets the function that shows a message in the toast.
+ *
+ * @returns The show function.
+ */
 export function useShowToast(): ShowToast {
   const showToast = useContext(ShowToastContext);
 
@@ -41,8 +50,6 @@ export function useShowToast(): ShowToast {
   return showToast;
 }
 
-// Both live regions stay on the page, empty until a result: screen readers announce a
-// change inside an existing region, but often miss a region inserted with its text.
 function ToastRegion({ toast }: { toast: ToastMessage | null }) {
   return (
     <div className="pointer-events-none fixed top-4 right-4 z-50 flex max-w-sm flex-col gap-2">
@@ -63,8 +70,6 @@ function ToastRegion({ toast }: { toast: ToastMessage | null }) {
 function ToastText({ kind, text }: Pick<ToastMessage, 'kind' | 'text'>) {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Runs once per mount: each result has a new key, so a new result remounts the text and
-  // restarts the timer, even with the same text.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setIsVisible(false);

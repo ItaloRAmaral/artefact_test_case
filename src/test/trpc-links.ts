@@ -7,6 +7,12 @@ import { appRouter } from '@/server/adapters/trpc/app-router';
 import type { TaskRepository } from '@/server/domains/task/repositories/database-repository';
 import { createTasksModule } from '@/server/tasks-module';
 
+/**
+ * Creates a link that calls the app router in process.
+ *
+ * @param repository - Where the tasks are stored.
+ * @returns The link.
+ */
 export function routerLink(repository: TaskRepository): TRPCLink<AppRouter> {
   return localLink({
     router: appRouter,
@@ -23,6 +29,12 @@ export const failingLink: TRPCLink<AppRouter> = () => () =>
 const neverSettlingLink: TRPCLink<AppRouter> = () => () =>
   observable(() => undefined);
 
+/**
+ * Creates a link that serves the first call and fails the others.
+ *
+ * @param repository - Where the tasks are stored.
+ * @returns The link.
+ */
 export function failingAfterFirstCallLink(
   repository: TaskRepository,
 ): TRPCLink<AppRouter> {
@@ -39,6 +51,12 @@ export function failingAfterFirstCallLink(
   });
 }
 
+/**
+ * Creates a link that serves the first `task.list` call and never settles the next ones.
+ *
+ * @param repository - Where the tasks are stored.
+ * @returns The link.
+ */
 export function pendingRefreshLink(
   repository: TaskRepository,
 ): TRPCLink<AppRouter> {
@@ -59,6 +77,13 @@ export function pendingRefreshLink(
   });
 }
 
+/**
+ * Creates a link that never settles the calls to one procedure.
+ *
+ * @param repository - Where the tasks are stored.
+ * @param path - The procedure path.
+ * @returns The link.
+ */
 export function pendingProcedureLink(
   repository: TaskRepository,
   path: string,
@@ -70,6 +95,13 @@ export function pendingProcedureLink(
   });
 }
 
+/**
+ * Creates a link that fails the calls to one procedure.
+ *
+ * @param repository - Where the tasks are stored.
+ * @param path - The procedure path.
+ * @returns The link.
+ */
 export function failingProcedureLink(
   repository: TaskRepository,
   path: string,
@@ -81,6 +113,14 @@ export function failingProcedureLink(
   });
 }
 
+/**
+ * Creates a link that serves, fails or hangs each call to one procedure, in order.
+ *
+ * @param repository - Where the tasks are stored.
+ * @param path - The procedure path.
+ * @param script - What to do with each call; calls past its end are served.
+ * @returns The link.
+ */
 export function scriptedProcedureLink(
   repository: TaskRepository,
   path: string,
@@ -107,6 +147,12 @@ export function scriptedProcedureLink(
   };
 }
 
+/**
+ * Wraps a link and counts its `task.list` calls.
+ *
+ * @param link - The link to wrap.
+ * @returns The wrapped link and a function that reads the count.
+ */
 export function countingLink(link: TRPCLink<AppRouter>): {
   link: TRPCLink<AppRouter>;
   listCallCount: () => number;

@@ -6,10 +6,13 @@ function subscribeToNothing(): () => void {
   return () => undefined;
 }
 
+/**
+ * Renders a task's creation date.
+ *
+ * @param props.iso - The date as an ISO 8601 string.
+ * @returns A `time` element.
+ */
 export function TaskDate({ iso }: { iso: string }) {
-  // false while rendering on the server and during hydration, true afterwards: the server
-  // HTML and the first client render show the same UTC text, then the browser's local
-  // time replaces it, with no hydration mismatch (DECISIONS D-14, D-27).
   const isHydrated = useSyncExternalStore(
     subscribeToNothing,
     () => true,

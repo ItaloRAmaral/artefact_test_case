@@ -2,10 +2,8 @@ import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import { gotoHydrated } from './hydration';
+import { readTaskId } from './trpc-response';
 
-// Ten tasks are taller than 400 px plus the list's 200 px load-ahead margin, so
-// the first page fills the screen: the first load requests no other page, and loading
-// more takes a scroll (DECISIONS D-31).
 test.use({ viewport: { width: 1280, height: 400 } });
 
 async function createTask(request: APIRequestContext, title: string) {
@@ -249,9 +247,8 @@ test('filters tasks by status', async ({ page, request }) => {
   const created = await request.post('/api/trpc/task.create', {
     data: { title: `Status done ${stamp}` },
   });
-  const done = (await created.json()) as { result: { data: { id: string } } };
   await request.post('/api/trpc/task.changeStatus', {
-    data: { id: done.result.data.id, status: 'done' },
+    data: { id: await readTaskId(created), status: 'done' },
   });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(stamp)}`);
 

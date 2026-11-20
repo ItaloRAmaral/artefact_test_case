@@ -1,8 +1,12 @@
 import type { TaskListFilterInput } from './task-schemas';
 import { taskListFilterSchema } from './task-schemas';
 
-// Each key is checked on its own, so a bad value in a hand-edited URL drops only that
-// key and the page still renders (DECISIONS D-34).
+/**
+ * Reads the list filter from URL search params, dropping the invalid keys.
+ *
+ * @param params - The URL search params.
+ * @returns The filter.
+ */
 export function readTaskListFilter(
   params: Record<string, string | string[] | undefined>,
 ): TaskListFilterInput {
@@ -16,6 +20,12 @@ export function readTaskListFilter(
   };
 }
 
+/**
+ * Gets the cursor of the page after a given one.
+ *
+ * @param page - A page of the list.
+ * @returns The next cursor, or `null` on the last page.
+ */
 export function getNextTaskListCursor(page: {
   nextCursor: string | null;
 }): string | null {

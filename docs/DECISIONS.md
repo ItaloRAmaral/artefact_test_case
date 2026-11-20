@@ -41,6 +41,7 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-35](#d-35-create-and-edit-in-a-modal-over-the-list)                                          | Create and edit in a modal over the list                                                 | 2026-11-20 |
 | [D-36](#d-36-task-status-to-do-doing-done)                                                      | Task status (to do, doing, done)                                                         | 2026-11-20 |
 | [D-37](#d-37-a-colored-board-look)                                                              | A colored board look                                                                     | 2026-11-20 |
+| [D-38](#d-38-jsdoc-on-exported-code-no-other-comments)                                          | JSDoc on exported code, no other comments                                                | 2026-11-20 |
 
 ---
 
@@ -502,6 +503,17 @@ The main decisions behind this project, each with its context, the choice and wh
   - A focus list (rows in one panel, Linear-like) and a minimal refinement of the old cards: offered, not chosen.
   - A component or icon library: still not needed (D-33); icons are inline SVG.
   - The system font stack: it changes with each system, and Segoe UI had already shown text sitting low in a select (D-36).
+
+## D-38: JSDoc on exported functions, no other comments
+
+- **Context:** the code held about 80 comments, most explaining why a passage was written that way. The user asked for none of those (2026-11-20): code is documented by JSDoc on its exported functions, saying what each does, its parameters and its result. The spec asks for "comentários explicando suas principais decisões".
+- **Decision (user decision):**
+  - Every exported function, components included, has a JSDoc: one line on what it does, `@param` for each parameter, `@returns` when it returns something. No why, no context, no reference to a decision.
+  - No JSDoc on classes, constants or types, and no other comment anywhere (code, JSX, CSS, config, tests). Tool directives (`eslint-disable-next-line`) stay.
+  - The spec's request for comments on the main decisions is met by this file and the README, where each decision has its context and reason.
+  - `.claude/rules/code-style.md` ("Comments") holds the rule.
+- **Why:** an explanation in the code repeats this file and goes stale when the code changes (a review on 2026-11-20 found three such comments); a JSDoc on an exported function documents its interface.
+- **Alternatives rejected:** comments explaining each decision where it lives (the earlier rule); JSDoc linking each decision with `@see` (tried, rejected by the user).
 
 ---
 

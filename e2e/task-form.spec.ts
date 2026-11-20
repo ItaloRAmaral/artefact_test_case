@@ -3,7 +3,6 @@ import { expect, test } from '@playwright/test';
 
 import { gotoHydrated } from './hydration';
 
-// gotoHydrated waits for a task's date on the list, so these tests make sure there is one.
 async function createListedTask(request: APIRequestContext) {
   await request.post('/api/trpc/task.create', {
     data: { title: `Listed task ${String(Date.now())}` },

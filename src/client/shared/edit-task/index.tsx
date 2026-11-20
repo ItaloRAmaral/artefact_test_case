@@ -10,10 +10,14 @@ import {
 } from '@/client/shared/error-message';
 import { TaskForm } from '@/client/shared/task-form';
 
+/**
+ * Loads a task and renders its edit form.
+ *
+ * @param props.id - The task id.
+ * @returns The form, or the loading or error state.
+ */
 export function EditTask({ id }: { id: string }) {
   const trpc = useTRPC();
-  // No retries: a missing task shows its message at once instead of after three
-  // retries, about 7 seconds (DECISIONS D-29).
   const task = useQuery(
     trpc.task.getById.queryOptions({ id }, { retry: false }),
   );

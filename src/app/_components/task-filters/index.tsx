@@ -14,8 +14,6 @@ function subscribeToNothing(): () => void {
   return () => undefined;
 }
 
-// A day typed in a date input is a calendar day in the browser's zone: its first instant.
-// setDate moves by calendar days, so a 23- or 25-hour day still counts as one (D-34).
 function startOfLocalDay(day: string, daysLater: number): string {
   const date = new Date(`${day}T00:00`);
 
@@ -36,6 +34,13 @@ function toLocalDay(iso: string | undefined, msBefore: number): string {
   return `${String(date.getFullYear())}-${month}-${day}`;
 }
 
+/**
+ * Renders the title search, the creation-date range, the status and Clear.
+ *
+ * @param props.filter - The current filter.
+ * @param props.onChange - Called with the new filter.
+ * @returns The filter bar.
+ */
 export function TaskFilters({
   filter,
   onChange,
@@ -47,15 +52,12 @@ export function TaskFilters({
   const fromId = useId();
   const toId = useId();
   const [search, setSearch] = useState(filter.titleContains ?? '');
-  // The server does not know the browser's zone, so the days show only after hydration and
-  // the server HTML matches the first client render (the D-14 pattern, as in TaskDate).
   const isHydrated = useSyncExternalStore(
     subscribeToNothing,
     () => true,
     () => false,
   );
   const fromDay = isHydrated ? toLocalDay(filter.createdFrom, 0) : '';
-  // createdBefore is the first instant after the To day, so the day shown is 1 ms earlier.
   const toDay = isHydrated ? toLocalDay(filter.createdBefore, 1) : '';
   const hasFilter =
     search !== '' ||
@@ -80,8 +82,6 @@ export function TaskFilters({
   }, [search, filter, onChange]);
 
   return (
-    // The search and Clear share the first row; the status and the days share the second,
-    // and wrap on a phone (DECISIONS D-37).
     <div className="space-y-3">
       <div className="flex gap-2">
         <div className="relative flex-1">

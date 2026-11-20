@@ -3,13 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 3100;
 const BASE_URL = `http://localhost:${String(PORT)}`;
 
-// e2e tests run against a production build that Playwright starts itself, never a
-// server already running: SSR is only meaningful in a production build, and a fresh
-// server means an empty in-memory task list on every run (DECISIONS D-18).
 export default defineConfig({
   testDir: 'e2e',
-  // One worker: the tests share one in-memory server and look for their tasks on the
-  // first page, which a test running in parallel could fill with its own (DECISIONS D-31).
   workers: 1,
   use: {
     baseURL: BASE_URL,

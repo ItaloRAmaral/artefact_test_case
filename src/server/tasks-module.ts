@@ -10,6 +10,12 @@ import { GetTask } from '@/server/domains/task/use-cases/get-task';
 import { ListTasks } from '@/server/domains/task/use-cases/list-tasks';
 import { UpdateTask } from '@/server/domains/task/use-cases/update-task';
 
+/**
+ * Creates the task use cases over a repository.
+ *
+ * @param repository - Where the tasks are stored.
+ * @returns The use cases.
+ */
 export function createTasksModule(repository: TaskRepository) {
   return {
     createTask: new CreateTask(repository),
@@ -21,10 +27,6 @@ export function createTasksModule(repository: TaskRepository) {
   };
 }
 
-// globalThis keeps the stored tasks across dev hot reloads (DECISIONS D-05) and across
-// Next.js bundles: pages and the API route each load their own copy of the domain
-// classes, so only plain data is shared, and each copy builds its own repository over it
-// (an error class from another copy would fail instanceof, DECISIONS D-30).
 const globalStore = globalThis as typeof globalThis & {
   taskSnapshots?: Map<string, TaskSnapshot>;
 };

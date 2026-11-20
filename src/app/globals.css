@@ -1,8 +1,5 @@
 @import 'tailwindcss';
 
-/* The board's palette and typeface (DECISIONS D-37). Each color is a token, redefined
-   once for dark mode below, so the markup uses one class where it needed a light and a
-   dark one. */
 @theme {
   --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
 
@@ -27,10 +24,8 @@
 }
 
 @layer base {
-  /* Native controls (scrollbars, the textarea's resize handle, autofill) follow the theme. */
   :root {
     color-scheme: light dark;
-    /* The scrollbar keeps its place, so the page does not shift when a modal locks it. */
     scrollbar-gutter: stable;
   }
 
@@ -57,8 +52,6 @@
     }
   }
 
-  /* A status maps to its colors here only; a card, a pill or a picker segment sets
-     data-status and reads --status (band, dot), --status-tint and --status-ink (D-37). */
   [data-status='todo'] {
     --status: var(--color-todo);
     --status-tint: var(--color-todo-tint);
@@ -77,7 +70,6 @@
     --status-ink: var(--color-done-ink);
   }
 
-  /* The list behind an open modal stays still (DECISIONS D-35). */
   :root:has(dialog:modal) {
     overflow: hidden;
   }
@@ -87,7 +79,6 @@
   }
 }
 
-/* The few patterns repeated across pages (DECISIONS D-33). */
 @layer components {
   .button {
     @apply focus-visible:outline-accent inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
