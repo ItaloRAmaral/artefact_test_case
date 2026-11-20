@@ -290,7 +290,7 @@ describe('EditTask', () => {
     });
     await user.selectOptions(cardStatus, 'Done');
     await waitFor(() => {
-      expect(cardStatus).toBeEnabled();
+      expect(cardStatus).toHaveAttribute('aria-disabled', 'false');
     });
 
     rerender(

@@ -81,15 +81,17 @@ export function TaskFilters({
   }, [search, filter, onChange]);
 
   return (
-    <div className="grid grid-cols-3 gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto]">
-      <div className="col-span-3 sm:col-span-1">
+    // The search gets a row of its own, so it stays wide; on a phone the dates pair up and
+    // stay readable, on a wider screen the dates, the status and Clear share one row.
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="col-span-2 sm:col-span-4">
         <label htmlFor={searchId} className="mb-1 block text-sm font-medium">
           Search by title
         </label>
         <input
           id={searchId}
           type="search"
-          className="field"
+          className="field h-10"
           maxLength={TASK_TITLE_MAX_LENGTH}
           value={search}
           onChange={(event) => {
@@ -104,7 +106,7 @@ export function TaskFilters({
         <input
           id={fromId}
           type="date"
-          className="field"
+          className="field h-10"
           value={fromDay}
           max={toDay === '' ? undefined : toDay}
           onChange={(event) => {
@@ -124,7 +126,7 @@ export function TaskFilters({
         <input
           id={toId}
           type="date"
-          className="field"
+          className="field h-10"
           value={toDay}
           min={fromDay === '' ? undefined : fromDay}
           onChange={(event) => {
@@ -143,7 +145,7 @@ export function TaskFilters({
         </label>
         <select
           id={statusId}
-          className="field"
+          className="field h-10"
           value={filter.status ?? ''}
           onChange={(event) => {
             onChange({ ...filter, status: toTaskStatus(event.target.value) });
@@ -159,7 +161,7 @@ export function TaskFilters({
       </div>
       <button
         type="button"
-        className="button button-secondary col-span-3 self-end sm:col-span-1"
+        className="button button-secondary h-10 self-end"
         disabled={!hasFilter}
         onClick={() => {
           setSearch('');

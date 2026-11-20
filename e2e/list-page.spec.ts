@@ -267,3 +267,20 @@ test('filters tasks by status', async ({ page, request }) => {
   ).toBeVisible();
   await expect(page).toHaveURL(/status=done/);
 });
+
+test('keeps the focus on the status after a keyboard change', async ({
+  page,
+  request,
+}) => {
+  const title = `Keyboard status ${String(Date.now())}`;
+  await createTask(request, title);
+  await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
+  const status = page.getByRole('combobox', { name: `Status of ${title}` });
+  await status.focus();
+
+  await page.keyboard.press('ArrowDown');
+
+  await expect(page.getByRole('status')).toHaveText('Status updated.');
+  await expect(status).toBeFocused();
+  await expect(status).toHaveValue('doing');
+});

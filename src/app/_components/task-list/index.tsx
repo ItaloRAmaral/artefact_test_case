@@ -169,13 +169,16 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
                 <h2 className="font-medium break-words">{task.title}</h2>
                 <select
                   aria-label={`Status of ${task.title}`}
-                  className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
+                  className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 dark:focus-visible:outline-zinc-100 ${STATUS_PILL_COLORS[shownStatus(task)]}`}
                   value={shownStatus(task)}
-                  disabled={changeStatus.isPending}
+                  // Not `disabled`: a focused control that becomes disabled drops the focus,
+                  // and the arrow keys change a select at once, so a keyboard user would land
+                  // back at the top of the page after each change (DECISIONS D-36).
+                  aria-disabled={changeStatus.isPending}
                   onChange={(event) => {
                     const status = toTaskStatus(event.target.value);
 
-                    if (status !== undefined) {
+                    if (!changeStatus.isPending && status !== undefined) {
                       changeStatus.mutate({ id: task.id, status });
                     }
                   }}

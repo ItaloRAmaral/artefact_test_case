@@ -599,7 +599,7 @@ describe('TaskList', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Status updated.');
     });
     await waitFor(() => {
-      expect(status).toBeEnabled();
+      expect(status).toHaveAttribute('aria-disabled', 'false');
     });
     expect(status).toHaveDisplayValue('Done');
     expect((await repository.findExistingById('task-1')).status).toBe('done');
@@ -633,10 +633,10 @@ describe('TaskList', () => {
 
     await user.selectOptions(status, 'Done');
 
-    expect(status).toBeDisabled();
+    expect(status).toHaveAttribute('aria-disabled', 'true');
     expect(
       screen.getByRole('combobox', { name: 'Status of Review the plan' }),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('keeps the status controls disabled until the list has refetched', async () => {
@@ -654,7 +654,44 @@ describe('TaskList', () => {
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent('Status updated.');
     });
-    expect(status).toBeDisabled();
+    expect(status).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('ignores another status change while one is saved', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    await repository.save(makeTask(SECOND_TASK));
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingProcedureLink(repository, 'task.changeStatus'),
+    });
+    await user.selectOptions(
+      await screen.findByRole('combobox', {
+        name: 'Status of Write the README',
+      }),
+      'Done',
+    );
+    const otherStatus = screen.getByRole('combobox', {
+      name: 'Status of Review the plan',
+    });
+
+    await user.selectOptions(otherStatus, 'Doing');
+
+    expect(otherStatus).toHaveDisplayValue('To do');
+  });
+
+  it('keeps the status control focusable while a change is saved', async () => {
+    const repository = new InMemoryTaskRepository();
+    await repository.save(makeTask());
+    const { user } = renderWithTrpc(<TaskList filter={{}} />, {
+      link: pendingProcedureLink(repository, 'task.changeStatus'),
+    });
+    const status = await screen.findByRole('combobox', {
+      name: 'Status of Write the README',
+    });
+
+    await user.selectOptions(status, 'Done');
+
+    expect(status).toBeEnabled();
   });
 
   it('keeps the delete buttons enabled while a status change is saved', async () => {
@@ -692,7 +729,7 @@ describe('TaskList', () => {
       );
     });
     await waitFor(() => {
-      expect(status).toBeEnabled();
+      expect(status).toHaveAttribute('aria-disabled', 'false');
     });
     expect(status).toHaveDisplayValue('To do');
   });
