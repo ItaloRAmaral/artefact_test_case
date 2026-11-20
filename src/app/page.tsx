@@ -13,7 +13,7 @@ import { getQueryClient, trpc } from '@/server/adapters/trpc/server';
 export default function HomePage() {
   return (
     <main>
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="sticky top-0 z-10 -mx-4 mb-2 flex items-center justify-between gap-4 bg-zinc-50 px-4 py-4 dark:bg-zinc-950">
         <h1 className="page-title">Tasks</h1>
         <Link href="/tasks/new" className="button button-primary">
           New task

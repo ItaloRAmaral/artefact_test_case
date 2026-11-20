@@ -379,7 +379,7 @@ The main decisions behind this project, each with its context, the choice and wh
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
   - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `field`, `text-muted`, `text-error`), so a change to a button or a field happens once.
-  - A neutral look: a centered column, tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge; dark mode follows the system (`prefers-color-scheme`).
+  - A neutral look: a centered column, the list's heading and `New task` pinned to the top while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root), tasks as cards, a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge; dark mode follows the system (`prefers-color-scheme`).
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
 - **Alternative rejected:** shadcn (above), CSS Modules (more files for the same result), React components for buttons and fields (the class names are enough for plain elements).
 
