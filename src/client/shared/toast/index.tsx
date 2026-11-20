@@ -45,7 +45,7 @@ export function useShowToast(): ShowToast {
 // change inside an existing region, but often miss a region inserted with its text.
 function ToastRegion({ toast }: { toast: ToastMessage | null }) {
   return (
-    <div className="fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2">
+    <div className="pointer-events-none fixed top-4 right-4 z-50 flex max-w-sm flex-col gap-2">
       <div role="status">
         {toast?.kind === 'success' ? (
           <ToastText key={toast.id} kind="success" text={toast.text} />
