@@ -90,7 +90,7 @@ Never guess a command; ask.
 | Unit and component tests                                   | `pnpm test`                                                                   |
 | Tests with the coverage gate                               | `pnpm test:coverage`                                                          |
 | End to end (once: `pnpm exec playwright install chromium`) | `pnpm test:e2e` (builds and starts its own server on port 3100)               |
-| Lint and types                                             | `pnpm lint`, `pnpm typecheck` (runs `next typegen` first)                     |
+| Lint and types                                             | `pnpm lint`, `pnpm typecheck` (both run `next typegen` first)                 |
 | Docker image, build and run                                | `docker build -t task-manager .`, `docker run --rm -p 3000:3000 task-manager` |
 | Formatting                                                 | `pnpm format:check`, `pnpm format` to fix                                     |
 
