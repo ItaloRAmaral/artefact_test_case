@@ -2,9 +2,19 @@
 
 A small task manager built for a technical test: a Next.js app whose back end keeps tasks in memory and exposes create, list, update and delete through tRPC, with a server-rendered list page and a create/edit form. The test statement is in [`docs/SPEC.md`](docs/SPEC.md).
 
+## Highlights for reviewers
+
+- **SSR with hydration, no second fetch.** The server prefetches the first page through the router, without HTTP, and hands it to the browser's TanStack Query cache, so the browser starts from it. Dates render in UTC on the server and switch to local time after hydration, with no mismatch ([D-27](docs/DECISIONS.md#d-27-list-page-rendering), [D-14](docs/DECISIONS.md#d-14-dates-rendered-in-utc-on-the-server-local-time-after-hydration)).
+- **Pagination by position.** The cursor is the `createdAt` and `id` of a page's last task, so the infinite scroll stays correct when tasks are created or deleted between pages, and filters apply before a page is cut ([D-21](docs/DECISIONS.md#d-21-position-cursor), [D-31](docs/DECISIONS.md#d-31-infinite-scroll-on-the-list), [D-34](docs/DECISIONS.md#d-34-title-search-and-creation-date-filter-on-the-list)).
+- **Errors by code, end to end.** The entity throws domain errors with literal codes, one middleware maps them to tRPC codes, and one UI module maps codes to text. An unexpected error reaches the browser with no detail and is logged on the server ([D-07](docs/DECISIONS.md#d-07-errors-as-domain-codes-translated-in-one-place), [D-25](docs/DECISIONS.md#d-25-error-responses-and-transport)).
+- **One source of rules.** The same strict Zod schemas validate the procedures and the form; the limits are defined once and the entity guards them again ([D-06](docs/DECISIONS.md#d-06-one-zod-contract-shared-by-server-and-form-invariants-in-the-entity), [D-20](docs/DECISIONS.md#d-20-limits-title-120-description-1000-page-10-max-50)).
+- **A small hexagonal back end.** The domain imports no framework, which ESLint enforces; one use case per operation; an in-memory repository behind a contract ([D-04](docs/DECISIONS.md#d-04-hexagonal-architecture-with-a-repository-on-the-back-end), [D-17](docs/DECISIONS.md#d-17-layer-rule-enforced-with-no-restricted-imports)).
+- **Tested at three levels.** Unit and component tests with Vitest (100% of lines and branches on server code, gated at 90%) and end-to-end tests with Playwright, on the same standalone server the Docker image runs ([D-08](docs/DECISIONS.md#d-08-lean-test-strategy), [D-18](docs/DECISIONS.md#d-18-e2e-tests-on-a-production-build-chromium-only), [D-39](docs/DECISIONS.md#d-39-docker-image-from-the-standalone-output)).
+- **Built with an AI-assisted workflow.** `CLAUDE.md` and `.claude/` hold the rules, skills, plan reviewer and git hook used to build the app with Claude Code; every change started from a plan in [`docs/plans/`](docs/plans/).
+
 ## How it works
 
-**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. The list can be searched by title and filtered by creation date. `/tasks/new` and `/tasks/<id>/edit` share one form; from the list, they open in a modal over it. Each action shows its loading, success and failure states.
+**Pages.** `/` lists the tasks, newest first: the first page is rendered on the server and handed to the browser, and more pages load as the user scrolls. The list can be searched by title and filtered by creation date and status. `/tasks/new` and `/tasks/<id>/edit` share one form; from the list, they open in a modal over it. Each action shows its loading, success and failure states.
 
 **Request path.** The pages talk to the back end only through tRPC, with TanStack Query caching the results in the browser:
 
@@ -15,7 +25,7 @@ list or form ─► tRPC client ─► /api/trpc ─► controller ─► use ca
 
 On the server, the list page calls the same router directly, without HTTP, and hands the result to the browser's cache ([D-27](docs/DECISIONS.md#d-27-list-page-rendering)).
 
-The controller validates the input shape with the shared Zod schema, calls one use case (`CreateTask`, `ListTasks`, `GetTask`, `UpdateTask`, `DeleteTask`) and returns an output object built field by field. The `Task` entity guards the rules (a title is required, length limits); the repository only stores and returns copies.
+The controller validates the input shape with the shared Zod schema, calls one use case (`CreateTask`, `ListTasks`, `GetTask`, `UpdateTask`, `ChangeTaskStatus`, `DeleteTask`) and returns an output object built field by field. The `Task` entity guards the rules (a title is required, length limits); the repository only stores and returns copies.
 
 **Errors.** An expected failure is a domain error with a code (`TASK_NOT_FOUND`, `TASK_TITLE_REQUIRED`…). One middleware turns the code into a tRPC code (`NOT_FOUND`, `BAD_REQUEST`, `CONFLICT`), and one module in the UI turns codes into messages; anything unexpected becomes a generic message, with no internal detail sent to the browser.
 
@@ -75,7 +85,7 @@ Each task shows its status (`To do`, `Doing` or `Done`) as a colored pill. Choos
 - **Created from / Created to:** days in your time zone, both included.
 - **Status:** `All`, `To do`, `Doing` or `Done`.
 - **Clear filters:** empties every filter at once.
-- **The URL:** the filters live in it (`/?titleContains=…&createdFrom=…&createdBefore=…`), so a reload or a shared link renders the same filtered list on the server. While new results load, the previous ones stay on screen, dimmed; with no match, the list shows `No tasks match the filters.` (D-34).
+- **The URL:** the filters live in it (`/?titleContains=…&createdFrom=…&createdBefore=…&status=…`), so a reload or a shared link renders the same filtered list on the server. While new results load, the previous ones stay on screen, dimmed; with no match, the list shows `No tasks match the filters.` (D-34).
 
 ## Create and edit
 
@@ -104,7 +114,7 @@ docker run --rm -p 3000:3000 task-manager   # http://localhost:3000
 
 A two-stage build: the first stage installs the dependencies and builds the app; the second holds only Node.js and Next.js's standalone output, and runs it as the non-root `node` user, so the image carries no source, no pnpm and no dev dependencies ([D-39](docs/DECISIONS.md#d-39-docker-image-from-the-standalone-output)).
 
-Tasks live in memory, so restarting the server empties the list. Tasks created before the task status was added (D-36) in a dev server that was already running have no status: restart `pnpm dev` once.
+Tasks live in memory, so restarting the server empties the list.
 
 ## Test
 
@@ -121,7 +131,7 @@ pnpm test:e2e               # end-to-end tests (Playwright) on a production buil
 ## Lint and format
 
 ```bash
-pnpm lint                   # ESLint, including the architecture import rules
+pnpm lint                   # route types, then ESLint, including the architecture import rules
 pnpm typecheck              # route types, then the TypeScript compiler
 pnpm format:check           # Prettier check (pnpm format to fix)
 ```

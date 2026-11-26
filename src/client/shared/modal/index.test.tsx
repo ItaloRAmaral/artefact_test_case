@@ -80,6 +80,19 @@ describe('Modal', () => {
     expect(back).toHaveBeenCalledOnce();
   });
 
+  it('stays open when a press inside the content ends outside', () => {
+    render(
+      <Modal title="New task">
+        <input aria-label="Title" />
+      </Modal>,
+    );
+    fireEvent.pointerDown(screen.getByRole('textbox', { name: 'Title' }));
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(back).not.toHaveBeenCalled();
+  });
+
   it('stays open when the content is clicked', async () => {
     const user = userEvent.setup();
     render(

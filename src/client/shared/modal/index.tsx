@@ -45,6 +45,7 @@ export function Modal({
   const afterCloseRef = useRef<(() => void) | null>(null);
   const isOpenRef = useRef(false);
   const isGoingBackRef = useRef(false);
+  const isPressOnBackdropRef = useRef(false);
   const goBack = useCallback(() => {
     if (isGoingBackRef.current) {
       return;
@@ -96,8 +97,14 @@ export function Modal({
         event.preventDefault();
         goBack();
       }}
+      onPointerDown={(event) => {
+        isPressOnBackdropRef.current = event.target === event.currentTarget;
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
+        if (
+          isPressOnBackdropRef.current &&
+          event.target === event.currentTarget
+        ) {
           goBack();
         }
       }}
