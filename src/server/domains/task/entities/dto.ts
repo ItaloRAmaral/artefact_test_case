@@ -13,6 +13,12 @@ export interface TaskContent {
   readonly description?: string | null;
 }
 
+export interface NewTask extends TaskContent {
+  readonly id: string;
+  readonly createdAt: Date;
+  readonly status?: TaskStatus;
+}
+
 export type TaskErrorCode =
   | 'TASK_NOT_FOUND'
   | 'TASK_TITLE_REQUIRED'

@@ -8,7 +8,7 @@ import {
   TASK_STATUSES,
 } from '@/shared/tasks/task-statuses';
 
-import type { TaskContent, TaskSnapshot } from './dto';
+import type { NewTask, TaskContent, TaskSnapshot } from './dto';
 import {
   TaskDescriptionTooLongError,
   TaskStatusInvalidError,
@@ -23,11 +23,7 @@ export class Task {
     this.state = { ...snapshot, createdAt: new Date(snapshot.createdAt) };
   }
 
-  static create(
-    props: TaskContent &
-      Partial<Pick<TaskSnapshot, 'status'>> &
-      Pick<TaskSnapshot, 'id' | 'createdAt'>,
-  ): Task {
+  static create(props: NewTask): Task {
     const content = Task.normalizeContent(props.title, props.description);
     const status = props.status ?? TASK_STATUS_DEFAULT;
 

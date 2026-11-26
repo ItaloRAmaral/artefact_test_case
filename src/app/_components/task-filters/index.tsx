@@ -1,18 +1,15 @@
 'use client';
 
-import { useEffect, useId, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { TASK_TITLE_MAX_LENGTH } from '@/shared/tasks/task-limits';
 import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
 
 import { SearchIcon } from '@/client/shared/icons';
 import { StatusPicker } from '@/client/shared/status-picker';
+import { useIsHydrated } from '@/client/shared/use-is-hydrated';
 
 const SEARCH_DEBOUNCE_MS = 300;
-
-function subscribeToNothing(): () => void {
-  return () => undefined;
-}
 
 function startOfLocalDay(day: string, daysLater: number): string {
   const date = new Date(`${day}T00:00`);
@@ -52,11 +49,7 @@ export function TaskFilters({
   const fromId = useId();
   const toId = useId();
   const [search, setSearch] = useState(filter.titleContains ?? '');
-  const isHydrated = useSyncExternalStore(
-    subscribeToNothing,
-    () => true,
-    () => false,
-  );
+  const isHydrated = useIsHydrated();
   const fromDay = isHydrated ? toLocalDay(filter.createdFrom, 0) : '';
   const toDay = isHydrated ? toLocalDay(filter.createdBefore, 1) : '';
   const hasFilter =

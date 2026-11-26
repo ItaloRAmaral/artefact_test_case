@@ -1,12 +1,11 @@
 import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import { createTask } from './api';
 import { gotoHydrated } from './hydration';
 
 async function createListedTask(request: APIRequestContext) {
-  await request.post('/api/trpc/task.create', {
-    data: { title: `Listed task ${String(Date.now())}` },
-  });
+  await createTask(request, { title: `Listed task ${String(Date.now())}` });
 }
 
 test('creates a task and sees it in the list', async ({ page, request }) => {
@@ -45,7 +44,7 @@ test('edits a task and sees the change in the list', async ({
 }) => {
   const title = `Edit task ${String(Date.now())}`;
   const newTitle = `${title} edited`;
-  await request.post('/api/trpc/task.create', { data: { title } });
+  await createTask(request, { title });
   await gotoHydrated(page, '/');
   await page.getByRole('link', { name: `Edit ${title}` }).click();
   await page.getByRole('textbox', { name: 'Title' }).fill(newTitle);
@@ -65,7 +64,7 @@ test('opens the edit form with the saved values after saving', async ({
 }) => {
   const title = `Edit task ${String(Date.now())}`;
   const newTitle = `${title} edited`;
-  await request.post('/api/trpc/task.create', { data: { title } });
+  await createTask(request, { title });
   await gotoHydrated(page, '/');
   await page.getByRole('link', { name: `Edit ${title}` }).click();
   await page.getByRole('textbox', { name: 'Title' }).fill(newTitle);
@@ -119,10 +118,8 @@ test('edits a task in a modal and keeps the search', async ({
   const stamp = String(Date.now());
   const title = `Modal edit ${stamp}`;
   const newTitle = `${title} edited`;
-  await request.post('/api/trpc/task.create', { data: { title } });
-  await request.post('/api/trpc/task.create', {
-    data: { title: `Modal other ${stamp}` },
-  });
+  await createTask(request, { title });
+  await createTask(request, { title: `Modal other ${stamp}` });
   const search = `?titleContains=${encodeURIComponent(title)}`;
   await gotoHydrated(page, `/${search}`);
   await page.getByRole('link', { name: `Edit ${title}` }).click();
@@ -171,7 +168,7 @@ test('moves the focus to the title once the task to edit has loaded', async ({
   request,
 }) => {
   const title = `Focus edit ${String(Date.now())}`;
-  await request.post('/api/trpc/task.create', { data: { title } });
+  await createTask(request, { title });
   await gotoHydrated(page, '/');
 
   await page.getByRole('link', { name: `Edit ${title}` }).click();

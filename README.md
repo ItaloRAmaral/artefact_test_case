@@ -33,14 +33,14 @@ The controller validates the input shape with the shared Zod schema, calls one u
 
 **Where the code lives.**
 
-| Path          | What                                                                                                                                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/`    | Next.js routes: the pages, the `/api/trpc` handler, and each page's own components in its `_components/<name>/` (the list, the date, the edit loader) |
-| `src/server/` | the back end: `domains/task/` (entity, repository, use cases), `adapters/` (tRPC), composition                                                        |
-| `src/shared/` | what both sides use: limits, Zod schemas, the list query options, the query client factory                                                            |
-| `src/client/` | `shared/<name>/`: what more than one page uses (the form, the toast, the code-to-message module); `trpc/`: the tRPC React provider                    |
-| `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup                                                          |
-| `e2e/`        | Playwright tests                                                                                                                                      |
+| Path          | What                                                                                                                                                                                                                          |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`    | Next.js routes: the pages, the `/api/trpc` handler, and each page's own components in its `_components/<name>/` (the list, the task card, the filters, the date)                                                              |
+| `src/server/` | the back end: `domains/task/` (entity, repository, use cases), `adapters/` (tRPC), composition                                                                                                                                |
+| `src/shared/` | what both sides use: limits, Zod schemas, the list query options, the query client factory                                                                                                                                    |
+| `src/client/` | `shared/<name>/`: what more than one component or page uses (the form, the edit loader, the modal, the status picker, the toast, the icons, the code-to-message module, the hydration hook); `trpc/`: the tRPC React provider |
+| `src/test/`   | test helpers: factories, the tRPC test links, the fake `IntersectionObserver`, the DOM setup                                                                                                                                  |
+| `e2e/`        | Playwright tests, with `createTask` (`api.ts`) and `gotoHydrated` (`hydration.ts`)                                                                                                                                            |
 
 **Look.** Styled with Tailwind CSS as a colored board: each task card is tinted and edged with its status color, in the Bricolage Grotesque typeface, with dark mode following the system ([D-33](docs/DECISIONS.md#d-33-styling-with-tailwind-css-only), [D-37](docs/DECISIONS.md#d-37-a-colored-board-look)).
 

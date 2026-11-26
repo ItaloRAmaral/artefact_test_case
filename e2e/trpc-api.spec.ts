@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { readTaskId } from './trpc-response';
+import { createTask } from './api';
 
 test('creates a task through the API', async ({ request }) => {
   const title = `API task ${String(Date.now())}`;
@@ -15,10 +15,7 @@ test('creates a task through the API', async ({ request }) => {
 
 test('reads a created task back through the API', async ({ request }) => {
   const title = `API task ${String(Date.now())}`;
-  const created = await request.post('/api/trpc/task.create', {
-    data: { title },
-  });
-  const id = await readTaskId(created);
+  const id = await createTask(request, { title });
 
   const fetched = await request.get(
     `/api/trpc/task.getById?input=${encodeURIComponent(JSON.stringify({ id }))}`,

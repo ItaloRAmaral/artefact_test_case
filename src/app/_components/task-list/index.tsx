@@ -6,7 +6,6 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -14,15 +13,12 @@ import { useTRPC } from '@/client/trpc/provider';
 import { getNextTaskListCursor } from '@/shared/tasks/task-list-query';
 import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
 import type { TaskStatus } from '@/shared/tasks/task-statuses';
-import { TASK_STATUSES } from '@/shared/tasks/task-statuses';
 
 import {
   getErrorMessage,
   isTemporaryError,
 } from '@/client/shared/error-message';
-import { CalendarIcon, PencilIcon, TrashIcon } from '@/client/shared/icons';
-import { TaskDate } from '../task-date';
-import { TASK_STATUS_LABELS, toTaskStatus } from '@/client/shared/task-status';
+import { TaskCard } from '../task-card';
 import { useShowToast } from '@/client/shared/toast';
 
 const LOAD_AHEAD_MARGIN = '200px';
@@ -151,95 +147,19 @@ export function TaskList({ filter }: { filter: TaskListFilterInput }) {
           className={`space-y-3 ${list.isPlaceholderData ? 'opacity-60' : ''}`}
         >
           {tasks.map((task) => (
-            <li
+            <TaskCard
               key={task.id}
-              data-status={shownStatus(task)}
-              className="border-line rounded-xl border border-l-4 border-l-(--status) bg-(--status-tint) py-4 pr-3 pl-5 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h2
-                  className={`pt-0.5 text-[1.0625rem] leading-snug font-semibold break-words ${shownStatus(task) === 'done' ? 'text-ink-muted' : ''}`}
-                >
-                  {task.title}
-                </h2>
-                <span className="border-line bg-surface has-focus-visible:outline-accent relative inline-flex shrink-0 items-center gap-1.5 rounded-full border py-1 pr-2 pl-2.5 text-xs font-semibold text-(--status-ink) has-aria-disabled:opacity-60 has-focus-visible:outline-2 has-focus-visible:outline-offset-2">
-                  <span
-                    aria-hidden
-                    className="size-2 rounded-full bg-(--status)"
-                  />
-                  <span
-                    aria-hidden
-                    className="block [text-box:trim-both_cap_alphabetic]"
-                  >
-                    {TASK_STATUS_LABELS[shownStatus(task)]}
-                  </span>
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 12 12"
-                    className="size-3"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 4.5 6 7.5 9 4.5" />
-                  </svg>
-                  <select
-                    aria-label={`Status of ${task.title}`}
-                    className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0 aria-disabled:cursor-not-allowed"
-                    value={shownStatus(task)}
-                    aria-disabled={changeStatus.isPending}
-                    onChange={(event) => {
-                      const status = toTaskStatus(event.target.value);
-
-                      if (!changeStatus.isPending && status !== undefined) {
-                        changeStatus.mutate({ id: task.id, status });
-                      }
-                    }}
-                  >
-                    {TASK_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {TASK_STATUS_LABELS[status]}
-                      </option>
-                    ))}
-                  </select>
-                </span>
-              </div>
-              {task.description === null ? null : (
-                <p className="text-ink-muted mt-1 pr-2 text-sm break-words whitespace-pre-line">
-                  {task.description}
-                </p>
-              )}
-              <div className="mt-1.5 -mb-2 flex items-center justify-between gap-3">
-                <span className="text-ink-muted inline-flex items-center gap-1.5 text-xs">
-                  <CalendarIcon className="size-3.5" />
-                  <TaskDate iso={task.createdAt} />
-                </span>
-                <div className="flex gap-0.5">
-                  <Link
-                    href={`/tasks/${task.id}/edit`}
-                    aria-label={`Edit ${task.title}`}
-                    title="Edit"
-                    className="icon-button"
-                  >
-                    <PencilIcon />
-                  </Link>
-                  <button
-                    type="button"
-                    className="icon-button hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${task.title}`}
-                    title="Delete"
-                    disabled={deleteTask.isPending}
-                    onClick={() => {
-                      deleteTask.mutate({ id: task.id });
-                    }}
-                  >
-                    <TrashIcon />
-                  </button>
-                </div>
-              </div>
-            </li>
+              task={task}
+              status={shownStatus(task)}
+              isChangingStatus={changeStatus.isPending}
+              onStatusChange={(status) => {
+                changeStatus.mutate({ id: task.id, status });
+              }}
+              isDeleting={deleteTask.isPending}
+              onDelete={() => {
+                deleteTask.mutate({ id: task.id });
+              }}
+            />
           ))}
         </ul>
         {isFetchingNextPage ? (

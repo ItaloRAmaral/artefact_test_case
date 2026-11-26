@@ -1,10 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
-
-function subscribeToNothing(): () => void {
-  return () => undefined;
-}
+import { useIsHydrated } from '@/client/shared/use-is-hydrated';
 
 /**
  * Renders a task's creation date.
@@ -13,11 +9,7 @@ function subscribeToNothing(): () => void {
  * @returns A `time` element.
  */
 export function TaskDate({ iso }: { iso: string }) {
-  const isHydrated = useSyncExternalStore(
-    subscribeToNothing,
-    () => true,
-    () => false,
-  );
+  const isHydrated = useIsHydrated();
   const text = isHydrated
     ? new Intl.DateTimeFormat(undefined, {
         dateStyle: 'medium',

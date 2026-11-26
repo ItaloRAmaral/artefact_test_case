@@ -2,13 +2,9 @@ import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import { gotoHydrated } from './hydration';
-import { readTaskId } from './trpc-response';
+import { createTask } from './api';
 
 test.use({ viewport: { width: 1280, height: 400 } });
-
-async function createTask(request: APIRequestContext, title: string) {
-  await request.post('/api/trpc/task.create', { data: { title } });
-}
 
 async function createTasks(
   request: APIRequestContext,
@@ -16,13 +12,13 @@ async function createTasks(
   count: number,
 ) {
   for (let n = 1; n <= count; n += 1) {
-    await createTask(request, `${prefix} ${String(n)}`);
+    await createTask(request, { title: `${prefix} ${String(n)}` });
   }
 }
 
 test('renders a task in the server HTML', async ({ request }) => {
   const title = `SSR task ${String(Date.now())}`;
-  await createTask(request, title);
+  await createTask(request, { title });
 
   const response = await request.get('/');
 
@@ -65,7 +61,7 @@ test('deletes a task from the list with feedback', async ({
   request,
 }) => {
   const title = `Delete task ${String(Date.now())}`;
-  await createTask(request, title);
+  await createTask(request, { title });
   await gotoHydrated(page, '/');
 
   await page.getByRole('button', { name: `Delete ${title}` }).click();
@@ -90,8 +86,8 @@ test('loads more tasks when scrolling to the end', async ({
 
 test('renders a filtered list in the server HTML', async ({ request }) => {
   const stamp = String(Date.now());
-  await createTask(request, `Filtered match ${stamp}`);
-  await createTask(request, `Filtered other ${stamp}`);
+  await createTask(request, { title: `Filtered match ${stamp}` });
+  await createTask(request, { title: `Filtered other ${stamp}` });
 
   const response = await request.get(
     `/?titleContains=${encodeURIComponent(`Filtered match ${stamp}`)}`,
@@ -149,8 +145,8 @@ test.describe('in a time zone far from the server', () => {
 
 test('searches tasks by title', async ({ page, request }) => {
   const stamp = String(Date.now());
-  await createTask(request, `Search match ${stamp}`);
-  await createTask(request, `Search other ${stamp}`);
+  await createTask(request, { title: `Search match ${stamp}` });
+  await createTask(request, { title: `Search other ${stamp}` });
   await gotoHydrated(page, '/');
 
   await page
@@ -175,7 +171,7 @@ test('searches tasks by title', async ({ page, request }) => {
 
 test('filters tasks by creation date', async ({ page, request }) => {
   const title = `Date filter ${String(Date.now())}`;
-  await createTask(request, title);
+  await createTask(request, { title });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
 
@@ -187,8 +183,8 @@ test('filters tasks by creation date', async ({ page, request }) => {
 
 test('clears the filters', async ({ page, request }) => {
   const stamp = String(Date.now());
-  await createTask(request, `Clear match ${stamp}`);
-  await createTask(request, `Clear other ${stamp}`);
+  await createTask(request, { title: `Clear match ${stamp}` });
+  await createTask(request, { title: `Clear other ${stamp}` });
   await gotoHydrated(
     page,
     `/?titleContains=${encodeURIComponent(`Clear match ${stamp}`)}`,
@@ -230,7 +226,7 @@ test('keeps the header and the filters on screen while scrolling', async ({
 
 test("changes a task's status from the list", async ({ page, request }) => {
   const title = `Status task ${String(Date.now())}`;
-  await createTask(request, title);
+  await createTask(request, { title });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   const status = page.getByRole('combobox', { name: `Status of ${title}` });
 
@@ -243,13 +239,8 @@ test("changes a task's status from the list", async ({ page, request }) => {
 
 test('filters tasks by status', async ({ page, request }) => {
   const stamp = String(Date.now());
-  await createTask(request, `Status open ${stamp}`);
-  const created = await request.post('/api/trpc/task.create', {
-    data: { title: `Status done ${stamp}` },
-  });
-  await request.post('/api/trpc/task.changeStatus', {
-    data: { id: await readTaskId(created), status: 'done' },
-  });
+  await createTask(request, { title: `Status open ${stamp}` });
+  await createTask(request, { title: `Status done ${stamp}`, status: 'done' });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(stamp)}`);
 
   await page.getByRole('radio', { name: 'Done', exact: true }).check();
@@ -268,7 +259,7 @@ test('keeps the focus on the status after a keyboard change', async ({
   request,
 }) => {
   const title = `Keyboard status ${String(Date.now())}`;
-  await createTask(request, title);
+  await createTask(request, { title });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   const status = page.getByRole('combobox', { name: `Status of ${title}` });
   await status.focus();
