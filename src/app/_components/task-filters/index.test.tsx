@@ -6,6 +6,7 @@ import { TaskFilters } from '.';
 describe('TaskFilters', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 26, 12));
   });
 
   afterEach(() => {
@@ -27,8 +28,12 @@ describe('TaskFilters', () => {
     const search = screen.getByRole('searchbox', { name: 'Search by title' });
 
     expect(search).toHaveValue('readme');
-    expect(screen.getByLabelText('Created from')).toHaveValue('2026-11-20');
-    expect(screen.getByLabelText('Created to')).toHaveValue('2026-11-20');
+    expect(
+      screen.getByRole('button', { name: 'Created from Nov 20, 2026' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Created to Nov 20, 2026' }),
+    ).toBeInTheDocument();
   });
 
   it('applies the search after the user stops typing', () => {
@@ -106,10 +111,13 @@ describe('TaskFilters', () => {
   it('applies the start of the From day in local time', () => {
     const onChange = vi.fn();
     render(<TaskFilters filter={{}} onChange={onChange} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     expect(onChange).toHaveBeenCalledWith({
       createdFrom: '2026-11-20T03:00:00.000Z',
@@ -119,10 +127,13 @@ describe('TaskFilters', () => {
   it('applies the start of the day after To in local time', () => {
     const onChange = vi.fn();
     render(<TaskFilters filter={{}} onChange={onChange} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created to Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created to'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     expect(onChange).toHaveBeenCalledWith({
       createdBefore: '2026-11-21T03:00:00.000Z',
@@ -137,10 +148,11 @@ describe('TaskFilters', () => {
         onChange={onChange}
       />,
     );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Nov 20, 2026' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
     expect(onChange).toHaveBeenCalledWith({ createdFrom: undefined });
   });
@@ -150,10 +162,13 @@ describe('TaskFilters', () => {
     render(
       <TaskFilters filter={{ titleContains: 'readme' }} onChange={onChange} />,
     );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     expect(onChange).toHaveBeenCalledWith({
       titleContains: 'readme',
@@ -186,21 +201,38 @@ describe('TaskFilters', () => {
   it('keeps To from starting before From', () => {
     render(
       <TaskFilters
-        filter={{
-          createdFrom: '2026-11-20T03:00:00.000Z',
-          createdBefore: '2026-11-23T03:00:00.000Z',
-        }}
+        filter={{ createdFrom: '2026-11-20T03:00:00.000Z' }}
         onChange={vi.fn()}
       />,
     );
 
-    const createdTo = screen.getByLabelText('Created to');
-
-    expect(createdTo).toHaveAttribute('min', '2026-11-20');
-    expect(screen.getByLabelText('Created from')).toHaveAttribute(
-      'max',
-      '2026-11-22',
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created to Pick a day' }),
     );
+
+    expect(
+      screen.getByRole('button', { name: 'Thursday, November 19th, 2026' }),
+    ).toBeDisabled();
+  });
+
+  it('keeps From from ending after To', () => {
+    render(
+      <TaskFilters
+        filter={{ createdBefore: '2026-11-23T03:00:00.000Z' }}
+        onChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Monday, November 23rd, 2026' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Sunday, November 22nd, 2026' }),
+    ).toBeEnabled();
   });
 
   it('clears every filter at once', () => {

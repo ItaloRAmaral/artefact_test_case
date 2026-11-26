@@ -45,6 +45,7 @@ Versions are pinned exactly in `package.json`. Decided with the user on 2026-11-
 | Vitest               | 5.1.0, with Testing Library and jsdom 31.0.0 for component tests      | —                                                                                                                                                         |
 | Playwright           | 1.65.0, Chromium only                                                 | production build on port 3100 (D-18)                                                                                                                      |
 | server-only          | 0.0.1                                                                 | makes a client import of server wiring fail the build (D-13)                                                                                              |
+| react-day-picker     | 10.0.2                                                                | the English calendar of the day filter, styled with the theme tokens (D-41)                                                                               |
 
 ## Language
 

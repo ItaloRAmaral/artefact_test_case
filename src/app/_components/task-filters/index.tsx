@@ -8,27 +8,30 @@ import type { TaskListFilterInput } from '@/shared/tasks/task-schemas';
 import { SearchIcon } from '@/client/shared/icons';
 import { StatusPicker } from '@/client/shared/status-picker';
 import { useIsHydrated } from '@/client/shared/use-is-hydrated';
+import { DayField } from '../day-field';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-function startOfLocalDay(day: string, daysLater: number): string {
-  const date = new Date(`${day}T00:00`);
-
-  date.setDate(date.getDate() + daysLater);
-
-  return date.toISOString();
+function startOfLocalDay(day: Date, daysLater: number): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate() + daysLater);
 }
 
-function toLocalDay(iso: string | undefined, msBefore: number): string {
-  if (iso === undefined) {
-    return '';
-  }
+function toFilterDate(
+  day: Date | undefined,
+  daysLater: number,
+): string | undefined {
+  return day === undefined
+    ? undefined
+    : startOfLocalDay(day, daysLater).toISOString();
+}
 
-  const date = new Date(new Date(iso).getTime() - msBefore);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${String(date.getFullYear())}-${month}-${day}`;
+function toLocalDate(
+  iso: string | undefined,
+  msBefore: number,
+): Date | undefined {
+  return iso === undefined
+    ? undefined
+    : startOfLocalDay(new Date(new Date(iso).getTime() - msBefore), 0);
 }
 
 /**
@@ -46,12 +49,10 @@ export function TaskFilters({
   onChange: (filter: TaskListFilterInput) => void;
 }) {
   const searchId = useId();
-  const fromId = useId();
-  const toId = useId();
   const [search, setSearch] = useState(filter.titleContains ?? '');
   const isHydrated = useIsHydrated();
-  const fromDay = isHydrated ? toLocalDay(filter.createdFrom, 0) : '';
-  const toDay = isHydrated ? toLocalDay(filter.createdBefore, 1) : '';
+  const fromDate = isHydrated ? toLocalDate(filter.createdFrom, 0) : undefined;
+  const toDate = isHydrated ? toLocalDate(filter.createdBefore, 1) : undefined;
   const hasFilter =
     search !== '' ||
     Object.values<string | undefined>(filter).some(
@@ -96,7 +97,7 @@ export function TaskFilters({
         </div>
         <button
           type="button"
-          className="button text-ink-muted hover:text-ink h-10 px-2"
+          className="button button-secondary h-10 w-32"
           disabled={!hasFilter}
           onClick={() => {
             setSearch('');
@@ -115,47 +116,24 @@ export function TaskFilters({
           }}
         />
         <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
-          <div>
-            <label htmlFor={fromId} className="mb-1 block text-sm font-medium">
-              Created from
-            </label>
-            <input
-              id={fromId}
-              type="date"
-              className="field h-10 px-2 sm:w-38 sm:px-3"
-              value={fromDay}
-              max={toDay === '' ? undefined : toDay}
-              onChange={(event) => {
-                const day = event.target.value;
-
-                onChange({
-                  ...filter,
-                  createdFrom: day === '' ? undefined : startOfLocalDay(day, 0),
-                });
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor={toId} className="mb-1 block text-sm font-medium">
-              Created to
-            </label>
-            <input
-              id={toId}
-              type="date"
-              className="field h-10 px-2 sm:w-38 sm:px-3"
-              value={toDay}
-              min={fromDay === '' ? undefined : fromDay}
-              onChange={(event) => {
-                const day = event.target.value;
-
-                onChange({
-                  ...filter,
-                  createdBefore:
-                    day === '' ? undefined : startOfLocalDay(day, 1),
-                });
-              }}
-            />
-          </div>
+          <DayField
+            label="Created from"
+            day={fromDate}
+            latestDay={toDate}
+            align="start"
+            onDayChange={(day) => {
+              onChange({ ...filter, createdFrom: toFilterDate(day, 0) });
+            }}
+          />
+          <DayField
+            label="Created to"
+            day={toDate}
+            earliestDay={fromDate}
+            align="end"
+            onDayChange={(day) => {
+              onChange({ ...filter, createdBefore: toFilterDate(day, 1) });
+            }}
+          />
         </div>
       </div>
     </div>

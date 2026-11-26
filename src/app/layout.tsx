@@ -13,7 +13,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: 'Tasks',
+  title: 'Task board',
   description: 'A simple task manager',
 };
 

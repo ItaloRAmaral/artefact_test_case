@@ -11,7 +11,7 @@ import { useIsHydrated } from '@/client/shared/use-is-hydrated';
 export function TaskDate({ iso }: { iso: string }) {
   const isHydrated = useIsHydrated();
   const text = isHydrated
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat('en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
       }).format(new Date(iso))

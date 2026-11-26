@@ -43,6 +43,8 @@ The main decisions behind this project, each with its context, the choice and wh
 | [D-37](#d-37-a-colored-board-look)                                                              | A colored board look                                                                     | 2026-11-20 |
 | [D-38](#d-38-jsdoc-on-exported-functions-no-other-comments)                                     | JSDoc on exported functions, no other comments                                           | 2026-11-20 |
 | [D-39](#d-39-docker-image-from-the-standalone-output)                                           | Docker image from the standalone output                                                  | 2026-11-20 |
+| [D-40](#d-40-a-styled-status-list-and-checked-creation-days)                                    | A styled status list and checked creation days                                           | 2026-11-26 |
+| [D-41](#d-41-an-english-calendar-from-react-day-picker)                                         | An English calendar from `react-day-picker`                                              | 2026-11-26 |
 
 ---
 
@@ -383,7 +385,7 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Context:** the app had no styles. The spec asks for a simple layout ("não é necessário um design elaborado").
 - **Decision (user decision):**
   - Tailwind CSS 4.3.5 (`tailwindcss`, `@tailwindcss/postcss`, pinned dev dependencies, the newest release at least 7 days old, D-19), wired as the Next.js docs show (`postcss.config.mjs`, `src/app/globals.css` imported by the root layout).
-  - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small.
+  - No component library: shadcn was considered and declined; it would add runtime dependencies and its own `components/ui` folder for markup this small. _Superseded in part by [D-41](#d-41-an-english-calendar-from-react-day-picker): one library, `react-day-picker`, draws the calendar grid of the day filter; everything else is still plain markup._
   - Utility classes in the markup; the few patterns repeated on several pages are component classes in `globals.css` built with `@apply` (`button`, `button-primary`, `button-secondary`, `button-danger`, `card`, `field`, `page-title`, `text-muted`, `text-error`); a `select.field` draws its own arrow, as far in from the right edge as the text is from the left, because the native one hugs the edge (user report, 2026-11-20), so a change to a button or a field happens once. _Superseded in part by [D-37](#d-37-a-colored-board-look): `button-danger` and `select.field` were removed once Delete became an icon button and no form or filter used a select; `icon-button` was added._
   - A neutral look: a centered column, the list's heading, `New task` and the filters (D-34) pinned to the top as one block while the page scrolls (user decision: a sticky header, not a scrolling list area, so the page keeps native scrolling and the infinite scroll keeps the viewport as its root; the block is rendered by `FilteredTaskList`, with the heading passed in by the page, which also shows it in the loading fallback), tasks as cards with their status as a colored pill (D-36), a visible focus style on every control, a red border on an invalid field, the toast with a green or red edge in the top-right corner (user decision, 2026-11-20: at the bottom it went unnoticed), with `pointer-events-none` so it never blocks a click on the `New task` link it may cover for its 4 seconds; dark mode follows the system (`prefers-color-scheme`). _Superseded in part by [D-37](#d-37-a-colored-board-look): the neutral zinc look gave way to a colored board, with color tokens, the Bricolage Grotesque typeface and an `icon-button` class; the layout, the sticky block and the toast's place stay._
 - **Why:** the smallest setup that gives every page a consistent look, with no change to text, roles or structure, so every test stays as it was.
@@ -529,6 +531,37 @@ The main decisions behind this project, each with its context, the choice and wh
 - **Measured (2026-11-20, Docker 24.0.7):** the image is 212 MB, of which the app is about 40 MB (39.7 MB standalone, 1 MB static) and the rest the base image. In the container: the list renders on the server, a task created through the API shows on the page, the CSS is served, and the process runs as `node` on Node 24.22.2.
 - **Why:** the standalone output is the Next.js way to ship only what the server needs; a second stage leaves the source, pnpm and dev dependencies behind; a non-root user limits what a compromised process can do; the pinned base matches the Node version used everywhere else.
 - **Alternatives rejected (offered to the user):** distroless (smaller, no shell, but no exact Node pin), `node:24.22.2-slim` (larger); a single stage (would ship the source and every dependency).
+
+## D-40: A styled status list and checked creation days
+
+- **Context:** a review of the UI (2026-11-26) found the card's status list drawn by the system, out of step with the rest of the look; the empty days' `dd/mm/yyyy` as bright as a real date; the calendar opening only from its icon; and no check on the typed days. Chrome let the year take six digits (up to 275760, measured), which `new Date` cannot read, so applying the day threw `RangeError: Invalid time value`; and `min`/`max` do not stop a typed day outside them, so a To before From reached the server and emptied the list without a word.
+- **Decision (user approval of the plan, 2026-11-26):**
+  - **Status list:** the card keeps its native select over the pill (D-36, D-37), so screen readers and the component tests are unchanged. Where the browser supports `appearance: base-select` (Chrome and Edge; checked on Chromium 158), `globals.css` styles its open list: a surface card with the line border, each option with its status dot and ink, the checked one in its tint with a check mark, opening below the pill (`position-try-order: normal`, since the browser default picks the side with more room and flipped it up on a phone). Other browsers keep the system list. With `base-select`, an arrow key on the closed select opens the list instead of changing the value (measured): the arrows move, Enter picks and the focus returns to the select, so the e2e keyboard test opens the list first.
+  - **Days:** an empty day is muted; a click anywhere on the field opens the calendar (`showPicker`); `max` is at most `9999-12-31`, which keeps Chrome's year at four digits. _Superseded by [D-41](#d-41-an-english-calendar-from-react-day-picker)._
+  - **Checked days:** a day that does not parse ("Enter a valid date") or a To before From ("Created to must be on or after Created from") is kept in the field, marked invalid with the message (`role="alert"`) and not applied, so the list keeps the last valid filter; fixing it applies it, and Clear filters drops it. A day shown from the URL keeps a four-digit year (`0002`, not `2`): Chrome applies the day as soon as the first year digit is typed, and a short year emptied the field mid-typing. The check lives in the filter bar only: the server already answers an inverted range correctly, with an empty list. _Superseded by [D-41](#d-41-an-english-calendar-from-react-day-picker): the days are picked, not typed._
+- **Why:** the list now matches the board look with no script of our own; the checks turn a thrown error and a silent empty list into a message.
+- **Alternatives rejected:** a menu of our own (a button with `menuitemradio` items, arrow keys, Escape and focus handling): the same look in every browser, but about 80 to 100 lines, the select's accessibility rewritten by hand and about 15 tests rewritten. Rejecting an inverted range on the server: the empty answer is already right.
+
+## D-41: An English calendar from `react-day-picker`
+
+- **Context:** a reviewer saw the native date picker in Portuguese on an English page (2026-11-26). The native input draws its calendar and its `dd/mm/aaaa` in the browser's language, and the page's `lang="en"` does not change that (seen in the reviewer's Chrome). The card dates followed the browser's language too: a Playwright browser in `pt-BR` showed `26 de nov. de 2026, 12:34`.
+- **Decision (user decisions, 2026-11-26: a calendar library styled like the page; the card dates in English too):**
+  - **Library:** `react-day-picker` `10.0.2`, pinned in `dependencies`. It brings `date-fns` and `@date-fns/tz`. It draws the month grid with its keyboard navigation and ARIA labels, in `en-US`, its default locale. `@daypicker/react`, the name its v10 docs use, only depends on this package, so the app installs it directly. Its `style.css` is not used: every part gets classes with the theme tokens.
+  - **`DayField`** (`src/app/_components/day-field/`):
+    - **Field:** a button that looks like a field and shows the day (`Nov 20, 2026`) or a muted `Pick a day`. Its accessible name is the label and the value (`Created from Nov 20, 2026`).
+    - **Panel:** it opens under the field, lined up with its left edge for From and its right edge for To, so it fits a phone. The focus moves into the grid.
+    - **Closing:** choosing a day closes it, and so do Escape, a click outside and the focus leaving it. Choosing and Escape return the focus to the field.
+    - **Clear:** with a day set, the panel offers `Clear`. Choosing the same day again keeps it.
+  - **Range:** in From, the days after To are disabled, and in To, the days before From. An inverted range can only come from a hand-edited URL, which the server answers with an empty list. The typed-day checks of D-40 are gone with the typing.
+  - **Dates in English:** `TaskDate` and `DayField` format with `Intl.DateTimeFormat('en-US', …)`, still in the browser's time zone (D-14). An e2e test runs in a `pt-BR` browser and expects both the card date and the calendar in English.
+- **Why:**
+  - The native input cannot be told its language.
+  - A calendar of our own would rewrite the grid's keyboard and ARIA behavior, which the library already gets right.
+  - Pinning the locale makes the page one language, as D-03 asks.
+- **Alternatives rejected:**
+  - Keeping the native input: it looks and reads different in each browser.
+  - A hand-written calendar: about 200 lines of grid, keyboard and focus code to test.
+  - `@daypicker/react`: a wrapper adding one package for the same code.
 
 ---
 

@@ -69,7 +69,7 @@ export function TaskCard({
           </svg>
           <select
             aria-label={`Status of ${task.title}`}
-            className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0 aria-disabled:cursor-not-allowed"
+            className="status-select absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0 aria-disabled:cursor-not-allowed"
             value={status}
             aria-disabled={isChangingStatus}
             onChange={(event) => {
@@ -81,7 +81,7 @@ export function TaskCard({
             }}
           >
             {TASK_STATUSES.map((option) => (
-              <option key={option} value={option}>
+              <option key={option} value={option} data-status={option}>
                 {TASK_STATUS_LABELS[option]}
               </option>
             ))}

@@ -96,7 +96,7 @@ test('opens the new task form in a modal over the list', async ({
 
   await expect(page.getByRole('dialog', { name: 'New task' })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks\/new$/);
-  await expect(page.locator('h1', { hasText: 'Tasks' })).toBeVisible();
+  await expect(page.locator('h1', { hasText: 'Task board' })).toBeVisible();
 });
 
 test('closes the modal with Escape', async ({ page, request }) => {

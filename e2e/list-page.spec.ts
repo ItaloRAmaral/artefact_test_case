@@ -138,8 +138,12 @@ test.describe('in a time zone far from the server', () => {
     await page.waitForLoadState('networkidle');
 
     expect(errors).toEqual([]);
-    await expect(page.getByLabel('Created from')).toHaveValue('2026-11-20');
-    await expect(page.getByLabel('Created to')).toHaveValue('2026-11-20');
+    await expect(
+      page.getByRole('button', { name: 'Created from Nov 20, 2026' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Created to Nov 20, 2026' }),
+    ).toBeVisible();
   });
 });
 
@@ -174,8 +178,13 @@ test('filters tasks by creation date', async ({ page, request }) => {
   await createTask(request, { title });
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await page.getByRole('button', { name: /^Created from/ }).click();
+  await page.getByRole('button', { name: 'Go to the Next Month' }).click();
 
-  await page.getByLabel('Created from').fill('2999-01-01');
+  await page
+    .getByRole('grid')
+    .getByRole('button', { name: / 1st, / })
+    .click();
 
   await expect(page.getByText('No tasks match the filters.')).toBeVisible();
   await expect(page.getByRole('heading', { name: title })).toHaveCount(0);
@@ -263,8 +272,10 @@ test('keeps the focus on the status after a keyboard change', async ({
   await gotoHydrated(page, `/?titleContains=${encodeURIComponent(title)}`);
   const status = page.getByRole('combobox', { name: `Status of ${title}` });
   await status.focus();
+  await page.keyboard.press('ArrowDown');
 
   await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
 
   await expect(page.getByRole('status')).toHaveText('Status updated.');
   await expect(status).toBeFocused();

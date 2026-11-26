@@ -37,8 +37,8 @@ export default function HomePage({ searchParams }: PageProps<'/'>) {
 function TaskListHeader() {
   return (
     <div className="flex items-center justify-between gap-4 pt-4 pb-5">
-      <h1 className="page-title">Tasks</h1>
-      <Link href="/tasks/new" className="button button-primary">
+      <h1 className="page-title">Task board</h1>
+      <Link href="/tasks/new" className="button button-primary h-10 w-32">
         <PlusIcon />
         New task
       </Link>

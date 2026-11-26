@@ -1,8 +1,8 @@
-# Task manager
+# Task board
 
 A task manager where you create, edit and delete tasks, move each one between **To do**, **Doing** and **Done** with one click, and find them by title, creation date or status, while the list loads more as you scroll. It is built with Next.js 16 (App Router, server-side rendering), tRPC and TanStack Query, on a back end that keeps the tasks in memory. It was built for a technical test; the statement is in [`docs/SPEC.md`](docs/SPEC.md).
 
-![Creating a task, changing a task's status, filtering by status and deleting a task](docs/images/demo.gif)
+![Creating a task, changing a task's status, filtering by status, picking a creation day and deleting a task](docs/images/demo.gif)
 
 | Light theme                                                     | Dark theme                                                    |
 | --------------------------------------------------------------- | ------------------------------------------------------------- |
@@ -96,12 +96,12 @@ Errors carry `data.code` (the tRPC code), `data.domainCode` (for example `TASK_N
 
 ## List page
 
-`/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. If the list cannot be loaded, a `Retry` button tries again. Scrolling near the end loads the next page (`Loading more tasks…`; on failure, the error and a `Retry` button; `No more tasks.` after the last page); on a screen taller than the first page, the second one loads right away. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28, D-31).
+`/` shows the tasks, newest first. The heading is static; the list is rendered on the server for every request: the page fetches the first page through tRPC on the server and hands it to the browser's query cache, so the browser shows it without requesting it again. Dates appear in UTC in the server HTML and switch to the browser's local time once the page is interactive. Every date is written in English, whatever the browser's language (D-41). Deleting a task shows a short message (`Task deleted.` or the error) and refreshes the list; the delete buttons stay disabled until it has refreshed. If the list cannot be loaded, a `Retry` button tries again. Scrolling near the end loads the next page (`Loading more tasks…`; on failure, the error and a `Retry` button; `No more tasks.` after the last page); on a screen taller than the first page, the second one loads right away. Details in [`docs/DECISIONS.md`](docs/DECISIONS.md) (D-27, D-28, D-31).
 
 Each task shows its status (`To do`, `Doing` or `Done`) as a colored pill. Choosing another value in the pill saves it at once and shows `Status updated.` (or the error). The heading, `New task` and the filters stay at the top while the page scrolls.
 
 - **Search by title:** finds part of a title, ignoring case and accents ("acao" finds "Ação"). It applies a moment after you stop typing.
-- **Created from / Created to:** days in your time zone, both included.
+- **Created from / Created to:** days in your time zone, both included, picked from a calendar (`Pick a day` when empty). In From, the days after To are disabled, and in To, the days before From. `Clear` in the calendar removes that day.
 - **Status:** `All`, `To do`, `Doing` or `Done`.
 - **Clear filters:** empties every filter at once.
 - **The URL:** the filters live in it (`/?titleContains=…&createdFrom=…&createdBefore=…&status=…`), so a reload or a shared link renders the same filtered list on the server. While new results load, the previous ones stay on screen, dimmed; with no match, the list shows `No tasks match the filters.` (D-34).

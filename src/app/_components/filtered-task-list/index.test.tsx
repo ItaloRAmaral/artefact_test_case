@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InMemoryTaskRepository } from '@/server/domains/task/repositories/in-memory-database-repository';
 import { makeTask } from '@/test/factories/make-task';
@@ -8,7 +8,13 @@ import { renderWithTrpc } from '@/test/render-with-trpc';
 import { FilteredTaskList } from '.';
 
 describe('FilteredTaskList', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 26, 12));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     window.history.replaceState(null, '', '/');
   });
@@ -16,10 +22,13 @@ describe('FilteredTaskList', () => {
   it('writes the filter to the URL', () => {
     const replaceState = vi.spyOn(window.history, 'replaceState');
     renderWithTrpc(<FilteredTaskList header={null} initialFilter={{}} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     expect(replaceState).toHaveBeenCalledWith(
       null,
@@ -36,10 +45,11 @@ describe('FilteredTaskList', () => {
         initialFilter={{ createdFrom: '2026-11-20T03:00:00.000Z' }}
       />,
     );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Nov 20, 2026' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
     expect(replaceState).toHaveBeenCalledWith(null, '', '/');
   });
@@ -48,10 +58,13 @@ describe('FilteredTaskList', () => {
     window.history.pushState(null, '', '/tasks/new');
     const replaceState = vi.spyOn(window.history, 'replaceState');
     renderWithTrpc(<FilteredTaskList header={null} initialFilter={{}} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     expect(replaceState).not.toHaveBeenCalled();
   });
@@ -75,10 +88,13 @@ describe('FilteredTaskList', () => {
       repository,
     });
     await screen.findByRole('heading', { name: 'Write the README' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Created from Pick a day' }),
+    );
 
-    fireEvent.change(screen.getByLabelText('Created from'), {
-      target: { value: '2026-11-20' },
-    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Friday, November 20th, 2026' }),
+    );
 
     await waitFor(() => {
       expect(
