@@ -1,6 +1,25 @@
 # Task manager
 
-A small task manager built for a technical test: a Next.js app whose back end keeps tasks in memory and exposes create, list, update and delete through tRPC, with a server-rendered list page and a create/edit form. The test statement is in [`docs/SPEC.md`](docs/SPEC.md).
+A task manager where you create, edit and delete tasks, move each one between **To do**, **Doing** and **Done** with one click, and find them by title, creation date or status, while the list loads more as you scroll. It is built with Next.js 16 (App Router, server-side rendering), tRPC and TanStack Query, on a back end that keeps the tasks in memory. It was built for a technical test; the statement is in [`docs/SPEC.md`](docs/SPEC.md).
+
+![Creating a task, changing a task's status, filtering by status and deleting a task](docs/images/demo.gif)
+
+| Light theme                                                     | Dark theme                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------- |
+| ![The task list in the light theme](docs/images/list-light.png) | ![The task list in the dark theme](docs/images/list-dark.png) |
+
+## Quick start
+
+You need Node.js 24 and pnpm 12 ([requirements](#requirements)).
+
+```bash
+pnpm install
+pnpm dev    # open http://localhost:3000
+```
+
+Or with Docker: `docker build -t task-manager . && docker run --rm -p 3000:3000 task-manager`.
+
+The list starts empty, since the tasks live in memory: press **New task** to add one. Other ways to run the app, and the tests, are in [Run](#run) and [Test](#test).
 
 ## Highlights for reviewers
 
